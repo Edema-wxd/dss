@@ -60,7 +60,7 @@ export function LookupQuiz() {
   const result = results[gaps];
 
   return (
-    <div className="rounded-[28px] border-2 border-ink bg-white p-6 shadow-hard-lg">
+    <div className="rounded-[28px] border-2 border-ink bg-white p-6 shadow-hard-lg lg:p-8">
       <p className="text-[11px] font-semibold tracking-[0.14em] text-pink uppercase">
         Answer all five to see your result
       </p>
