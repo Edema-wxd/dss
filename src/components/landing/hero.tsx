@@ -3,6 +3,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AnnouncementBar, SiteHeader } from "./site-header";
 import { Sparkle } from "./primitives";
+import { RotatingWord } from "./rotating-word";
 
 export function Hero() {
   return (
@@ -41,7 +42,14 @@ export function Hero() {
           For founders who move first
         </p>
         <h1 className="mt-1 text-[38px] leading-[0.95] font-black tracking-[-0.04em] text-ink">
-          They loved the <span className="text-pink">Pitch.</span> Then they looked you up!
+          They loved the{" "}
+          <RotatingWord
+            words={["Pitch.", "Brand.", "Products.", "Service."]}
+            srText="Pitch."
+            interval={3000}
+            className="text-pink"
+          />{" "}
+          Then they looked you up!
         </h1>
 
         <div className="relative mt-12">
