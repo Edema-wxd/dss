@@ -62,21 +62,21 @@ export function BubblePair({
   answer: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-4 lg:gap-2.5">
+      <div className="flex items-center gap-3 lg:gap-4">
         <Image
           src="/images/iconmark-pink.png"
           alt=""
           width={72}
           height={72}
-          sizes="64px"
-          className="size-16 shrink-0 -rotate-6"
+          sizes="(min-width: 1024px) 140px, 64px"
+          className="size-16 shrink-0 -rotate-6 lg:-my-7 lg:-mr-5 lg:-ml-7 lg:size-[140px]"
         />
-        <p className="font-display rounded-[22px] rounded-bl-md border-2 border-ink bg-white px-5 py-3.5 text-[22px] leading-[1.1] font-bold shadow-hard-md">
+        <p className="font-display rounded-[22px] rounded-bl-md border-2 border-ink bg-white px-5 py-3.5 text-[22px] leading-[1.1] font-bold shadow-hard-md lg:rounded-[26px] lg:px-7 lg:py-4 lg:text-[50px] lg:shadow-hard-lg">
           {statement}
         </p>
       </div>
-      <p className="font-display -rotate-1 rounded-[22px] border-2 border-ink bg-pink px-5 py-3.5 text-[22px] leading-[1.1] font-bold text-white shadow-hard-md">
+      <p className="font-display -rotate-1 rounded-[22px] border-2 border-ink bg-pink px-5 py-3.5 text-[22px] leading-[1.1] font-bold text-white shadow-hard-md lg:self-end lg:rounded-[26px] lg:px-7 lg:py-4 lg:text-[50px] lg:shadow-hard-lg">
         {answer}
       </p>
     </div>

@@ -6,8 +6,8 @@ import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "@/compone
 
 export function AnnouncementBar() {
   return (
-    <div className="bg-ink px-2 py-2.5 text-center text-[11px] tracking-[-0.01em] leading-tight text-white">
-      <span className="font-semibold text-lime">8 sessions open in November</span>{" "}
+    <div className="bg-ink px-2 py-2.5 text-center text-[11px] tracking-[-0.01em] leading-tight text-white lg:py-[11px] lg:text-[13px]">
+      <span className="font-semibold text-lime">8 sessions open in October</span>{" "}
       · Reviewed personally by Janefrances
     </div>
   );
@@ -19,9 +19,12 @@ function SiteMenu() {
     <Popover>
       <PopoverTrigger
         aria-label="Open menu"
-        className="grid size-11 place-items-center rounded-full border-2 border-ink bg-white shadow-hard-sm transition-colors data-popup-open:bg-lime"
+        className="grid size-11 place-items-center rounded-full border-2 border-ink bg-white shadow-hard-sm transition-colors data-popup-open:bg-lime lg:flex lg:w-auto lg:gap-2.5 lg:px-[18px]"
       >
         <MenuIcon className="size-6" strokeWidth={2.5} />
+        <span aria-hidden className="hidden text-[15px] font-semibold lg:inline">
+          Menu
+        </span>
       </PopoverTrigger>
       <PopoverContent
         align="end"
@@ -71,7 +74,7 @@ function SiteMenu() {
 
 export function SiteHeader() {
   return (
-    <header className="relative z-20 flex items-center justify-between gap-3 px-4 pt-5">
+    <header className="relative z-20 mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 pt-5 lg:pt-[22px] lg:pr-[122px] lg:pl-[102px]">
       <a href="#top" aria-label="Digital Savvy Studios home">
         <Image
           src="/images/lockup-black.png"
@@ -79,14 +82,14 @@ export function SiteHeader() {
           width={1262}
           height={468}
           priority
-          sizes="118px"
-          className="h-auto w-[118px]"
+          sizes="(min-width: 1024px) 145px, 118px"
+          className="h-auto w-[118px] lg:w-[145px]"
         />
       </a>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 lg:gap-7">
         <a
           href="#apply"
-          className="rounded-full border-2 border-ink bg-pink px-3.5 py-2.5 text-[10px] font-semibold text-white shadow-hard-sm"
+          className="rounded-full border-2 border-ink bg-pink px-3.5 py-2.5 text-[10px] font-semibold text-white shadow-hard-sm lg:px-7 lg:py-[14px] lg:text-[15px] lg:shadow-hard-md"
         >
           5 slots left in November
         </a>

@@ -11,10 +11,10 @@ function Ticker({
 }) {
   const run = items.map((item) => `${item} ✦ `).join("");
   return (
-    <div className={cn("overflow-hidden border-y-2 border-ink py-2.5 whitespace-nowrap", className)}>
+    <div className={cn("overflow-hidden border-y-2 border-ink py-2.5 whitespace-nowrap lg:py-3.5", className)}>
       <div
         className={cn(
-          "flex w-max text-[13px] font-semibold tracking-[0.12em] uppercase",
+          "flex w-max text-[13px] font-semibold tracking-[0.12em] uppercase lg:text-[18px]",
           reverse ? "animate-marquee-reverse" : "animate-marquee",
         )}
       >
@@ -33,16 +33,16 @@ export function Tickers() {
     <div
       aria-label="Moving first? Get seen first. Great brands lose to louder ones."
       role="img"
-      className="relative h-[150px] overflow-hidden"
+      className="relative h-[150px] overflow-hidden lg:h-[300px]"
     >
       <Ticker
         items={["Moving first? Get seen first", "Launch", "Raise", "Expand", "Rebrand", "Scale"]}
-        className="absolute top-10 -left-8 w-[130%] rotate-[8deg] bg-lime text-ink"
+        className="absolute top-10 -left-8 w-[130%] rotate-[8deg] bg-lime text-ink lg:top-[76px] lg:-left-[5%] lg:w-[110%] lg:rotate-[2.4deg]"
       />
       <Ticker
         reverse
         items={["Do not ignore", "Great brands lose to louder ones", "Built boldly? Make it visible"]}
-        className="absolute top-10 -left-8 w-[130%] -rotate-[8deg] bg-pink text-white"
+        className="absolute top-10 -left-8 w-[130%] -rotate-[8deg] bg-pink text-white lg:top-[98px] lg:-left-[5%] lg:w-[110%] lg:-rotate-[2.9deg]"
       />
     </div>
   );
