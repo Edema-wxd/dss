@@ -4,15 +4,15 @@ import { cn } from "@/lib/utils";
 
 export function FinalCta() {
   return (
-    <section aria-labelledby="final-cta-title" className="px-4 pt-4 pb-20 lg:px-10 lg:pt-[106px] lg:pb-[90px]">
-      <div className="relative mx-auto max-w-xl rounded-[28px] border-2 border-ink bg-aqua px-5 pt-8 pb-28 text-center shadow-hard-lg lg:max-w-[1280px] lg:px-10 lg:pt-[76px] lg:pb-[58px]">
+    <section aria-labelledby="final-cta-title" className="px-4 pt-4 pb-20 lg:px-10 lg:pt-10 lg:pb-[90px]">
+      <div className="reveal relative mx-auto max-w-xl rounded-[28px] border-2 border-ink bg-aqua px-5 pt-8 pb-28 text-center shadow-hard-lg lg:max-w-[1280px] lg:px-10 lg:pt-[76px] lg:pb-[58px]">
         <Image
           src="/images/wifi-heart.png"
           alt=""
           width={360}
           height={284}
           sizes="(min-width: 1024px) 112px, 84px"
-          className="ml-6 w-[84px] lg:absolute lg:-top-[46px] lg:left-5 lg:ml-0 lg:w-[112px]"
+          className="float hover-pop ml-6 w-[84px] [--float-delay:-1.8s] lg:absolute lg:-top-[46px] lg:left-5 lg:ml-0 lg:w-[112px]"
         />
         {/* on desktop the answer runs on from the headline, in one block */}
         <div className="lg:text-[min(5vw,72px)] lg:leading-[1.08]">
@@ -39,7 +39,7 @@ export function FinalCta() {
           width={300}
           height={408}
           sizes="(min-width: 1024px) 64px, 54px"
-          className="absolute right-8 bottom-6 w-[54px] lg:right-7 lg:-bottom-[48px] lg:w-[64px]"
+          className="float hover-pop absolute right-8 bottom-6 w-[54px] [--float-delay:-3s] lg:right-7 lg:-bottom-[48px] lg:w-[64px]"
         />
       </div>
     </section>

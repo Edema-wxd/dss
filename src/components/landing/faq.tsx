@@ -63,7 +63,7 @@ const ease = "ease-[cubic-bezier(0.22,1,0.36,1)]";
 /** Plus that folds into a minus when its item opens. */
 function PlusMinus({ className }: { className?: string }) {
   return (
-    <span aria-hidden className={cn("relative mt-1.5 size-4 shrink-0 text-pink transition-colors duration-300", className)}>
+    <span aria-hidden className={cn("relative mt-1.5 size-4 shrink-0 text-pink transition-colors duration-300 lg:mt-0 lg:self-center", className)}>
       <span className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-current" />
       <span
         className={cn(

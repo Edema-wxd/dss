@@ -33,7 +33,7 @@ export function Tickers() {
     <div
       aria-label="Moving first? Get seen first. Great brands lose to louder ones."
       role="img"
-      className="relative h-[150px] overflow-hidden lg:h-[300px]"
+      className="relative h-[150px] overflow-hidden lg:h-[260px]"
     >
       <Ticker
         items={["Moving first? Get seen first", "Launch", "Raise", "Expand", "Rebrand", "Scale"]}

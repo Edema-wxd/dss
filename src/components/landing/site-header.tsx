@@ -35,7 +35,7 @@ function SiteMenu() {
         <svg
           aria-hidden
           viewBox="0 0 20 12"
-          className="absolute -top-[10px] right-[14px] h-3 w-5"
+          className="absolute -top-[10px] right-[14px] h-3 w-5 lg:right-[46px]"
         >
           <path d="M0 12 10 1l10 11" fill="#ffffff" stroke="#212121" strokeWidth="2" strokeLinejoin="round" />
         </svg>

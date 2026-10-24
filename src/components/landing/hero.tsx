@@ -20,12 +20,12 @@ export function Hero() {
       <SiteHeader />
 
       <section className="relative mx-auto max-w-xl px-5 pt-14 pb-10 text-center lg:max-w-[1440px] lg:px-20 lg:pt-[148px] lg:pb-6">
-        <Sparkle className="absolute top-2 left-6 size-3.5 text-ink lg:top-[88px] lg:left-[51px] lg:size-[26px]" />
-        <Sparkle className="absolute top-0 right-1/2 size-3.5 text-gold lg:top-[63px] lg:right-auto lg:left-[279px] lg:size-7" />
+        <Sparkle className="twinkle absolute top-2 left-6 size-3.5 text-ink lg:top-[88px] lg:left-[51px] lg:size-[26px]" />
+        <Sparkle className="twinkle absolute top-0 right-1/2 size-3.5 text-gold [--float-delay:-1.2s] lg:top-[63px] lg:right-[calc(50%+min(28.7vw,413px))] lg:size-7" />
         <svg
           viewBox="0 0 40 36"
           aria-hidden
-          className="absolute top-12 left-5 h-8 w-9 -rotate-12 lg:top-[136px] lg:left-[268px] lg:h-[78px] lg:w-[86px]"
+          className="float absolute top-12 left-5 h-8 w-9 -rotate-12 [--float-delay:-2s] lg:top-[136px] lg:right-[calc(50%+min(25.4vw,366px))] lg:left-auto lg:h-[78px] lg:w-[86px]"
         >
           <path d="M2 18 38 2 28 34 20 22Z" fill="#cdd629" stroke="#212121" strokeWidth="2.5" strokeLinejoin="round" />
         </svg>
@@ -35,17 +35,17 @@ export function Hero() {
           width={389}
           height={265}
           sizes="(min-width: 1024px) 180px, 96px"
-          className="absolute top-8 -right-1 w-[96px] lg:top-[97px] lg:right-[145px] lg:w-[180px]"
+          className="float hover-pop absolute top-8 -right-1 w-[96px] [--float-delay:-0.8s] lg:top-[97px] lg:right-auto lg:left-[calc(50%+min(27.4vw,395px))] lg:w-[180px]"
         />
 
-        <p className="relative mx-auto inline-block border-[1.5px] border-dashed border-[#d4477a] bg-pink-soft px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-pink uppercase lg:rounded-[6px] lg:bg-pink-tint lg:px-5 lg:py-3 lg:text-[14px] lg:tracking-[0.1em] lg:text-ink">
+        <p className="rise-in relative mx-auto inline-block border-[1.5px] border-dashed border-[#d4477a] bg-pink-soft px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-pink uppercase lg:rounded-[6px] lg:bg-pink-tint lg:px-5 lg:py-3 lg:text-[14px] lg:tracking-[0.1em] lg:text-ink">
           For founders who move first
           {/* speech-bubble tail on desktop */}
           <svg aria-hidden viewBox="0 0 24 14" className="absolute top-full left-[46px] -mt-px hidden h-3.5 w-6 lg:block">
             <path d="M0 0 12 13 24 0" fill="var(--color-pink-tint)" stroke="#d4477a" strokeWidth="1.5" strokeDasharray="3 2" />
           </svg>
         </p>
-        <h1 className="mt-1 text-[38px] leading-[0.95] font-black tracking-[-0.04em] text-ink lg:mt-12 lg:text-[min(7.8vw,112px)] lg:leading-[1.01]">
+        <h1 className="rise-in mt-1 text-[38px] [--rise-delay:120ms] leading-[0.95] font-black tracking-[-0.04em] text-ink lg:mt-12 lg:text-[min(7.8vw,112px)] lg:leading-[1.01]">
           They loved the{" "}
           <RotatingWord
             words={["Pitch.", "Brand.", "Products.", "Service."]}
@@ -64,7 +64,7 @@ export function Hero() {
             width={360}
             height={284}
             sizes="(min-width: 1024px) 86px, 44px"
-            className="absolute -top-6 left-3 w-[44px] -rotate-12 lg:-top-[118px] lg:left-[15px] lg:w-[86px]"
+            className="float hover-pop absolute -top-6 left-3 w-[44px] -rotate-12 [--float-delay:-3s] lg:-top-[118px] lg:right-[calc(50%+min(37.5vw,540px))] lg:left-auto lg:w-[min(6vw,86px)]"
           />
           <Image
             src="/images/cursor-pink.png"
@@ -72,9 +72,9 @@ export function Hero() {
             width={300}
             height={408}
             sizes="(min-width: 1024px) 56px, 28px"
-            className="absolute -top-12 right-10 w-[28px] lg:-top-[98px] lg:right-[40px] lg:w-[56px]"
+            className="float hover-pop absolute -top-12 right-10 w-[28px] [--float-delay:-1.5s] lg:-top-[98px] lg:right-auto lg:left-[calc(50%+min(37.8vw,545px))] lg:w-[min(3.9vw,56px)]"
           />
-          <p className="mx-auto max-w-[330px] text-[11px] leading-[1.75] text-slate lg:max-w-[1180px] lg:text-[20px] lg:leading-[1.65]">
+          <p className="rise-in mx-auto max-w-[330px] text-[11px] [--rise-delay:240ms] leading-[1.75] text-slate lg:max-w-[1180px] lg:text-[20px] lg:leading-[1.65]">
             The Visibility Session is a <strong className="font-semibold text-ink">₦250,000</strong>{" "}
             brand review we give free to 8 founders a month. We look you up the way a serious buyer
             would, then show you in 30 minutes what&apos;s winning them over and what&apos;s quietly
@@ -85,17 +85,17 @@ export function Hero() {
         <div aria-hidden className="relative mt-4 flex h-[92px] items-end justify-between lg:pointer-events-none lg:absolute lg:inset-0 lg:mt-0 lg:block lg:h-auto">
           <Image src="/images/laptop-pink.png" alt="" width={380} height={333}
             sizes="(min-width: 1024px) 168px, 92px"
-            className="w-[92px] -rotate-6 lg:absolute lg:top-[605px] lg:left-[88px] lg:w-[168px]"
+            className="float hover-pop w-[92px] -rotate-6 [--float-delay:-2.6s] lg:pointer-events-auto lg:absolute lg:right-[calc(50%+464px)] lg:bottom-[62px] lg:hidden lg:w-[168px] xl:block"
           />
-          <Sparkle className="mb-0 size-3 text-ink lg:absolute lg:top-[723px] lg:right-[30px] lg:size-6" />
+          <Sparkle className="twinkle mb-0 size-3 text-ink [--float-delay:-0.6s] lg:absolute lg:right-[30px] lg:bottom-[53px] lg:size-6" />
           <Image src="/images/folder-pink.png" alt="" width={320} height={347}
             sizes="(min-width: 1024px) 118px, 72px"
-            className="w-[72px] lg:absolute lg:top-[626px] lg:right-[204px] lg:w-[118px]"
+            className="float hover-pop w-[72px] [--float-delay:-4s] lg:pointer-events-auto lg:absolute lg:bottom-[70px] lg:left-[calc(50%+400px)] lg:hidden lg:w-[118px] xl:block"
           />
-          <Sparkle className="mb-10 size-6 text-gold lg:absolute lg:top-[739px] lg:left-[202px] lg:size-7" />
+          <Sparkle className="twinkle mb-10 size-6 text-gold [--float-delay:-1.9s] lg:absolute lg:right-[calc(50%+490px)] lg:bottom-[31px] lg:hidden lg:size-7 xl:block" />
         </div>
 
-        <div className="relative mt-6 flex flex-col gap-4 lg:mt-12 lg:flex-row lg:justify-center">
+        <div className="rise-in relative mt-6 flex flex-col gap-4 [--rise-delay:360ms] lg:mt-12 lg:flex-row lg:justify-center">
           <a href="#apply" className={cn(buttonVariants({ variant: "brand", size: "xl" }), "w-full lg:h-[52px] lg:w-auto lg:px-7 lg:text-[15px]")}>
             Apply for one of 8 sessions →
           </a>

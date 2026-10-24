@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { BubblePair, Eyebrow } from "./primitives";
+import { BubblePair } from "./chat-bubbles";
+import { Eyebrow } from "./primitives";
 import { CardCarousel } from "./card-carousel";
 
 const studyList = [
@@ -33,7 +34,7 @@ function StudyCard({
   image: { src: string; alt: string; width: number; height: number; position?: string };
 }) {
   return (
-    <article className={cn("h-full rounded-[28px] border-2 border-ink p-6 shadow-hard-lg lg:p-8", cardTones[tone])}>
+    <article className={cn("hover-lift h-full rounded-[28px] border-2 border-ink p-6 shadow-hard-lg lg:p-8", cardTones[tone])}>
       <Image
         src={image.src}
         alt={image.alt}
@@ -66,7 +67,7 @@ function StudyCard({
 
 export function Session() {
   return (
-    <section id="the-session" aria-labelledby="session-title" className="scroll-mt-4 px-4 py-14 lg:px-10 lg:py-20">
+    <section id="the-session" aria-labelledby="session-title" className="scroll-mt-4 px-4 py-14 lg:px-10 lg:pt-20 lg:pb-12">
       <div className="mx-auto max-w-xl lg:max-w-[1280px]">
         <Eyebrow>What the session is</Eyebrow>
         <h2 id="session-title" className="sr-only">
@@ -80,6 +81,7 @@ export function Session() {
           <CardCarousel
             label="What happens in the Visibility Session"
             gridClassName="grid-cols-3 gap-[26px]"
+            entrance="reveal-pop"
             slides={[
               <StudyCard
                 key="before"
@@ -126,10 +128,17 @@ export function Session() {
           />
         </div>
 
-        <div className="relative mt-8 rounded-[28px] border-2 border-ink bg-pink px-6 py-8 text-center text-white shadow-hard-lg lg:flex lg:items-center lg:gap-6 lg:px-11 lg:py-10 lg:text-left">
+        {/* pops in, strikes the price, stamps it FREE; a cursor keeps tapping it */}
+        <div className="reveal-pop hover-lift relative mt-8 rounded-[28px] border-2 border-ink bg-pink px-6 py-8 text-center text-white shadow-hard-lg lg:flex lg:items-center lg:gap-6 lg:px-11 lg:py-7 lg:text-left">
           <p className="font-display relative inline-block shrink-0 text-[46px] leading-none font-black tracking-[-0.04em] text-lime lg:text-[104px]">
             <span className="sr-only">Usually </span>₦250,000
-            <span aria-hidden className="absolute inset-x-[-4px] top-1/2 h-1.5 -translate-y-1/2 bg-ink lg:inset-x-[-12px] lg:h-3" />
+            <span aria-hidden className="reveal-draw absolute inset-x-[-4px] top-1/2 h-1.5 -translate-y-1/2 bg-ink [--draw-delay:0.55s] lg:inset-x-[-12px] lg:h-3" />
+            <span
+              aria-hidden
+              className="reveal-stamp absolute -top-5 -right-7 -rotate-12 rounded-[10px] border-2 border-ink bg-white px-2.5 py-1 font-sans text-[15px] font-bold tracking-[0.12em] text-pink shadow-hard-sm [--draw-delay:1.1s] lg:-top-7 lg:-right-12 lg:px-4 lg:py-1.5 lg:text-[24px] lg:shadow-hard"
+            >
+              FREE
+            </span>
           </p>
           <div>
             <p className="font-display mt-3 text-[28px] leading-[1.05] font-bold lg:mt-0 lg:text-[30px]">Free for 8 founders a month</p>
@@ -137,14 +146,18 @@ export function Session() {
               Sessions are confirmed in the order qualified applications arrive.
             </p>
           </div>
-          <Image
-            src="/images/cursor-grey.png"
-            alt=""
-            width={300}
-            height={408}
-            sizes="(min-width: 1024px) 66px, 48px"
-            className="absolute -right-3 -bottom-8 w-[48px] lg:right-5 lg:-bottom-9 lg:w-[66px]"
-          />
+          <span aria-hidden className="absolute -right-3 -bottom-8 w-[48px] lg:right-5 lg:-bottom-9 lg:w-[66px]">
+            {/* ripple sits at the cursor's tip */}
+            <span className="tap-ripple absolute -top-3 -left-3 size-7 rounded-full border-[3px] border-white opacity-0 lg:size-9" />
+            <Image
+              src="/images/cursor-grey.png"
+              alt=""
+              width={300}
+              height={408}
+              sizes="(min-width: 1024px) 66px, 48px"
+              className="cursor-tap relative w-full"
+            />
+          </span>
         </div>
       </div>
     </section>

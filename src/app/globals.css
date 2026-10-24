@@ -119,12 +119,187 @@
   -webkit-text-stroke: 1.25px #ffffff;
 }
 
+/* ── Motion ─────────────────────────────────────────────────────────────
+   reveal     rises in on first scroll into view (armed by <ScrollReveal>)
+   rise-in    hero entrance on load; stagger with [--rise-delay:…]
+   float      gentle bob for stickers; offset with [--float-delay:…]
+   twinkle    sparkle pulse
+   hover-lift / hover-pop   desktop-only hover (fine pointer, lg and up)
+   Uses `transform` for float/hover and the `translate` property for
+   reveal, so they compose with Tailwind's translate/rotate utilities. */
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(-3deg);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.72) rotate(45deg);
+    opacity: 0.65;
+  }
+}
+
+@utility reveal {
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+    translate 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
+  :root.reveal-ready &:not(.is-revealed) {
+    opacity: 0;
+    translate: 0 28px;
+  }
+}
+
+/* like reveal, but springs up from small: a "pop in" */
+@utility reveal-pop {
+  transition:
+    opacity 0.4s ease-out var(--reveal-delay, 0ms),
+    scale 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) var(--reveal-delay, 0ms);
+  :root.reveal-ready &:not(.is-revealed) {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+/* children that play once their .reveal / .reveal-pop parent lands;
+   time them with [--draw-delay:…] */
+@utility reveal-draw {
+  transform-origin: left center;
+  transition: scale 0.55s cubic-bezier(0.65, 0, 0.35, 1) var(--draw-delay, 0.5s);
+  :root.reveal-ready :is(.reveal, .reveal-pop):not(.is-revealed) & {
+    scale: 0 1;
+  }
+}
+
+@utility reveal-stamp {
+  transition:
+    opacity 0.15s ease-out var(--draw-delay, 1s),
+    scale 0.45s cubic-bezier(0.34, 1.8, 0.64, 1) var(--draw-delay, 1s);
+  :root.reveal-ready :is(.reveal, .reveal-pop):not(.is-revealed) & {
+    opacity: 0;
+    scale: 2.6;
+  }
+}
+
+/* a cursor that glides in, taps, and drifts off on a loop, with a ripple */
+@keyframes cursor-tap {
+  0%,
+  100% {
+    transform: translate(26px, 30px);
+    opacity: 0;
+  }
+  14%,
+  70% {
+    opacity: 1;
+  }
+  18% {
+    transform: translate(0, 0);
+  }
+  23% {
+    transform: translate(0, 0) scale(0.82);
+  }
+  29%,
+  70% {
+    transform: translate(0, 0) scale(1);
+  }
+  84% {
+    transform: translate(26px, 30px);
+    opacity: 0;
+  }
+}
+
+@keyframes tap-ripple {
+  0%,
+  22% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  24% {
+    opacity: 0.9;
+  }
+  45%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@utility cursor-tap {
+  animation: cursor-tap 4.5s cubic-bezier(0.45, 0, 0.25, 1) 1.6s infinite both;
+}
+
+@utility tap-ripple {
+  animation: tap-ripple 4.5s ease-out 1.6s infinite both;
+}
+
+@utility rise-in {
+  animation: rise-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) var(--rise-delay, 0ms) both;
+}
+
+@utility float {
+  animation: float 5.5s ease-in-out var(--float-delay, 0s) infinite;
+}
+
+@utility twinkle {
+  animation: twinkle 2.8s ease-in-out var(--float-delay, 0s) infinite;
+}
+
+@utility hover-lift {
+  @media (hover: hover) and (pointer: fine) and (min-width: 64rem) {
+    /* keeps reveal / reveal-pop's own properties so cards with both still enter */
+    transition:
+      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+      translate 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+      scale 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) var(--reveal-delay, 0ms),
+      transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    &:hover {
+      transform: translate(-3px, -4px);
+      box-shadow: 9px 10px 0 var(--color-ink);
+    }
+  }
+}
+
+@utility hover-pop {
+  @media (hover: hover) and (pointer: fine) and (min-width: 64rem) {
+    transition: scale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    &:hover {
+      scale: 1.08;
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
   .animate-marquee,
-  .animate-marquee-reverse {
+  .animate-marquee-reverse,
+  .rise-in,
+  .float,
+  .twinkle,
+  .cursor-tap,
+  .tap-ripple {
     animation: none;
+  }
+  .hover-lift:hover {
+    transform: none;
   }
 }

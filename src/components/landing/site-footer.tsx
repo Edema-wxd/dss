@@ -13,7 +13,7 @@ export function SiteFooter() {
           sizes="150px"
           className="h-auto w-[150px] lg:w-[146px]"
         />
-        <p aria-hidden className="font-display text-outline mt-6 text-[84px] leading-[0.92] font-medium tracking-[-0.04em] lg:mt-0 lg:text-[min(12.3vw,174px)] lg:leading-[1.05] lg:whitespace-nowrap">
+        <p aria-hidden className="reveal font-display text-outline mt-6 text-[84px] transition-colors duration-500 lg:hover:text-pink leading-[0.92] font-medium tracking-[-0.04em] lg:mt-0 lg:text-[min(12.3vw,174px)] lg:leading-[1.05] lg:whitespace-nowrap">
           Digital Savvy Studios
         </p>
         <div className="lg:mt-5 lg:flex lg:items-baseline lg:justify-between lg:gap-8">

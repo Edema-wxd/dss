@@ -13,17 +13,20 @@ import { ChunkyArrow } from "./primitives";
 /**
  * shadcn Carousel with the design's chunky arrow controls underneath.
  * From `lg` up the slides sit side by side in `gridClassName` instead.
+ * `entrance` picks how slides arrive on scroll: rise (default) or a staggered pop.
  */
 export function CardCarousel({
   label,
   slides,
   arrowTone = "text-white",
   gridClassName,
+  entrance = "reveal",
 }: {
   label: string;
   slides: React.ReactNode[];
   arrowTone?: string;
   gridClassName?: string;
+  entrance?: "reveal" | "reveal-pop";
 }) {
   const [api, setApi] = useState<CarouselApi>();
   const [index, setIndex] = useState(0);
@@ -42,7 +45,7 @@ export function CardCarousel({
 
   return (
     <>
-      <div role="region" aria-roledescription="carousel" aria-label={label} className="lg:hidden">
+      <div role="region" aria-roledescription="carousel" aria-label={label} className={cn(entrance, "lg:hidden")}>
         <Carousel setApi={setApi} opts={{ align: "start" }} className="-mx-4">
           <CarouselContent className="ml-0 px-4 pb-3">
             {slides.map((slide, i) => (
@@ -82,7 +85,9 @@ export function CardCarousel({
       </div>
       <ul aria-label={label} className={cn("hidden lg:grid", gridClassName)}>
         {slides.map((slide, i) => (
-          <li key={i}>{slide}</li>
+          <li key={i} className={entrance}>
+            {slide}
+          </li>
         ))}
       </ul>
     </>

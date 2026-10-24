@@ -33,7 +33,7 @@ export function ChecklistDialog({ trigger }: { trigger: React.ReactElement }) {
       <DialogTrigger render={trigger} />
       <DialogContent
         showCloseButton={false}
-        className="max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto rounded-[24px] border-2 border-ink bg-white p-0 shadow-hard-lg ring-0 sm:max-w-md"
+        className="max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto rounded-[24px] border-2 border-ink bg-white p-0 shadow-hard-lg ring-0 sm:max-w-md lg:max-w-[640px]"
       >
         <div className="flex items-center justify-between bg-ink px-5 py-3 text-[10px] font-semibold tracking-[0.14em] text-white uppercase">
           <span className="flex items-center gap-2">
@@ -46,11 +46,11 @@ export function ChecklistDialog({ trigger }: { trigger: React.ReactElement }) {
         {/* striped pink edge from the design */}
         <div aria-hidden className="h-2 bg-[repeating-linear-gradient(90deg,#fff_0_6px,#ec1763_6px_12px)]" />
 
-        <div className="p-6">
+        <div className="p-6 lg:px-9 lg:pt-7 lg:pb-8">
           <p className="inline-block rounded-full border-2 border-ink bg-lime px-3 py-1 text-[11px] font-semibold">
             Free · 12 checks · 5 minutes
           </p>
-          <DialogTitle className="font-display mt-4 text-[36px] leading-[1.02] font-black tracking-[-0.04em]">
+          <DialogTitle className="font-display mt-4 text-[36px] leading-[1.02] lg:text-[40px] font-black tracking-[-0.04em]">
             Launching, raising or expanding soon? <span className="text-pink">Check</span> your brand first.
           </DialogTitle>
           <DialogDescription className="mt-3 text-[15px] leading-[1.6] text-slate">
@@ -87,17 +87,19 @@ export function ChecklistDialog({ trigger }: { trigger: React.ReactElement }) {
                 setSent(true);
               }}
             >
-              <div className="grid gap-1.5">
-                <Label htmlFor="cl-name" className="text-xs font-semibold">
-                  First name
-                </Label>
-                <Input id="cl-name" name="firstName" required autoComplete="given-name" className="h-12 rounded-[12px] border-2 bg-white px-4 text-base" />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="cl-email" className="text-xs font-semibold">
-                  Work email
-                </Label>
-                <Input id="cl-email" name="email" type="email" required autoComplete="email" className="h-12 rounded-[12px] border-2 bg-white px-4 text-base" />
+              <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="cl-name" className="text-xs font-semibold">
+                    First name
+                  </Label>
+                  <Input id="cl-name" name="firstName" required autoComplete="given-name" className="h-12 rounded-[12px] border-2 bg-white px-4 text-base" />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="cl-email" className="text-xs font-semibold">
+                    Work email
+                  </Label>
+                  <Input id="cl-email" name="email" type="email" required autoComplete="email" className="h-12 rounded-[12px] border-2 bg-white px-4 text-base" />
+                </div>
               </div>
               <fieldset className="grid gap-2">
                 <legend className="mb-2 text-xs font-semibold">
