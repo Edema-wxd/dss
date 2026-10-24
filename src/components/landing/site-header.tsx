@@ -29,10 +29,13 @@ function SiteMenu() {
         className="w-[min(330px,calc(100vw-32px))] gap-3 overflow-visible rounded-[26px] border-2 border-ink bg-white p-4 shadow-hard-lg ring-0"
       >
         {/* tail pointing up at the menu button */}
-        <span
+        <svg
           aria-hidden
-          className="absolute -top-[9px] right-4 size-4 rotate-45 rounded-tl-[3px] border-t-2 border-l-2 border-ink bg-white"
-        />
+          viewBox="0 0 20 12"
+          className="absolute -top-[10px] right-[14px] h-3 w-5"
+        >
+          <path d="M0 12 10 1l10 11" fill="#ffffff" stroke="#212121" strokeWidth="2" strokeLinejoin="round" />
+        </svg>
         <nav aria-label="Services">
           <PopoverClose
             render={<a href="#the-session" />}
