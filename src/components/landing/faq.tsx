@@ -107,17 +107,17 @@ export function Faq() {
   const { ref, state } = useRevealOnce<HTMLDivElement>();
 
   return (
-    <section id="faq" aria-labelledby="faq-title" className="scroll-mt-4 px-4 py-14">
-      <div className="mx-auto max-w-xl">
+    <section id="faq" aria-labelledby="faq-title" className="scroll-mt-4 px-4 py-14 lg:px-10 lg:pt-[116px] lg:pb-16">
+      <div className="mx-auto max-w-xl lg:max-w-[1280px]">
         <Eyebrow>Straight answers</Eyebrow>
-        <div className="mt-5 flex items-center gap-3">
+        <div className="mt-5 flex items-center gap-3 lg:mt-5 lg:gap-2.5">
           <h2
             id="faq-title"
-            className="rounded-[22px] rounded-bl-md border-2 border-ink bg-white px-5 py-3 text-[24px] font-bold shadow-hard"
+            className="rounded-[22px] rounded-bl-md border-2 border-ink bg-white px-5 py-3 text-[24px] font-bold shadow-hard lg:rounded-[26px] lg:px-7 lg:py-4 lg:text-[50px] lg:shadow-hard-lg"
           >
             Before you <span className="text-pink">apply.</span>
           </h2>
-          <span aria-hidden className="flex gap-1 rounded-full border-2 border-ink bg-white px-4 py-3">
+          <span aria-hidden className="flex gap-1 rounded-full border-2 border-ink bg-white px-4 py-3 lg:gap-1.5 lg:px-[18px]">
             <span className="size-2 animate-bounce rounded-full bg-ink [animation-delay:-0.3s] motion-reduce:animate-none" />
             <span className="size-2 animate-bounce rounded-full bg-ink [animation-delay:-0.15s] motion-reduce:animate-none" />
             <span className="size-2 animate-bounce rounded-full bg-ink motion-reduce:animate-none" />
@@ -125,7 +125,7 @@ export function Faq() {
         </div>
 
         <div ref={ref}>
-          <Accordion multiple={false} className="mt-8 gap-4">
+          <Accordion multiple={false} className="mt-8 gap-4 lg:mt-11">
             {faqs.map((item, i) => (
               <AccordionItem
                 key={item.q}
@@ -142,7 +142,7 @@ export function Faq() {
                 <AccordionPrimitive.Header className="flex">
                   <AccordionPrimitive.Trigger
                     className={cn(
-                      "font-display flex min-h-[70px] flex-1 items-start justify-between gap-5 rounded-[19px] px-6 py-5 text-left text-[18px] leading-[1.15] font-bold text-ink outline-none",
+                      "font-display flex min-h-[70px] flex-1 items-start justify-between gap-5 rounded-[19px] px-6 py-5 text-left text-[18px] leading-[1.15] font-bold text-ink outline-none lg:min-h-[76px] lg:px-7 lg:text-[22px]",
                       "transition-[color,scale] duration-300 focus-visible:ring-3 focus-visible:ring-pink/50 active:scale-[0.985]",
                       item.question,
                     )}
@@ -159,7 +159,7 @@ export function Faq() {
                 >
                   <p
                     className={cn(
-                      "px-6 pb-6 text-[15px] leading-[1.6]",
+                      "px-6 pb-6 text-[15px] leading-[1.6] lg:max-w-[920px] lg:px-7 lg:pb-7 lg:text-[17px]",
                       "translate-y-2 opacity-0 transition-[opacity,translate] delay-100 duration-300 group-data-open/item:translate-y-0 group-data-open/item:opacity-100 motion-reduce:translate-y-0",
                       ease,
                       item.answer,
