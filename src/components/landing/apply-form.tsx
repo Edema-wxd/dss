@@ -39,7 +39,14 @@ const moments = [
 const timings = ["Within 30 days", "1 to 3 months", "3 to 6 months", "Just exploring"];
 
 // TODO(copy): the design shows these dropdowns closed; their options are drafted.
-const investments = ["Under ₦800,000", "₦800,000 to ₦1.5m", "₦1.5m to ₦3m", "Over ₦3m"];
+// "We budget in USD…" is named in the FAQ, so it must stay.
+const investments = [
+  "Under ₦800,000",
+  "₦800,000 to ₦1.5m",
+  "₦1.5m to ₦3m",
+  "Over ₦3m",
+  "We budget in USD or another currency",
+];
 const deciders = ["I do", "I decide with a co-founder or partner", "A board or leadership team", "Someone else"];
 
 const chipClass =

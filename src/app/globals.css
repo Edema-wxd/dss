@@ -48,6 +48,8 @@
   --color-keycap: #d6cfb9;
   --color-gold: #e7b92e;
   --color-slate: #5f5f63;
+  --color-maroon: #5e0827;
+  --color-navy: #212845;
 
   /* Hard offset shadows used across cards and buttons */
   --shadow-hard-sm: 3px 3px 0 var(--color-ink);
