@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { buttonVariants } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 
@@ -15,22 +14,31 @@ const statements = [
 
 type Answer = "true" | "not-yet";
 
-// TODO(copy): result wording is drafted; confirm with Janefrances.
-function resultFor(score: number) {
-  if (score === 5)
+const wideGap =
+  "Your business is likely ahead of how it looks online. That gap is costing you clients you never hear from. This is exactly what the session is for.";
+
+// Result copy per number of "Not yet" answers, from the result-state design.
+// TODO(copy): the 1-gap and 5-gap states aren't in the design; they follow its pattern.
+function resultFor(gaps: number) {
+  if (gaps === 0)
     return {
-      title: "They'd likely find a brand that's ready.",
-      body: "Your basics hold up. The session shows you what's winning buyers over, so you can do more of it before your next big moment.",
+      title: "Strong first impression.",
+      body: "Buyers likely find a brand that matches your ambition. The session would focus on what to sharpen before your next big moment.",
+      cta: "Apply for a session",
     };
-  if (score >= 3)
+  if (gaps === 1)
     return {
-      title: "Close, but a buyer would notice the gaps.",
-      body: "A serious buyer would find enough to keep looking, and enough to hesitate. The session shows you exactly where they hesitate.",
+      title: "1 door left open.",
+      body: "A serious buyer could leave with doubts on one point. It's usually quick to fix once you can see it clearly.",
+      cta: "Let's find it together",
     };
-  return {
-    title: "A buyer is likely leaving with doubts.",
-    body: "The good news: these are fixable, and quickly. This is exactly what the session is for.",
-  };
+  if (gaps === 2)
+    return {
+      title: "2 doors left open.",
+      body: "A serious buyer could leave with doubts on two points. These are usually quick to fix once you can see them clearly.",
+      cta: "Let's find them together",
+    };
+  return { title: `${gaps} of 5 doors left open.`, body: wideGap, cta: "Apply for one of 8 sessions" };
 }
 
 export function LookupQuiz() {
@@ -38,9 +46,9 @@ export function LookupQuiz() {
     statements.map(() => undefined),
   );
   const answered = answers.filter(Boolean).length;
-  const score = answers.filter((a) => a === "true").length;
+  const gaps = answers.filter((a) => a === "not-yet").length;
   const done = answered === statements.length;
-  const result = resultFor(score);
+  const result = resultFor(gaps);
 
   return (
     <div className="rounded-[28px] border-2 border-ink bg-white p-6 shadow-hard-lg">
@@ -90,7 +98,7 @@ export function LookupQuiz() {
             <span
               key={i}
               className={cn(
-                "h-2 flex-1 rounded-full bg-white/25 transition-colors",
+                "h-2.5 flex-1 rounded-full bg-white/25 transition-colors",
                 a === "true" && "bg-lime",
                 a === "not-yet" && "bg-pink",
               )}
@@ -99,14 +107,16 @@ export function LookupQuiz() {
         </div>
         {done ? (
           <>
-            <p className="mt-5 text-[11px] font-semibold tracking-[0.14em] text-lime uppercase">
-              {score} of 5 true
+            <h3 className="mt-5 text-[28px] leading-[1.02] font-bold tracking-[-0.02em]">{result.title}</h3>
+            <p className="mt-3 text-[15px] leading-[1.6] text-white/85">
+              {result.body}{" "}
+              <a
+                href="#apply"
+                className="font-semibold text-lime underline decoration-2 underline-offset-[3px] hover:decoration-white"
+              >
+                {result.cta}
+              </a>
             </p>
-            <h3 className="mt-1 text-[26px] leading-[1.05] font-bold">{result.title}</h3>
-            <p className="mt-3 text-[15px] leading-[1.6] text-white/80">{result.body}</p>
-            <a href="#apply" className={cn(buttonVariants({ variant: "lime", size: "pill" }), "mt-5")}>
-              Apply for one of 8 sessions →
-            </a>
           </>
         ) : (
           <>
