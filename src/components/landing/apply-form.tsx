@@ -72,7 +72,7 @@ function ChipGroup({ label, name, options }: { label: string; name: string; opti
         onValueChange={setValue}
         orientation="vertical"
         spacing={2.5}
-        className="data-vertical:items-start"
+        className="data-vertical:items-start lg:data-vertical:flex-row lg:data-vertical:flex-wrap"
       >
         {options.map((o) => (
           <ToggleGroupItem key={o} value={o} className={chipClass}>
@@ -133,7 +133,7 @@ export function ApplyForm() {
 
   return (
     <form
-      className="rounded-[28px] border-2 border-ink bg-white p-6 shadow-hard-lg"
+      className="rounded-[28px] border-2 border-ink bg-white p-6 shadow-hard-lg lg:px-9 lg:pt-10 lg:pb-8"
       onSubmit={(e) => {
         e.preventDefault();
         // TODO: post the application to the backend / CRM.
@@ -153,8 +153,8 @@ export function ApplyForm() {
 
       {/* both steps stay mounted so answers survive "Back" and "Continue" */}
       <div hidden={step !== 1}>
-        <h3 className="mt-6 text-[30px] leading-[1.02] font-bold tracking-[-0.03em]">Tell us who you are</h3>
-        <div className="mt-6 flex flex-col gap-8">
+        <h3 className="mt-6 text-[30px] leading-[1.02] font-bold tracking-[-0.03em] lg:mt-9">Tell us who you are</h3>
+        <div className="mt-6 flex flex-col gap-8 lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-10">
           {stepOneFields.map((f) => (
             <div key={f.id} className="grid gap-3">
               <Label htmlFor={`apply-${f.id}`} className={`${labelClass} gap-0`}>
@@ -173,19 +173,25 @@ export function ApplyForm() {
             </div>
           ))}
         </div>
-        <p className="mt-8 text-center text-[13px] text-slate">We never share your details.</p>
-        <Button type="submit" variant="brand" size="xl" className="mt-6 h-[52px] w-full">
-          Continue →
-        </Button>
+        <div className="lg:mt-12 lg:flex lg:items-center lg:justify-between lg:gap-6">
+          <p className="mt-8 text-center text-[13px] text-slate lg:mt-0">We never share your details.</p>
+          <Button type="submit" variant="brand" size="xl" className="mt-6 h-[52px] w-full lg:mt-0 lg:w-auto lg:px-7 lg:text-[15px]">
+            Continue →
+          </Button>
+        </div>
       </div>
 
       <div hidden={step !== 2}>
-        <h3 className="mt-6 text-[30px] leading-[1.02] font-bold tracking-[-0.03em]">
+        <h3 className="mt-6 text-[30px] leading-[1.02] font-bold tracking-[-0.03em] lg:mt-9">
           Tell us about the moment
         </h3>
-        <div className="mt-6 flex flex-col gap-8">
-          <ChipGroup label="What's your next big moment?" name="moment" options={moments} />
-          <ChipGroup label="When is it?" name="timing" options={timings} />
+        <div className="mt-6 flex flex-col gap-8 lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-10">
+          <div className="lg:col-span-2">
+            <ChipGroup label="What's your next big moment?" name="moment" options={moments} />
+          </div>
+          <div className="lg:col-span-2">
+            <ChipGroup label="When is it?" name="timing" options={timings} />
+          </div>
           <SelectField
             id="investment"
             label="Monthly marketing investment"
@@ -193,7 +199,7 @@ export function ApplyForm() {
             options={investments}
           />
           <SelectField id="decider" label="Who decides on this?" placeholder="Choose one" options={deciders} />
-          <div className="grid gap-3">
+          <div className="grid gap-3 lg:col-span-2">
             <Label htmlFor="apply-goal" className={labelClass}>
               What would make this session worth your 30 minutes? (optional)
             </Label>
@@ -205,18 +211,18 @@ export function ApplyForm() {
               className="min-h-[100px] rounded-[12px] border-2 border-ink bg-white px-4 py-3 text-base placeholder:text-[#8a8a8e]"
             />
           </div>
-          <Label className="items-start gap-3 text-[14px] leading-[1.5] font-normal text-slate">
+          <Label className="items-start gap-3 text-[14px] leading-[1.5] font-normal text-slate lg:col-span-2">
             <Checkbox name="consent" required={step === 2} className="mt-0.5 size-[18px] rounded-[4px] border-[1.5px] border-slate" />
             Digital Savvy Studios can contact me about my application by email or WhatsApp. My
             details are handled in line with the Nigeria Data Protection Act 2023, and I can opt out
             anytime.
           </Label>
         </div>
-        <div className="mt-10 flex flex-col gap-4">
-          <Button type="button" variant="paper" size="xl" className="h-[52px] w-full" onClick={() => setStep(1)}>
+        <div className="mt-10 flex flex-col gap-4 lg:mt-12 lg:flex-row lg:justify-between">
+          <Button type="button" variant="paper" size="xl" className="h-[52px] w-full lg:w-auto lg:px-7 lg:text-[15px]" onClick={() => setStep(1)}>
             ← Back
           </Button>
-          <Button type="submit" variant="brand" size="xl" className="h-[52px] w-full">
+          <Button type="submit" variant="brand" size="xl" className="h-[52px] w-full lg:w-auto lg:px-7 lg:text-[15px]">
             Submit my application
           </Button>
         </div>
