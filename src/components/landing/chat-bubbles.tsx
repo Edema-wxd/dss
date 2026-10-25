@@ -21,7 +21,7 @@ function Typing({ show, tone, className }: { show: boolean; tone: "white" | "pin
       aria-hidden
       className={cn(
         "absolute top-1/2 flex -translate-y-1/2 gap-1.5 rounded-[22px] border-2 border-ink px-5 py-4 shadow-hard-md lg:px-7 lg:py-6",
-        tone === "white" ? "rounded-bl-md bg-white text-ink" : "bg-pink text-white",
+        tone === "white" ? "rounded-bl-[6px] bg-white text-ink" : "rounded-br-[6px] bg-pink text-white",
         pop,
         show ? "scale-100 opacity-100" : "pointer-events-none scale-50 opacity-0",
         className,
@@ -90,7 +90,7 @@ export function BubblePair({ statement, answer }: { statement: React.ReactNode; 
           <Typing show={phase === 1} tone="white" className="left-0" />
           <p
             className={cn(
-              "font-display origin-bottom-left rounded-[22px] rounded-bl-md border-2 border-ink bg-white px-5 py-3.5 text-[22px] leading-[1.1] font-bold shadow-hard-md lg:rounded-[26px] lg:px-7 lg:py-4 lg:text-[50px] lg:shadow-hard-lg",
+              "font-display origin-bottom-left rounded-[22px] rounded-bl-[6px] border-2 border-ink bg-white px-5 py-3.5 text-[22px] leading-[1.1] font-bold shadow-hard-md lg:rounded-[26px] lg:rounded-bl-[6px] lg:px-7 lg:py-4 lg:text-[50px] lg:shadow-hard-lg",
               pop,
               shown(2),
             )}
@@ -103,7 +103,7 @@ export function BubblePair({ statement, answer }: { statement: React.ReactNode; 
         <Typing show={phase === 3} tone="pink" className="left-0 lg:right-0 lg:left-auto" />
         <p
           className={cn(
-            "font-display origin-bottom-left -rotate-1 rounded-[22px] border-2 border-ink bg-pink px-5 py-3.5 text-[22px] leading-[1.1] font-bold text-white shadow-hard-md lg:origin-bottom-right lg:rounded-[26px] lg:px-7 lg:py-4 lg:text-[50px] lg:shadow-hard-lg",
+            "font-display origin-bottom-left -rotate-1 rounded-[22px] rounded-br-[6px] border-2 border-ink bg-pink px-5 py-3.5 text-[22px] leading-[1.1] font-bold text-white shadow-hard-md lg:origin-bottom-right lg:rounded-[26px] lg:rounded-br-[6px] lg:px-7 lg:py-4 lg:text-[50px] lg:shadow-hard-lg",
             pop,
             shown(4),
           )}

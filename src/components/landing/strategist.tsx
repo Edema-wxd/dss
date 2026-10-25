@@ -32,7 +32,7 @@ export function Strategist() {
 
           <div>
             <figure className="reveal relative mt-10 lg:mt-0">
-              <blockquote className="hover-lift font-display rounded-[28px] border-2 border-ink bg-white p-6 pb-24 text-[19px] leading-[1.35] font-medium shadow-hard-lg lg:px-8 lg:pt-10 lg:pb-[104px] lg:text-[22px]">
+              <blockquote className="hover-lift font-display rounded-[28px] rounded-bl-[6px] border-2 border-ink bg-white p-6 pb-24 text-[19px] leading-[1.35] font-medium shadow-hard-lg lg:px-8 lg:pt-10 lg:pb-[104px] lg:text-[22px]">
                 &ldquo;The best founders I meet build with courage. Too many still lose ground to
                 competitors who simply communicate better. Every Visibility Session starts with us doing
                 the work first, because that&apos;s how I&apos;d want to be treated.&rdquo;

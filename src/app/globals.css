@@ -249,6 +249,31 @@
   animation: tap-ripple 4.5s ease-out 1.6s infinite both;
 }
 
+/* a quick press into the shadow every few seconds, so a CTA invites a tap;
+   start it after the entrance with [--press-delay:…] */
+@keyframes press-loop {
+  0%,
+  80%,
+  92%,
+  100% {
+    transform: translate(0, 0);
+    box-shadow: 5px 5px 0 var(--color-ink);
+  }
+  86% {
+    transform: translate(3px, 3px);
+    box-shadow: 2px 2px 0 var(--color-ink);
+  }
+}
+
+@utility press-loop {
+  animation: press-loop 3.6s ease-in-out var(--press-delay, 1.6s) infinite;
+  &:hover,
+  &:active,
+  &:focus-visible {
+    animation: none;
+  }
+}
+
 @utility rise-in {
   animation: rise-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) var(--rise-delay, 0ms) both;
 }
@@ -296,7 +321,8 @@
   .float,
   .twinkle,
   .cursor-tap,
-  .tap-ripple {
+  .tap-ripple,
+  .press-loop {
     animation: none;
   }
   .hover-lift:hover {

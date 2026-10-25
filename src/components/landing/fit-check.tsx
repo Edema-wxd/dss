@@ -105,7 +105,7 @@ export function FitCheck() {
             data-reveal-base="450"
             className="reveal-pop w-[64px] shrink-0 origin-bottom lg:w-[68px]"
           />
-          <p className="reveal-pop mb-6 origin-bottom-left rounded-[22px] border-2 border-ink bg-white p-5 text-[14px] leading-[1.75] font-medium shadow-hard-md lg:mb-0 lg:max-w-[1055px] lg:px-7 lg:py-5 lg:text-[19px] lg:leading-[1.35]">
+          <p className="reveal-pop mb-6 origin-bottom-left rounded-[22px] rounded-bl-[6px] border-2 border-ink bg-white p-5 text-[14px] leading-[1.75] font-medium shadow-hard-md lg:mb-0 lg:max-w-[1055px] lg:px-7 lg:py-5 lg:text-[19px] lg:leading-[1.35]">
             If we&apos;re a fit afterwards, most clients start with a 90-day Visibility Sprint.
             Engagements start from ₦800,000 a month. You&apos;ll never be pushed into one.
           </p>

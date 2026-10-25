@@ -83,8 +83,9 @@ export function SiteHeader() {
           width={1262}
           height={468}
           priority
-          sizes="(min-width: 1024px) 145px, 118px"
-          className="h-auto w-[118px] lg:w-[145px]"
+          sizes="(min-width: 1024px) 190px, 148px"
+          // as wide as the row allows beside the slots pill and menu, up to 148px
+          className="h-auto w-[min(148px,calc(100vw-251px))] lg:w-[190px]"
         />
       </Link>
       <div className="flex items-center gap-3 lg:gap-7">

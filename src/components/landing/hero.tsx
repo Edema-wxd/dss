@@ -96,10 +96,10 @@ export function Hero() {
         </div>
 
         <div className="rise-in relative mt-6 flex flex-col gap-4 [--rise-delay:360ms] lg:mt-12 lg:flex-row lg:justify-center">
-          <a href="#apply" className={cn(buttonVariants({ variant: "brand", size: "xl" }), "w-full lg:h-[52px] lg:w-auto lg:px-7 lg:text-[15px]")}>
+          <a href="#apply" className={cn(buttonVariants({ variant: "brand", size: "xl" }), "press-loop w-full lg:h-[52px] lg:w-auto lg:px-7 lg:text-[15px]")}>
             Apply for one of 8 sessions →
           </a>
-          <a href="#look-up-test" className={cn(buttonVariants({ variant: "paper", size: "xl" }), "w-full lg:h-[52px] lg:w-auto lg:px-7 lg:text-[15px]")}>
+          <a href="#look-up-test" className={cn(buttonVariants({ variant: "paper", size: "xl" }), "press-loop w-full [--press-delay:3.4s] lg:h-[52px] lg:w-auto lg:px-7 lg:text-[15px]")}>
             Take the 60-second look-up test
           </a>
         </div>

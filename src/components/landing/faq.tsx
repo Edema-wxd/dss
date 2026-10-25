@@ -113,7 +113,7 @@ export function Faq() {
         <div className="mt-5 flex items-center gap-3 lg:mt-5 lg:gap-2.5">
           <h2
             id="faq-title"
-            className="rounded-[22px] rounded-bl-md border-2 border-ink bg-white px-5 py-3 text-[24px] font-bold shadow-hard lg:rounded-[26px] lg:px-7 lg:py-4 lg:text-[50px] lg:shadow-hard-lg"
+            className="rounded-[22px] rounded-bl-[6px] border-2 border-ink bg-white px-5 py-3 text-[24px] font-bold shadow-hard lg:rounded-[26px] lg:rounded-bl-[6px] lg:px-7 lg:py-4 lg:text-[50px] lg:shadow-hard-lg"
           >
             Before you <span className="text-pink">apply.</span>
           </h2>
