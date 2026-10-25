@@ -1,9 +1,13 @@
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ChecklistDialog } from "./checklist-dialog";
 
-// TODO: swap in the real booking link and WhatsApp number.
+// TODO: swap in the real booking link, WhatsApp number and Visibility Brief link.
 const bookingUrl = "#";
 const whatsappUrl = "#";
+const briefUrl = "#";
+
+const buttonClass = "h-[52px] w-full lg:w-auto lg:px-7 lg:text-[15px]";
 
 export type ResponseKind = "priority" | "received" | "exploring" | "early";
 
@@ -39,11 +43,39 @@ export function ApplyResponse({
 }) {
   if (kind === "exploring") {
     return (
-      <div role="status" className="rise-in rounded-[28px] border-2 border-ink bg-white p-6 text-center shadow-hard-lg">
-        <p className="font-display text-[30px] leading-tight font-bold">Application received.</p>
-        <p className="mt-3 text-[15px] leading-relaxed text-slate">
-          Janefrances reads every application personally. You&apos;ll hear back within one working day.
+      <div role="status" className={cardClass}>
+        <Tag>Application received</Tag>
+        <h3 className={headingClass}>
+          Thank you, {firstName}.
+          <br />
+          We&apos;ve noted your interest.
+        </h3>
+        <p className={bodyClass}>
+          We keep Visibility Sessions for founders with a launch, raise or expansion in the next six
+          months, so the advice can be put to work straight away. As you&apos;re still exploring, we
+          won&apos;t schedule a session just yet.
         </p>
+        <p className={bodyClass}>
+          Your application will stay on file. In the meantime, we&apos;ll send you our Launch Visibility
+          Checklist and The Visibility Brief, our occasional note on positioning and growth. When your
+          next big moment comes into view, email us at{" "}
+          <a href="mailto:hello@digitalsavvystudios.com" className="font-semibold text-pink underline underline-offset-2">
+            hello@digitalsavvystudios.com
+          </a>{" "}
+          and we&apos;ll pick up from there.
+        </p>
+        <div className="mt-6 flex flex-col gap-4 lg:mt-5 lg:items-start">
+          <a href={briefUrl} className={cn(buttonVariants({ variant: "brand", size: "xl" }), buttonClass)}>
+            Read The Visibility Brief
+          </a>
+          <ChecklistDialog
+            trigger={
+              <Button variant="paper" size="xl" className={buttonClass}>
+                Get the Visibility Checklist
+              </Button>
+            }
+          />
+        </div>
       </div>
     );
   }
