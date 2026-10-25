@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowUpRightIcon, MenuIcon, StarIcon } from "lucide-react";
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -41,7 +42,7 @@ function SiteMenu() {
         </svg>
         <nav aria-label="Services">
           <PopoverClose
-            render={<a href="#the-session" />}
+            render={<Link href="/#the-session" />}
             nativeButton={false}
             className="flex h-[66px] items-center gap-3 rounded-[18px] border-2 border-ink bg-lime pr-2.5 pl-4 shadow-hard transition-transform hover:-translate-y-0.5 active:translate-y-0.5"
           >
@@ -75,7 +76,7 @@ function SiteMenu() {
 export function SiteHeader() {
   return (
     <header className="relative z-20 mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 pt-5 lg:pt-[22px] lg:pr-[122px] lg:pl-[102px]">
-      <a href="#top" aria-label="Digital Savvy Studios home">
+      <Link href="/#top" aria-label="Digital Savvy Studios home">
         <Image
           src="/images/lockup-black.png"
           alt="Digital Savvy Studios"
@@ -85,14 +86,14 @@ export function SiteHeader() {
           sizes="(min-width: 1024px) 145px, 118px"
           className="h-auto w-[118px] lg:w-[145px]"
         />
-      </a>
+      </Link>
       <div className="flex items-center gap-3 lg:gap-7">
-        <a
-          href="#apply"
+        <Link
+          href="/#apply"
           className="rounded-full border-2 border-ink bg-pink px-3.5 py-2.5 text-[10px] font-semibold text-white shadow-hard-sm lg:px-7 lg:py-[14px] lg:text-[15px] lg:shadow-hard-md"
         >
           5 slots left in November
-        </a>
+        </Link>
         <SiteMenu />
       </div>
     </header>
