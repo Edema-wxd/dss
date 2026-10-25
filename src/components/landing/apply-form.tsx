@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ApplyResponse, responseFor } from "./apply-response";
 
 const fieldClass =
   "h-[52px] rounded-[12px] border-2 border-ink bg-white px-4 text-base placeholder:text-[#8a8a8e]";
@@ -22,12 +24,76 @@ const labelClass = "text-[13px] font-semibold tracking-[0.04em]";
 
 const stepOneFields = [
   { id: "name", label: "Your name", autoComplete: "name" },
-  { id: "role", label: "Your role", placeholder: "e.g. Founder, CEO", autoComplete: "organization-title", required: true },
+  { id: "role", label: "Your role", placeholder: "e.g. Founder, CEO", autoComplete: "organization-title" },
   { id: "company", label: "Company", autoComplete: "organization" },
   { id: "website", label: "Website or main social handle", placeholder: "yourbrand.com or @yourbrand" },
-  { id: "email", label: "Work email", type: "email", autoComplete: "email", required: true },
+  { id: "email", label: "Work email", type: "email", autoComplete: "email" },
   { id: "whatsapp", label: "WhatsApp number", type: "tel", placeholder: "+234", autoComplete: "tel" },
 ];
+
+const stepOneIds = stepOneFields.map((f) => f.id);
+const stepTwoIds = ["moment", "timing", "investment", "decider", "goal", "consent"];
+
+type Errors = Record<string, string>;
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const domainPattern = /^(https?:\/\/)?([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(\/\S*)?$/i;
+const handlePattern = /^@[a-z0-9._]{2,30}$/i;
+
+/** Returns an error message, or "" when the field is valid. */
+function validateField(id: string, raw: unknown): string {
+  const value = typeof raw === "string" ? raw.trim() : "";
+  switch (id) {
+    case "name":
+      if (!value) return "Please tell us your name.";
+      if (value.length < 2) return "Your name looks too short.";
+      if (/^[\d\s\W]+$/.test(value)) return "Enter your name using letters.";
+      return "";
+    case "role":
+      return value ? "" : "Please tell us your role, e.g. Founder or CEO.";
+    case "company":
+      return value ? "" : "Please enter your company name.";
+    case "website":
+      if (!value) return "Add your website or main social handle.";
+      if (value.startsWith("@")) return handlePattern.test(value) ? "" : "Enter a valid handle, e.g. @yourbrand.";
+      return domainPattern.test(value) ? "" : "Enter a website like yourbrand.com, or a handle like @yourbrand.";
+    case "email":
+      if (!value) return "Please enter your work email.";
+      return emailPattern.test(value) ? "" : "Enter a valid email, e.g. you@company.com.";
+    case "whatsapp": {
+      if (!value) return "Please enter your WhatsApp number.";
+      if (!/^\+?[\d\s\-()]+$/.test(value)) return "Use digits only, e.g. +234 801 234 5678.";
+      const digits = value.replace(/\D/g, "");
+      if (digits.length < 10 || digits.length > 15) return "Enter a full number with country code, e.g. +234 801 234 5678.";
+      return "";
+    }
+    case "moment":
+      return value ? "" : "Pick the moment that fits best.";
+    case "timing":
+      return value ? "" : "Tell us when it is.";
+    case "investment":
+      return value ? "" : "Choose a range.";
+    case "decider":
+      return value ? "" : "Choose who decides.";
+    case "goal":
+      return value.length > 500 ? "Please keep this under 500 characters." : "";
+    case "consent":
+      return raw === true ? "" : "Please agree so we can contact you about your application.";
+    default:
+      return "";
+  }
+}
+
+const errorId = (id: string) => `apply-${id}-error`;
+
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={errorId(id)} role="alert" className="text-[13px] leading-snug font-medium text-pink">
+      {message}
+    </p>
+  );
+}
 
 const moments = [
   "A product or brand launch",
@@ -62,25 +128,45 @@ function Required() {
   );
 }
 
-function ChipGroup({ label, name, options }: { label: string; name: string; options: string[] }) {
-  const [value, setValue] = useState<string[]>([]);
+function ChipGroup({
+  id,
+  label,
+  options,
+  value,
+  onChange,
+  error,
+}: {
+  id: string;
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+}) {
   return (
-    <fieldset>
-      <legend className={`${labelClass} mb-3`}>{label}</legend>
+    <fieldset aria-describedby={error ? errorId(id) : undefined} aria-invalid={error ? true : undefined}>
+      <legend className={`${labelClass} mb-3`}>
+        {label}
+        <Required />
+      </legend>
       <ToggleGroup
-        value={value}
-        onValueChange={setValue}
+        value={value ? [value] : []}
+        onValueChange={(v) => onChange(v[0] ?? "")}
         orientation="vertical"
         spacing={2.5}
+        id={`apply-${id}`}
         className="data-vertical:items-start lg:data-vertical:flex-row lg:data-vertical:flex-wrap"
       >
         {options.map((o) => (
-          <ToggleGroupItem key={o} value={o} className={chipClass}>
+          <ToggleGroupItem key={o} value={o} className={cn(chipClass, error && "border-pink")}>
             {o}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
-      <input type="hidden" name={name} value={value[0] ?? ""} />
+      <input type="hidden" name={id} value={value} />
+      <div className="mt-2 empty:hidden">
+        <FieldError id={id} message={error} />
+      </div>
     </fieldset>
   );
 }
@@ -90,19 +176,31 @@ function SelectField({
   label,
   placeholder,
   options,
+  value,
+  onChange,
+  error,
 }: {
   id: string;
   label: string;
   placeholder: string;
   options: string[];
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
 }) {
   return (
     <div className="grid gap-3">
-      <Label id={`${id}-label`} className={labelClass}>
+      <Label id={`${id}-label`} className={`${labelClass} gap-0`}>
         {label}
+        <Required />
       </Label>
-      <Select name={id}>
-        <SelectTrigger aria-labelledby={`${id}-label`} className={selectTriggerClass}>
+      <Select name={id} value={value || null} onValueChange={(v) => onChange(v ?? "")}>
+        <SelectTrigger
+          aria-labelledby={`${id}-label`}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId(id) : undefined}
+          className={cn(selectTriggerClass, "aria-invalid:border-pink aria-invalid:ring-pink/20")}
+        >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent className="rounded-[12px] border-2 border-ink p-1 shadow-hard ring-0">
@@ -113,32 +211,102 @@ function SelectField({
           ))}
         </SelectContent>
       </Select>
+      <FieldError id={id} message={error} />
     </div>
   );
 }
 
 export function ApplyForm() {
   const [step, setStep] = useState<1 | 2 | "done">(1);
+  const [errors, setErrors] = useState<Errors>({});
+  const [choices, setChoices] = useState({ moment: "", timing: "", investment: "", decider: "" });
+  const [consent, setConsent] = useState(false);
+  const [applicant, setApplicant] = useState<{ firstName: string; company: string } | null>(null);
+  const responseRef = useRef<HTMLDivElement>(null);
 
-  if (step === "done") {
+  // the response is much shorter than the form, so bring it into view
+  useEffect(() => {
+    if (step === "done") responseRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [step]);
+
+  const readValue = (id: string): unknown => {
+    if (id === "consent") return consent;
+    if (id in choices) return choices[id as keyof typeof choices];
+    return "";
+  };
+
+  /** Validates the given fields, updates their error state and returns the first invalid id. */
+  const validate = (ids: string[], overrides: Record<string, unknown> = {}) => {
+    const next: Errors = {};
+    let first: string | undefined;
+    for (const id of ids) {
+      const message = validateField(id, id in overrides ? overrides[id] : readValue(id));
+      if (message) {
+        next[id] = message;
+        first ??= id;
+      }
+    }
+    setErrors((prev) => {
+      const merged = { ...prev };
+      for (const id of ids) delete merged[id];
+      return { ...merged, ...next };
+    });
+    return first;
+  };
+
+  const focusField = (id: string) => {
+    const root = document.getElementById(`apply-${id}`) ?? document.querySelector<HTMLElement>(`[aria-labelledby="${id}-label"]`);
+    const target = root?.matches("input,textarea,button") ? root : root?.querySelector<HTMLElement>("button");
+    target?.focus();
+  };
+
+  const choose = (id: keyof typeof choices, value: string) => {
+    setChoices((c) => ({ ...c, [id]: value }));
+    if (errors[id] || value) validate([id], { [id]: value });
+  };
+
+  const fieldProps = (id: string) => ({
+    "aria-invalid": errors[id] ? true : undefined,
+    "aria-describedby": errors[id] ? errorId(id) : undefined,
+    onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => validate([id], { [id]: e.target.value }),
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (errors[id]) validate([id], { [id]: e.target.value });
+    },
+  });
+
+  if (step === "done" && applicant) {
     return (
-      <div role="status" className="rounded-[28px] border-2 border-ink bg-white p-6 text-center shadow-hard-lg">
-        <p className="font-display text-[30px] leading-tight font-bold">Application received.</p>
-        <p className="mt-3 text-[15px] leading-relaxed text-slate">
-          Janefrances reads every application personally. You&apos;ll hear back within one working day.
-        </p>
+      <div ref={responseRef} className="scroll-mt-6">
+        <ApplyResponse
+          kind={responseFor(choices.investment, choices.timing)}
+          firstName={applicant.firstName}
+          company={applicant.company}
+        />
       </div>
     );
   }
 
   return (
     <form
+      noValidate
       className="rounded-[28px] border-2 border-ink bg-white p-6 shadow-hard-lg lg:px-9 lg:pt-10 lg:pb-8"
       onSubmit={(e) => {
         e.preventDefault();
+        const typed = Object.fromEntries(new FormData(e.currentTarget));
+        const firstInvalid = validate(step === 1 ? stepOneIds : stepTwoIds, { ...typed, consent });
+        if (firstInvalid) {
+          focusField(firstInvalid);
+          return;
+        }
         // TODO: post the application to the backend / CRM.
         if (step === 1) setStep(2);
-        else setStep("done");
+        else {
+          setApplicant({
+            firstName: String(typed.name ?? "").trim().split(/\s+/)[0],
+            company: String(typed.company ?? "").trim(),
+          });
+          setStep("done");
+        }
       }}
     >
       <div className="flex items-center justify-between text-[13px]">
@@ -159,7 +327,7 @@ export function ApplyForm() {
             <div key={f.id} className="grid gap-3">
               <Label htmlFor={`apply-${f.id}`} className={`${labelClass} gap-0`}>
                 {f.label}
-                {f.required && <Required />}
+                <Required />
               </Label>
               <Input
                 id={`apply-${f.id}`}
@@ -167,9 +335,10 @@ export function ApplyForm() {
                 type={f.type ?? "text"}
                 placeholder={f.placeholder}
                 autoComplete={f.autoComplete}
-                required={f.required && step === 1}
-                className={fieldClass}
+                className={cn(fieldClass, "aria-invalid:border-pink aria-invalid:ring-pink/20")}
+                {...fieldProps(f.id)}
               />
+              <FieldError id={f.id} message={errors[f.id]} />
             </div>
           ))}
         </div>
@@ -187,18 +356,21 @@ export function ApplyForm() {
         </h3>
         <div className="mt-6 flex flex-col gap-8 lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-10">
           <div className="lg:col-span-2">
-            <ChipGroup label="What's your next big moment?" name="moment" options={moments} />
+            <ChipGroup id="moment" label="What's your next big moment?" options={moments} value={choices.moment} onChange={(v) => choose("moment", v)} error={errors.moment} />
           </div>
           <div className="lg:col-span-2">
-            <ChipGroup label="When is it?" name="timing" options={timings} />
+            <ChipGroup id="timing" label="When is it?" options={timings} value={choices.timing} onChange={(v) => choose("timing", v)} error={errors.timing} />
           </div>
           <SelectField
             id="investment"
             label="Monthly marketing investment"
             placeholder="Choose a range"
             options={investments}
+            value={choices.investment}
+            onChange={(v) => choose("investment", v)}
+            error={errors.investment}
           />
-          <SelectField id="decider" label="Who decides on this?" placeholder="Choose one" options={deciders} />
+          <SelectField id="decider" label="Who decides on this?" placeholder="Choose one" options={deciders} value={choices.decider} onChange={(v) => choose("decider", v)} error={errors.decider} />
           <div className="grid gap-3 lg:col-span-2">
             <Label htmlFor="apply-goal" className={labelClass}>
               What would make this session worth your 30 minutes? (optional)
@@ -208,15 +380,31 @@ export function ApplyForm() {
               name="goal"
               rows={3}
               placeholder="e.g. We launch in Abuja in February and I want to know if our brand is ready."
-              className="min-h-[100px] rounded-[12px] border-2 border-ink bg-white px-4 py-3 text-base placeholder:text-[#8a8a8e]"
+              className="min-h-[100px] rounded-[12px] border-2 border-ink bg-white px-4 py-3 text-base placeholder:text-[#8a8a8e] aria-invalid:border-pink aria-invalid:ring-pink/20"
+              {...fieldProps("goal")}
             />
+            <FieldError id="goal" message={errors.goal} />
           </div>
-          <Label className="items-start gap-3 text-[14px] leading-[1.5] font-normal text-slate lg:col-span-2">
-            <Checkbox name="consent" required={step === 2} className="mt-0.5 size-[18px] rounded-[4px] border-[1.5px] border-slate" />
-            Digital Savvy Studios can contact me about my application by email or WhatsApp. My
-            details are handled in line with the Nigeria Data Protection Act 2023, and I can opt out
-            anytime.
-          </Label>
+          <div className="grid gap-2 lg:col-span-2">
+            <Label className="items-start gap-3 text-[14px] leading-[1.5] font-normal text-slate">
+              <Checkbox
+                id="apply-consent"
+                name="consent"
+                checked={consent}
+                onCheckedChange={(checked) => {
+                  setConsent(checked);
+                  validate(["consent"], { consent: checked });
+                }}
+                aria-invalid={errors.consent ? true : undefined}
+                aria-describedby={errors.consent ? errorId("consent") : undefined}
+                className="mt-0.5 size-[18px] rounded-[4px] border-[1.5px] border-slate aria-invalid:border-pink aria-invalid:ring-pink/20"
+              />
+              Digital Savvy Studios can contact me about my application by email or WhatsApp. My
+              details are handled in line with the Nigeria Data Protection Act 2023, and I can opt out
+              anytime.
+            </Label>
+            <FieldError id="consent" message={errors.consent} />
+          </div>
         </div>
         <div className="mt-10 flex flex-col gap-4 lg:mt-12 lg:flex-row lg:justify-between">
           <Button type="button" variant="paper" size="xl" className="h-[52px] w-full lg:w-auto lg:px-7 lg:text-[15px]" onClick={() => setStep(1)}>
