@@ -1,5 +1,6 @@
 import { Apply } from "@/components/landing/apply";
 import { BigMoments } from "@/components/landing/big-moments";
+import { ChecklistPopup } from "@/components/landing/checklist-popup";
 import { Faq } from "@/components/landing/faq";
 import { FinalCta } from "@/components/landing/final-cta";
 import { FitCheck } from "@/components/landing/fit-check";
@@ -28,6 +29,7 @@ export default function Home() {
       </main>
       <SiteFooter />
       <ScrollReveal />
+      <ChecklistPopup />
     </>
   );
 }
