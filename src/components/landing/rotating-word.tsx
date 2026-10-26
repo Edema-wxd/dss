@@ -47,7 +47,7 @@ export function RotatingWord({
   return (
     <span
       className={cn(
-        "inline-grid justify-items-start overflow-hidden align-bottom transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+        "inline-grid justify-items-start -mb-[0.25em] overflow-hidden pb-[0.25em] align-bottom transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
         className,
       )}
       style={widths[index] ? { width: widths[index] } : undefined}
