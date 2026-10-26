@@ -14,6 +14,7 @@ import {
   digits,
 } from "@/lib/desk/model";
 import * as store from "@/lib/desk/db";
+import { mirrorConfigured, scheduleMirror, syncSheetNow } from "@/lib/desk/sheets";
 import { countUsers, createUser, deleteUser, listUsers, requireUser, signIn, signOut, startSession } from "@/lib/desk/auth";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
@@ -62,6 +63,7 @@ export async function saveApplication(id: string, version: string, input: Record
   await requireUser();
   const saved = await store.updateApplication(text(id, 40), readEdit(input), text(version, 40));
   if (!saved) return fail("Someone else saved this application since you opened it. Reopen it to see their changes.");
+  scheduleMirror();
   refresh();
   return { ok: true, message: "Saved" };
 }
@@ -94,6 +96,7 @@ export async function addApplication(input: Record<string, unknown>): Promise<Ac
     owner: edit.owner,
     notes: edit.notes,
   });
+  scheduleMirror();
   refresh();
   return { ok: true, message: "Application added" };
 }
@@ -101,6 +104,7 @@ export async function addApplication(input: Record<string, unknown>): Promise<Ac
 export async function removeApplication(id: string): Promise<ActionResult> {
   await requireUser();
   await store.deleteApplication(text(id, 40));
+  scheduleMirror();
   refresh();
   return { ok: true, message: "Application deleted" };
 }
@@ -111,6 +115,7 @@ export async function setLeadFlag(id: number, flag: LeadFlag, value: boolean): P
   await requireUser();
   if (!LEAD_FLAGS.includes(flag)) return fail("Unknown field.");
   await store.setLeadFlag(Number(id), flag, Boolean(value));
+  scheduleMirror();
   refresh();
   return { ok: true, message: "Saved" };
 }
@@ -118,6 +123,7 @@ export async function setLeadFlag(id: number, flag: LeadFlag, value: boolean): P
 export async function removeLead(id: number): Promise<ActionResult> {
   await requireUser();
   await store.deleteLead(Number(id));
+  scheduleMirror();
   refresh();
   return { ok: true, message: "Lead deleted" };
 }
@@ -152,6 +158,7 @@ export async function saveSettings(input: Partial<Record<EditableSetting, unknow
     } else values[k] = text(v, 500).trim();
   }
   await store.saveSettings(values, user.name);
+  scheduleMirror();
   refresh();
   return { ok: true, message: "Saved. The website picks this up straight away." };
 }
@@ -183,4 +190,14 @@ export async function removeTeamMember(id: number): Promise<ActionResult> {
   await deleteUser(Number(id));
   refresh();
   return { ok: true, message: "Removed" };
+}
+
+/* ── Google Sheet copy ───────────────────────────────────────────────── */
+
+export async function syncSheet(): Promise<ActionResult> {
+  await requireUser();
+  if (!mirrorConfigured()) return fail("The Google Sheet copy isn't set up yet. See the steps under Team and setup.");
+  const r = await syncSheetNow();
+  refresh();
+  return r.ok ? { ok: true, message: r.detail } : fail(r.detail);
 }

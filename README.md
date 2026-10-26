@@ -46,3 +46,8 @@ The admin dashboard for Visibility Session applications lives at `/admin`.
 - **Website connection**: the application form and the checklist pop-up post to
   `/api/visibility`. A GET to the same address returns the public settings (sessions left,
   waitlist, booking link, client places line).
+- **Google Sheet copy**: every change is also copied to the "DSS Visibility Session Backend"
+  sheet in the background, as a read-only view for the team. Set `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+  and `GOOGLE_PRIVATE_KEY` (from a service account JSON key with the Sheets API on), share the
+  Sheet with that email as an Editor, and optionally set `GOOGLE_SHEET_ID`. Without them the
+  desk works as normal and skips the copy.

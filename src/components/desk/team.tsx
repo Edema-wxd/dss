@@ -1,13 +1,13 @@
 "use client";
 
 import { useActionState } from "react";
-import { addTeamMember, removeTeamMember } from "@/app/admin/actions";
+import { addTeamMember, removeTeamMember, syncSheet } from "@/app/admin/actions";
 import { useDesk } from "./desk";
 import { Button, Field, Panel, btn, fieldClass } from "./ui";
 import { cn } from "@/lib/utils";
 
 export function TeamView() {
-  const { user, users, run, pending } = useDesk();
+  const { user, users, sheet, run, pending } = useDesk();
   const [state, add, adding] = useActionState(addTeamMember, null);
   const isAdmin = user.role === "admin";
 
@@ -65,6 +65,41 @@ export function TeamView() {
             </form>
           ) : (
             <p className="mt-3 text-sm text-slate">Ask an admin to add or remove people.</p>
+          )}
+        </Panel>
+
+        <Panel title="Google Sheet copy" aside={sheet.configured ? "On" : "Not set up"}>
+          <p className="text-sm">
+            Every change on the desk and every submission from the website is copied to the{" "}
+            <a className="font-semibold text-pink underline" href={sheet.url} target="_blank" rel="noopener noreferrer">
+              DSS Visibility Session Backend
+            </a>{" "}
+            sheet a few seconds later. The desk stays the original: edits made in the Sheet are overwritten on the next copy, so make changes here.
+          </p>
+          {sheet.configured ? (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Button size="sm" disabled={pending} onClick={() => run(syncSheet)}>
+                Copy everything to the Sheet now
+              </Button>
+              {sheet.last ? (
+                <span className={cn("text-sm", sheet.last.ok ? "text-slate" : "font-medium text-pink")}>
+                  {sheet.last.ok ? "Last copied" : "Last copy failed"}{" "}
+                  {new Date(sheet.last.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}: {sheet.last.detail}
+                </span>
+              ) : (
+                <span className="text-sm text-slate">Not copied yet.</span>
+              )}
+            </div>
+          ) : (
+            <ol className="mt-3 grid list-decimal gap-1.5 pl-5 text-sm">
+              <li>In Google Cloud, create a service account, turn on the Google Sheets API, and download a JSON key.</li>
+              <li>Share the Sheet with the service account&apos;s email address as an Editor.</li>
+              <li>
+                Add <code className="rounded bg-paper px-1">GOOGLE_SERVICE_ACCOUNT_EMAIL</code> and{" "}
+                <code className="rounded bg-paper px-1">GOOGLE_PRIVATE_KEY</code> (the <code className="rounded bg-paper px-1">private_key</code> from the
+                JSON) to <code className="rounded bg-paper px-1">.env.local</code> and the host&apos;s environment settings, then redeploy.
+              </li>
+            </ol>
           )}
         </Panel>
 

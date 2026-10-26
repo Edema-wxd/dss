@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { BANDS } from "@/lib/desk/model";
 import { routeFor, statusForRoute } from "@/lib/desk/logic";
+import { scheduleMirror } from "@/lib/desk/sheets";
 import { NotConfiguredError, insertApplication, insertLead, loadDesk, markLeadApplied, newApplicationId, publicSettings } from "@/lib/desk/db";
 
 // The Visibility Session page talks to the desk here.
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
 
     if (body.type === "checklist-lead") {
       await insertLead({ name: text(body.name, 120), email, moment: text(body.moment, 200), source: text(body.source, 120) || "website" });
+      scheduleMirror();
       return NextResponse.json({ ok: true });
     }
 
@@ -84,6 +86,7 @@ export async function POST(request: NextRequest) {
       status: statusForRoute(route),
     });
     await markLeadApplied(email);
+    scheduleMirror();
     return NextResponse.json({ ok: true, id, route });
   } catch (e) {
     return failure(e);

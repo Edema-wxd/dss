@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { DeskData } from "@/lib/desk/model";
 import type { DeskUser } from "@/lib/desk/auth";
+import type { SyncStatus } from "@/lib/desk/sheets";
 import { type ActionResult, logout } from "@/app/admin/actions";
 import { ToastProvider, useToast } from "./ui";
 import { Overview } from "./overview";
@@ -23,7 +24,11 @@ const VIEWS = [
 ] as const;
 export type View = (typeof VIEWS)[number][0];
 
+export type SheetInfo = { configured: boolean; url: string; last: SyncStatus };
+type DeskProps = { data: DeskData; user: DeskUser; users: DeskUser[]; team: string[]; sheet: SheetInfo };
+
 type DeskContextValue = {
+  sheet: SheetInfo;
   data: DeskData;
   user: DeskUser;
   users: DeskUser[];
@@ -44,7 +49,7 @@ export function useDesk() {
 
 const REFRESH_SECONDS = 90;
 
-export function Desk(props: { data: DeskData; user: DeskUser; users: DeskUser[]; team: string[] }) {
+export function Desk(props: DeskProps) {
   return (
     <ToastProvider>
       <DeskInner {...props} />
@@ -52,7 +57,7 @@ export function Desk(props: { data: DeskData; user: DeskUser; users: DeskUser[];
   );
 }
 
-function DeskInner({ data, user, users, team }: { data: DeskData; user: DeskUser; users: DeskUser[]; team: string[] }) {
+function DeskInner({ data, user, users, team, sheet }: DeskProps) {
   const router = useRouter();
   const toast = useToast();
   const [view, setView] = useState<View>("overview");
@@ -93,7 +98,7 @@ function DeskInner({ data, user, users, team }: { data: DeskData; user: DeskUser
   const synced = new Date(data.loadedAt).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit" });
 
   return (
-    <DeskContext value={{ data, user, users, team, pending, run, go, open: setDrawer }}>
+    <DeskContext value={{ data, user, users, team, sheet, pending, run, go, open: setDrawer }}>
       <header className="sticky top-0 z-30 bg-ink text-white">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 lg:px-6">
           <div className="flex items-center gap-2.5 whitespace-nowrap">
