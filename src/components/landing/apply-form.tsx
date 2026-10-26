@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { sendToDesk } from "@/lib/visibility-client";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ApplyResponse, responseFor } from "./apply-response";
@@ -110,7 +111,8 @@ const investments = [
   "Under ₦800,000",
   "₦800,000 to ₦1.5m",
   "₦1.5m to ₦3m",
-  "Over ₦3m",
+  "₦3m to ₦5m",
+  "Over ₦5m",
   "We budget in USD or another currency",
 ];
 const deciders = ["I do", "I decide with a co-founder or partner", "A board or leadership team", "Someone else"];
@@ -307,9 +309,23 @@ export function ApplyForm() {
           focusField(firstInvalid);
           return;
         }
-        // TODO: post the application to the backend / CRM.
         if (step === 1) setStep(2);
         else {
+          void sendToDesk({
+            type: "application",
+            name: typed.name,
+            role: typed.role,
+            company: typed.company,
+            site: typed.website,
+            email: typed.email,
+            whatsapp: typed.whatsapp,
+            moment: choices.moment,
+            when: choices.timing,
+            budget: choices.investment,
+            decider: choices.decider,
+            worth: typed.goal,
+            consent,
+          });
           setApplicant({
             firstName: String(typed.name ?? "").trim().split(/\s+/)[0],
             company: String(typed.company ?? "").trim(),

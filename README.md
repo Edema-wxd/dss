@@ -34,3 +34,15 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Session Desk (admin dashboard)
+
+The admin dashboard for Visibility Session applications lives at `/admin`.
+
+- **Data**: Neon Postgres. Set `DATABASE_URL` to the Neon connection string in `.env.local`
+  (git ignores it) and in the host's environment settings. Tables are created on first use.
+- **First login**: open `/admin`. If no account exists yet, the page asks you to create the
+  first one, which becomes the admin. Admins add the rest of the team under "Team and setup".
+- **Website connection**: the application form and the checklist pop-up post to
+  `/api/visibility`. A GET to the same address returns the public settings (sessions left,
+  waitlist, booking link, client places line).

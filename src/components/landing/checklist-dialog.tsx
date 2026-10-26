@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
+import { sendToDesk } from "@/lib/visibility-client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -189,7 +190,8 @@ function ChecklistForm({ onSent }: { onSent: (lead: { firstName: string; email: 
           document.getElementById(`checklist-${firstInvalid}`)?.focus();
           return;
         }
-        // TODO: send to the email provider once one is chosen.
+        // TODO: also send to the email provider once one is chosen.
+        void sendToDesk({ type: "checklist-lead", name: firstName, email, moment: nextUp });
         onSent({ firstName, email, nextUp });
       }}
     >
