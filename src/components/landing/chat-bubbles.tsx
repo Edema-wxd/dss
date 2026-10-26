@@ -79,9 +79,9 @@ export function BubblePair({ statement, answer }: { statement: React.ReactNode; 
           alt=""
           width={72}
           height={72}
-          sizes="(min-width: 1024px) 140px, 64px"
+          sizes="(min-width: 1024px) 140px, 96px"
           className={cn(
-            "size-16 shrink-0 -rotate-6 lg:-my-7 lg:-mr-5 lg:-ml-7 lg:size-[140px]",
+            "-my-4 -mr-2 -ml-3 size-24 shrink-0 -rotate-6 lg:-my-7 lg:-mr-5 lg:-ml-7 lg:size-[140px]",
             pop,
             shown(1),
           )}

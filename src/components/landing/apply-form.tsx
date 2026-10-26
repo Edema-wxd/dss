@@ -203,9 +203,18 @@ function SelectField({
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent className="rounded-[12px] border-2 border-ink p-1 shadow-hard ring-0">
+        <SelectContent
+          caret
+          alignItemWithTrigger={false}
+          sideOffset={20}
+          className="rounded-[22px] border-2 border-ink bg-white p-[9px] text-ink shadow-hard-lg! ring-0"
+        >
           {options.map((o) => (
-            <SelectItem key={o} value={o} className="rounded-[8px] py-2.5 pl-3 text-[15px]">
+            <SelectItem
+              key={o}
+              value={o}
+              className="h-[50px] rounded-[12px] border-2 border-transparent pr-4 pl-3.5 text-[15px] not-last:mb-[5px] focus:bg-transparent focus:text-ink data-highlighted:border-ink data-highlighted:bg-aqua data-highlighted:text-ink **:data-[slot=select-item-indicator]:hidden"
+            >
               {o}
             </SelectItem>
           ))}

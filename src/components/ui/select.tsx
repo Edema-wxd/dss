@@ -63,12 +63,16 @@ function SelectContent({
   align = "center",
   alignOffset = 0,
   alignItemWithTrigger = true,
+  caret = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
     SelectPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset" | "alignItemWithTrigger"
-  >) {
+  > & {
+    /** Draws a speech-bubble caret on the popup's top edge, near the right. */
+    caret?: boolean
+  }) {
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
@@ -77,7 +81,7 @@ function SelectContent({
         align={align}
         alignOffset={alignOffset}
         alignItemWithTrigger={alignItemWithTrigger}
-        className="isolate z-50"
+        className="group/select-positioner isolate z-50"
       >
         <SelectPrimitive.Popup
           data-slot="select-content"
@@ -89,6 +93,13 @@ function SelectContent({
           <SelectPrimitive.List>{children}</SelectPrimitive.List>
           <SelectScrollDownButton />
         </SelectPrimitive.Popup>
+        {caret && (
+          <span
+            aria-hidden
+            data-slot="select-caret"
+            className="pointer-events-none absolute -top-2.5 right-[35px] z-50 size-5 rotate-45 border-t-2 border-l-2 border-ink bg-white group-data-[side=top]/select-positioner:hidden"
+          />
+        )}
       </SelectPrimitive.Positioner>
     </SelectPrimitive.Portal>
   )
@@ -126,7 +137,7 @@ function SelectItem({
       </SelectPrimitive.ItemText>
       <SelectPrimitive.ItemIndicator
         render={
-          <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
+          <span data-slot="select-item-indicator" className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
         }
       >
         <CheckIcon className="pointer-events-none" />

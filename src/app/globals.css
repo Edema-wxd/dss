@@ -116,7 +116,7 @@
 
 @utility text-outline {
   color: transparent;
-  -webkit-text-stroke: 1.25px #ffffff;
+  -webkit-text-stroke: 0.5px #ffffff;
 }
 
 /* ── Motion ─────────────────────────────────────────────────────────────
@@ -124,6 +124,8 @@
    rise-in    hero entrance on load; stagger with [--rise-delay:…]
    float      gentle bob for stickers; offset with [--float-delay:…]
    twinkle    sparkle pulse
+   pulse-dot  blinking status dot with a soft glow
+   fly        paper plane flies off and re-enters at its spot (on click)
    hover-lift / hover-pop   desktop-only hover (fine pointer, lg and up)
    Uses `transform` for float/hover and the `translate` property for
    reveal, so they compose with Tailwind's translate/rotate utilities. */
@@ -142,6 +144,47 @@
   }
   50% {
     transform: translateY(-7px) rotate(-3deg);
+  }
+}
+
+@keyframes fly {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  8% {
+    transform: translate(-8px, 10px) rotate(-12deg);
+  }
+  38% {
+    transform: translate(90vw, -70px) rotate(14deg) scale(0.7);
+    opacity: 1;
+  }
+  39% {
+    transform: translate(90vw, -70px) rotate(14deg) scale(0.7);
+    opacity: 0;
+  }
+  40% {
+    transform: translate(-60vw, 60px) rotate(-8deg) scale(0.7);
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(236, 23, 99, 0.55), 0 0 6px 1px rgba(236, 23, 99, 0.5);
+  }
+  50% {
+    opacity: 0.35;
+    box-shadow: 0 0 0 5px rgba(236, 23, 99, 0), 0 0 12px 3px rgba(236, 23, 99, 0.25);
   }
 }
 
@@ -282,6 +325,14 @@
   animation: float 5.5s ease-in-out var(--float-delay, 0s) infinite;
 }
 
+@utility fly {
+  animation: fly 1.6s cubic-bezier(0.45, 0.05, 0.3, 1) both;
+}
+
+@utility pulse-dot {
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}
+
 @utility twinkle {
   animation: twinkle 2.8s ease-in-out var(--float-delay, 0s) infinite;
 }
@@ -320,6 +371,8 @@
   .rise-in,
   .float,
   .twinkle,
+  .pulse-dot,
+  .fly,
   .cursor-tap,
   .tap-ripple,
   .press-loop {

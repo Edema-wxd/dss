@@ -3,6 +3,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AnnouncementBar, SiteHeader } from "./site-header";
 import { Sparkle } from "./primitives";
+import { PaperPlane } from "./paper-plane";
 import { RotatingWord } from "./rotating-word";
 
 export function Hero() {
@@ -22,13 +23,7 @@ export function Hero() {
       <section className="relative mx-auto max-w-xl px-5 pt-14 pb-10 text-center lg:max-w-[1440px] lg:px-20 lg:pt-[148px] lg:pb-6">
         <Sparkle className="twinkle absolute top-2 left-6 size-3.5 text-ink lg:top-[88px] lg:left-[51px] lg:size-[26px]" />
         <Sparkle className="twinkle absolute top-0 right-1/2 size-3.5 text-gold [--float-delay:-1.2s] lg:top-[63px] lg:right-[calc(50%+min(28.7vw,413px))] lg:size-7" />
-        <svg
-          viewBox="0 0 40 36"
-          aria-hidden
-          className="float absolute top-12 left-5 h-8 w-9 -rotate-12 [--float-delay:-2s] lg:top-[136px] lg:right-[calc(50%+min(25.4vw,366px))] lg:left-auto lg:h-[78px] lg:w-[86px]"
-        >
-          <path d="M2 18 38 2 28 34 20 22Z" fill="#cdd629" stroke="#212121" strokeWidth="2.5" strokeLinejoin="round" />
-        </svg>
+        <PaperPlane className="top-9 left-3 size-12 rotate-14 lg:top-[120px] lg:right-[calc(50%+min(25.4vw,366px))] lg:left-auto lg:size-[90.68px]" />
         <Image
           src="/images/dss-keys.png"
           alt=""
@@ -38,23 +33,23 @@ export function Hero() {
           className="float hover-pop absolute top-8 -right-1 w-[96px] [--float-delay:-0.8s] lg:top-[97px] lg:right-auto lg:left-[calc(50%+min(27.4vw,395px))] lg:w-[180px]"
         />
 
-        <p className="rise-in relative mx-auto inline-block border-[1.5px] border-dashed border-[#d4477a] bg-pink-soft px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-pink uppercase lg:rounded-[6px] lg:bg-pink-tint lg:px-5 lg:py-3 lg:text-[14px] lg:tracking-[0.1em] lg:text-ink">
+        <p className="rise-in relative mx-auto inline-block border-[1.5px] border-dashed border-[#d4477a] rounded-[6px] bg-pink-tint px-3.5 py-2 text-center align-middle font-sans text-[11px] leading-[11px] font-bold tracking-[1.1px] text-ink uppercase lg:px-5 lg:py-3 lg:text-[14px] lg:leading-[14.3px]">
           For founders who move first
-          {/* speech-bubble tail on desktop */}
-          <svg aria-hidden viewBox="0 0 24 14" className="absolute top-full left-[46px] -mt-px hidden h-3.5 w-6 lg:block">
+          {/* chat-bubble tail */}
+          <svg aria-hidden viewBox="0 0 24 14" className="absolute top-full left-[30px] -mt-px h-3.5 w-6 lg:left-[46px]">
             <path d="M0 0 12 13 24 0" fill="var(--color-pink-tint)" stroke="#d4477a" strokeWidth="1.5" strokeDasharray="3 2" />
           </svg>
         </p>
-        <h1 className="rise-in mt-1 text-[38px] [--rise-delay:120ms] leading-[0.95] font-black tracking-[-0.04em] text-ink lg:mt-12 lg:text-[min(7.8vw,112px)] lg:leading-[1.01]">
+        <h1 className="rise-in mt-5 text-[38px]  [--rise-delay:120ms] leading-[0.94] font-black tracking-[-0.04em] text-ink lg:mt-12 lg:text-[min(7.8vw,112px)] lg:leading-[1.01]">
           They loved the{" "}
           <RotatingWord
-            words={["Pitch.", "Brand.", "Products.", "Service."]}
+            words={["pitch.", "brand.", "products.", "service."]}
             srText="Pitch."
             interval={3000}
             className="text-pink"
           />{" "}
           <br className="max-lg:hidden" />
-          Then they looked you up!
+          Then they looked you up.
         </h1>
 
         <div className="relative mt-12 lg:mt-[78px]">

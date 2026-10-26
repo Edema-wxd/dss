@@ -9,6 +9,15 @@ import { useEffect } from "react";
  * Without JS (or with reduced motion) nothing is hidden.
  */
 export function ScrollReveal() {
+  // Arriving at "/#apply" from another page: the browser's own jump can run
+  // before the section exists, so go there once the page has rendered.
+  useEffect(() => {
+    const target = window.location.hash && document.getElementById(window.location.hash.slice(1));
+    if (target && Math.abs(target.getBoundingClientRect().top) > 4) {
+      setTimeout(() => target.scrollIntoView({ block: "start", behavior: "instant" }), 0);
+    }
+  }, []);
+
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 

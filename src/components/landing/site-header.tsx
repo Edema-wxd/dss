@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { SectionLink } from "./section-link";
 import { ArrowUpRightIcon, MenuIcon, StarIcon } from "lucide-react";
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -42,7 +42,7 @@ function SiteMenu() {
         </svg>
         <nav aria-label="Services">
           <PopoverClose
-            render={<Link href="/#the-session" />}
+            render={<SectionLink href="/#the-session" />}
             nativeButton={false}
             className="flex h-[66px] items-center gap-3 rounded-[18px] border-2 border-ink bg-lime pr-2.5 pl-4 shadow-hard transition-transform hover:-translate-y-0.5 active:translate-y-0.5"
           >
@@ -76,9 +76,9 @@ function SiteMenu() {
 export function SiteHeader() {
   return (
     <header className="relative z-20 mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 pt-5 lg:pt-[22px] lg:pr-[122px] lg:pl-[102px]">
-      <Link href="/#top" aria-label="Digital Savvy Studios home">
+      <SectionLink href="/#top" aria-label="Digital Savvy Studios home">
         <Image
-          src="/images/lockup-black.png"
+          src="/images/logo-pinkandblack.svg"
           alt="Digital Savvy Studios"
           width={1262}
           height={468}
@@ -87,14 +87,14 @@ export function SiteHeader() {
           // as wide as the row allows beside the slots pill and menu, up to 148px
           className="h-auto w-[min(148px,calc(100vw-251px))] lg:w-[190px]"
         />
-      </Link>
+      </SectionLink>
       <div className="flex items-center gap-3 lg:gap-7">
-        <Link
+        <SectionLink
           href="/#apply"
           className="rounded-full border-2 border-ink bg-pink px-3.5 py-2.5 text-[10px] font-semibold text-white shadow-hard-sm lg:px-7 lg:py-[14px] lg:text-[15px] lg:shadow-hard-md"
         >
           5 slots left in November
-        </Link>
+        </SectionLink>
         <SiteMenu />
       </div>
     </header>

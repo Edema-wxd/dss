@@ -8,28 +8,28 @@ const moments = [
     body: "Launch week attention is expensive. Spend it on a brand that's ready to convert it.",
     finding: "a message that explains the product but never names the buyer.",
     position: "0% 0%",
-    tone: "lg:bg-pink-tint",
+    tone: "bg-pink-tint",
   },
   {
     title: "Before a raise",
     body: "Investors look you up before the second meeting. Your brand is part of the deck whether you planned it or not.",
     finding: "a founder with a strong story and no visible point of view.",
     position: "100% 0%",
-    tone: "lg:bg-aqua",
+    tone: "bg-aqua",
   },
   {
     title: "Before a new market",
     body: "A new city or country means strangers who've never heard your name. First impressions have to do all the work.",
     finding: "proof that's buried, local or impossible to find in a minute.",
     position: "0% 100%",
-    tone: "lg:bg-[#f2f5b8]",
+    tone: "bg-[#f2f5b8]",
   },
   {
     title: "When a competitor gets louder",
     body: "A weaker offer that communicates better will win more often than it should. Clarity beats quality when buyers are in a hurry.",
     finding: "channels telling different stories, so none of them builds trust.",
     position: "100% 100%",
-    tone: "lg:bg-peach",
+    tone: "bg-peach",
   },
 ];
 

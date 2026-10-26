@@ -1,8 +1,37 @@
 import Image from "next/image";
+import { cacheLife } from "next/cache";
 import { Keycap } from "./primitives";
 import { ApplyForm } from "./apply-form";
 
-export function Apply() {
+type ApplyProps = {
+  takenSlots?: number;
+};
+
+function getApplicationMonth(takenSlots: number) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const lastDay = new Date(year, month + 1, 0);
+  const lastMonday = new Date(lastDay);
+
+  lastMonday.setDate(lastDay.getDate() - ((lastDay.getDay() + 6) % 7));
+
+  const isFull = takenSlots >= 8;
+  const showNextMonth = isFull || now >= lastMonday;
+  const applicationDate = new Date(year, month + (showNextMonth ? 1 : 0), 1);
+
+  return {
+    monthName: applicationDate.toLocaleString("en-US", { month: "long" }),
+    isFull,
+  };
+}
+
+export async function Apply({ takenSlots = 0 }: ApplyProps) {
+  "use cache";
+  cacheLife("hours");
+
+  const applicationMonth = getApplicationMonth(takenSlots);
+
   return (
     <section
       id="apply"
@@ -33,8 +62,9 @@ export function Apply() {
         </div>
 
         <p className="relative mx-auto mt-2 flex w-fit lg:mt-0 items-center gap-2.5 rounded-full border-2 border-ink bg-white px-4 py-1.5 text-[11px] font-semibold tracking-[0.14em] uppercase">
-          <span aria-hidden className="size-2 rounded-full bg-pink" />
-          October applications open
+          <span aria-hidden className="pulse-dot size-2 rounded-full bg-pink" />
+          {applicationMonth.isFull && "No Slots available this month — "}
+          {applicationMonth.monthName} applications open
         </p>
 
         <h2 id="apply-title" className="relative mt-6 text-center text-[44px] lg:mt-8 lg:text-[50px]">

@@ -5,6 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Keycap, Sparkle } from "@/components/landing/primitives";
 import { AnnouncementBar, SiteHeader } from "@/components/landing/site-header";
 import { SiteFooter } from "@/components/landing/site-footer";
+import { SectionLink } from "@/components/landing/section-link";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -67,9 +68,9 @@ export default function NotFound() {
             <Link href="/" className={cn(buttonVariants({ variant: "brand", size: "xl" }), "w-full lg:w-auto lg:px-8")}>
               Back to the homepage
             </Link>
-            <Link href="/#apply" className={cn(buttonVariants({ variant: "paper", size: "xl" }), "w-full lg:w-auto lg:px-8")}>
+            <SectionLink href="/#apply" className={cn(buttonVariants({ variant: "paper", size: "xl" }), "w-full lg:w-auto lg:px-8")}>
               Apply for one of 8 sessions →
-            </Link>
+            </SectionLink>
           </div>
         </main>
       </div>

@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { CheckIcon, XIcon } from "lucide-react";
+import { XIcon } from "lucide-react";
+import { CheckMark } from "./check-mark";
 import { Button } from "@/components/ui/button";
 import { BubblePair } from "./chat-bubbles";
 import { Eyebrow, Sparkle } from "./primitives";
@@ -54,7 +55,7 @@ export function FitCheck() {
               {forYou.map((item) => (
                 <li key={item} data-reveal-base="250" className="reveal-pop flex origin-left gap-3 text-[15px] leading-[1.6] lg:text-[16px]">
                   <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full border-2 border-ink bg-white">
-                    <CheckIcon aria-hidden className="size-4" strokeWidth={3} />
+                    <CheckMark className="size-3.5" />
                   </span>
                   {item}
                 </li>
