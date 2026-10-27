@@ -34,18 +34,19 @@ function StudyCard({
   tone?: keyof typeof cardTones;
   image: { src: string; alt: string; width: number; height: number; position?: string };
 }) {
+  // the image grows into any spare height so the text sits at the bottom of every card
   return (
-    <article className={cn("hover-lift h-full rounded-[28px] border-2 border-ink p-6 shadow-hard-lg lg:p-8", cardTones[tone])}>
+    <article className={cn("hover-lift flex h-full flex-col rounded-[28px] border-2 border-ink p-6 shadow-hard-lg lg:p-8", cardTones[tone])}>
       <Image
         src={image.src}
         alt={image.alt}
         width={image.width}
         height={image.height}
         sizes="(max-width: 600px) 90vw, 600px"
-        className="aspect-[300/134] w-full rounded-[18px] border-2 border-ink object-cover lg:aspect-auto lg:h-[175px]"
+        className="aspect-[300/134] w-full shrink-0 grow rounded-[18px] border-2 border-ink object-cover lg:aspect-auto lg:h-[175px]"
         style={{ objectPosition: image.position }}
       />
-      <p className="mt-5 inline-block rounded-full border-2 border-ink bg-white px-4 py-1.5 text-[11px] font-semibold tracking-[0.12em] uppercase">
+      <p className="mt-5 self-start rounded-full border-2 border-ink bg-white px-4 py-1.5 text-[11px] font-semibold tracking-[0.12em] uppercase">
         {tag}
       </p>
       <h3 className="mt-2 text-[26px] leading-[1.05] font-bold lg:mt-4">{title}</h3>
