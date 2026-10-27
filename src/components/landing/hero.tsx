@@ -70,10 +70,9 @@ export function Hero() {
             className="float hover-pop absolute -top-12 right-10 w-[28px] [--float-delay:-1.5s] lg:-top-[98px] lg:right-auto lg:left-[calc(50%+min(37.8vw,545px))] lg:w-[min(3.9vw,56px)]"
           />
           <p className="rise-in mx-auto max-w-[330px] text-[11px] [--rise-delay:240ms] leading-[1.75] text-slate lg:max-w-[1180px] lg:text-[20px] lg:leading-[1.65]">
-            The Visibility Session is a <strong className="font-semibold text-ink">₦250,000</strong>{" "}
-            brand review we give free to 8 founders a month. We look you up the way a serious buyer
-            would, then show you in 30 minutes what&apos;s winning them over and what&apos;s quietly
-            sending them to someone else.
+            Before a serious buyer pays you, they look you up. The Visibility Session shows you what
+            they find. A <strong className="font-semibold text-ink">₦250,000</strong> review,
+            complimentary by application.
           </p>
         </div>
 

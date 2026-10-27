@@ -18,7 +18,7 @@ import { ChunkyArrow } from "./primitives";
 export function CardCarousel({
   label,
   slides,
-  arrowTone = "text-white",
+  arrowTone = "text-aqua",
   gridClassName,
   entrance = "reveal",
 }: {
