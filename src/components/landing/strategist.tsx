@@ -18,7 +18,7 @@ export function Strategist() {
           id="strategist-title"
           className="reveal mt-5 text-[60px] leading-[0.92] font-black tracking-[-0.05em] lg:mt-6 lg:max-w-[960px] lg:text-[70px] lg:leading-[0.93]"
         >
-          Trusted with brands that can&apos;t afford to look ordinary.
+          <span className="text-pink">Trusted</span> with brands that can&apos;t afford to look ordinary.
         </h2>
 
         <div className="lg:mt-12 lg:grid lg:grid-cols-[minmax(0,620fr)_minmax(0,618fr)] lg:items-start lg:gap-x-[42px]">

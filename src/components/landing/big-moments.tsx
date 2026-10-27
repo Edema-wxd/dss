@@ -43,7 +43,7 @@ export function BigMoments() {
           id="big-moments-title"
           className="reveal mt-5 text-[46px] leading-[0.98] font-black tracking-[-0.04em] lg:mt-6 lg:max-w-[900px] lg:text-[70px] lg:leading-[0.93]"
         >
-          Proactive founders book this before the moment, not after it.
+          Proactive founders <span className="text-orange">book this</span> before the moment, not after it.
         </h2>
         <p className="reveal mt-5 text-lg leading-relaxed text-slate lg:mt-7 lg:max-w-[640px] lg:text-[19px]">
           The cost of being misread is highest right before something important. That&apos;s when
