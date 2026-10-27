@@ -14,9 +14,9 @@ export async function Apply() {
     >
       <div className="relative mx-auto max-w-xl lg:max-w-[1280px]">
         <div className="relative h-[100px] lg:absolute lg:inset-x-0 lg:top-0 lg:h-0">
-          {/* straddles the section's top edge; the wrapper bobs, the badge blinks */}
+          {/* straddles the section's top edge and bobs gently */}
           <div className="float absolute -top-[70px] left-1/2 z-10 -translate-x-1/2 [--float-delay:-3.2s] lg:-top-[116px] lg:right-[58px] lg:left-auto lg:translate-x-0">
-            <p className="blink -rotate-6 rounded-[10px] border-2 border-ink bg-lime px-4 py-2 text-[15px] font-semibold whitespace-nowrap shadow-hard-sm lg:px-[18px] lg:py-3 lg:text-[16px] lg:shadow-hard">
+            <p className="-rotate-6 rounded-[10px] border-2 border-ink bg-lime px-4 py-2 text-[15px] font-semibold whitespace-nowrap shadow-hard-sm lg:px-[18px] lg:py-3 lg:text-[16px] lg:shadow-hard">
               {slots.per} founders a month
             </p>
           </div>

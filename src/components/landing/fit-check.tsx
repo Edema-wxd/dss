@@ -44,13 +44,15 @@ export function FitCheck() {
           <div className="reveal-pop hover-lift relative mt-8 rounded-[28px] border-2 border-ink bg-lime p-6 shadow-hard-lg lg:mt-0 lg:px-9 lg:pt-6 lg:pb-10">
             <span aria-hidden className="absolute top-12 -left-4 size-8 rounded-full border-2 border-ink bg-cream" />
             <span aria-hidden className="absolute top-12 -right-4 size-8 rounded-full border-2 border-ink bg-cream" />
+            {/* perforation between the notches */}
+            <span aria-hidden className="absolute inset-x-4 top-16 -translate-y-1/2 border-t-2 border-dashed border-ink" />
             <div className="flex justify-between text-[11px] font-semibold tracking-[0.14em] uppercase">
               <span>Admit one</span>
               <span className="flex items-center gap-1.5">
                 <Sparkle className="twinkle size-3 text-ink" /> 8 seats a month
               </span>
             </div>
-            <h3 className="mt-8 text-[30px] font-bold lg:mt-11 lg:text-[32px]">This is for you if</h3>
+            <h3 className="mt-12 text-[30px] font-bold lg:mt-14 lg:text-[32px]">This is for you if</h3>
             <ul className="mt-4 flex flex-col gap-4">
               {forYou.map((item) => (
                 <li key={item} data-reveal-base="250" className="reveal-pop flex origin-left gap-3 text-[15px] leading-[1.6] lg:text-[16px]">
