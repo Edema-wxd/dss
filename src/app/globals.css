@@ -330,6 +330,27 @@
   }
 }
 
+/* a keycap typed on a loop: sinks into its shadow and springs back;
+   stagger a row with [--press-delay:…] so it reads as typing */
+@keyframes key-press {
+  0%,
+  16%,
+  100% {
+    transform: translateY(0);
+    box-shadow: var(--shadow-keycap);
+  }
+  6% {
+    transform: translateY(4px);
+    box-shadow:
+      0 2px 0 var(--color-keycap),
+      0 2px 0 2px var(--color-ink);
+  }
+}
+
+@utility key-press {
+  animation: key-press 2.6s cubic-bezier(0.3, 0, 0.3, 1) var(--press-delay, 1.2s) infinite;
+}
+
 @utility rise-in {
   animation: rise-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) var(--rise-delay, 0ms) both;
 }
@@ -393,7 +414,8 @@
   .fly,
   .cursor-tap,
   .tap-ripple,
-  .press-loop {
+  .press-loop,
+  .key-press {
     animation: none;
   }
   .hover-lift:hover {
