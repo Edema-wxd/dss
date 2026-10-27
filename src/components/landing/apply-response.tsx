@@ -1,6 +1,6 @@
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ChecklistDialog } from "./checklist-dialog";
+import { ChecklistDialog, checklistPdf } from "./checklist-dialog";
 
 // TODO: swap in the real booking link, WhatsApp number and Visibility Brief link.
 const bookingUrl = "#";
@@ -87,12 +87,21 @@ export function ApplyResponse({
         <h3 className={headingClass}>You&apos;re a little early, and that&apos;s fine.</h3>
         <p className={bodyClass}>
           Sessions are for founders ready to invest ₦800,000 or more a month, so we can give you
-          advice you can act on straight away. We&apos;ll email you our Launch Visibility Checklist
-          instead, so you can close the biggest gaps yourself.
+          advice you can act on straight away. Take our Launch Visibility Checklist instead, so you
+          can close the biggest gaps yourself.
         </p>
         <p className="text-[17px] leading-[1.75] lg:text-[16px] lg:leading-[1.6]">
           When your budget is ready, apply again and mention this application. We&apos;ll remember you.
         </p>
+        <div className="mt-6 flex flex-col gap-4 lg:mt-5 lg:items-start">
+          <a
+            href={checklistPdf}
+            download
+            className={cn(buttonVariants({ variant: "brand", size: "xl" }), buttonClass)}
+          >
+            Download the checklist (PDF)
+          </a>
+        </div>
       </div>
     );
   }

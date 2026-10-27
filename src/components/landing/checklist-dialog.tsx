@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { sendToDesk } from "@/lib/visibility-client";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -61,6 +61,8 @@ function remember(storage: () => Storage, key: string) {
     // private mode or blocked storage: the pop-up may simply show again
   }
 }
+
+export const checklistPdf = "/downloads/The-Launch-Visibility-Checklist.pdf";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -268,8 +270,8 @@ function ChecklistForm({ onSent }: { onSent: (lead: { firstName: string; email: 
         Send me the checklist
       </Button>
       <p className="mt-4 text-[13px] leading-[1.6] text-slate lg:text-[12px]">
-        One email with the checklist, then The Visibility Brief now and then. Unsubscribe anytime. Handled in line
-        with the Nigeria Data Protection Act 2023.
+        The checklist downloads right away, then The Visibility Brief lands now and then. Unsubscribe anytime.
+        Handled in line with the Nigeria Data Protection Act 2023.
       </p>
       <DialogClose className="mt-3 self-center text-[15px] text-slate underline underline-offset-4 hover:text-ink">
         No thanks
@@ -329,13 +331,12 @@ export function ChecklistDialog({
 
             {lead ? (
               <div role="status">
-                <p className={tagClass}>It&apos;s on its way</p>
+                <p className={tagClass}>It&apos;s yours</p>
                 <DialogTitle className="font-display mt-5 text-[44px] leading-[1] font-black tracking-[-0.04em] lg:mt-4 lg:text-[46px]">
-                  Check your inbox, {lead.firstName}.
+                  Here&apos;s your checklist, {lead.firstName}.
                 </DialogTitle>
                 <DialogDescription className="mt-5 text-[17px] leading-[1.7] text-slate lg:mt-3 lg:text-[15px] lg:leading-[1.65]">
-                  The checklist is heading to <span className="wrap-anywhere">{lead.email}</span>. Here&apos;s the first
-                  check while you wait:{" "}
+                  Twelve checks across 15 pages. Start with the first one:{" "}
                   <strong className="font-semibold text-ink">
                     can you say who you&apos;re for and why you win in one sentence, and would your team say it the
                     same way?
@@ -346,8 +347,15 @@ export function ChecklistDialog({
                   have us run all 12 for you, free.
                 </p>
                 <div className="mt-8 flex flex-col items-center gap-5 lg:mt-7 lg:gap-4">
+                  <a
+                    href={checklistPdf}
+                    download
+                    className={cn(buttonVariants({ variant: "brand", size: "xl" }), "h-[52px] w-full text-[15px]")}
+                  >
+                    Download the checklist (PDF)
+                  </a>
                   <DialogClose
-                    render={<Button variant="brand" size="xl" className="h-[52px] w-full text-[15px]" />}
+                    render={<Button variant="paper" size="xl" className="h-[52px] w-full text-[15px]" />}
                     onClick={() => (goToApply.current = true)}
                   >
                     Apply for a Visibility Session
