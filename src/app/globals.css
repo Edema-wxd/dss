@@ -125,6 +125,7 @@
    float      gentle bob for stickers; offset with [--float-delay:…]
    twinkle    sparkle pulse
    pulse-dot  blinking status dot with a soft glow
+   blink      steady on/off blink for attention badges ("8 founders a month")
    fly        paper plane flies off and re-enters at its spot (on click)
    hover-lift / hover-pop   desktop-only hover (fine pointer, lg and up)
    Uses `transform` for float/hover and the `translate` property for
@@ -173,6 +174,18 @@
   100% {
     transform: translate(0, 0) rotate(0deg) scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes blink {
+  0%,
+  45%,
+  100% {
+    opacity: 1;
+  }
+  55%,
+  90% {
+    opacity: 0.25;
   }
 }
 
@@ -329,6 +342,10 @@
   animation: fly 1.6s cubic-bezier(0.45, 0.05, 0.3, 1) both;
 }
 
+@utility blink {
+  animation: blink 1.4s ease-in-out infinite;
+}
+
 @utility pulse-dot {
   animation: pulse-dot 1.8s ease-in-out infinite;
 }
@@ -372,6 +389,7 @@
   .float,
   .twinkle,
   .pulse-dot,
+  .blink,
   .fly,
   .cursor-tap,
   .tap-ripple,
