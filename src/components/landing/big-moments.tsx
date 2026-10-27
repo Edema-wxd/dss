@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Eyebrow } from "./primitives";
 import { CardCarousel } from "./card-carousel";
@@ -7,28 +8,28 @@ const moments = [
     title: "Before a launch",
     body: "Launch week attention is expensive. Spend it on a brand that's ready to convert it.",
     finding: "a message that explains the product but never names the buyer.",
-    position: "0% 0%",
+    image: "/images/moments/launch.jpg",
     tone: "bg-pink-tint",
   },
   {
     title: "Before a raise",
     body: "Investors look you up before the second meeting. Your brand is part of the deck whether you planned it or not.",
     finding: "a founder with a strong story and no visible point of view.",
-    position: "100% 0%",
+    image: "/images/moments/raise.jpg",
     tone: "bg-aqua",
   },
   {
     title: "Before a new market",
     body: "A new city or country means strangers who've never heard your name. First impressions have to do all the work.",
     finding: "proof that's buried, local or impossible to find in a minute.",
-    position: "0% 100%",
+    image: "/images/moments/new-market.jpg",
     tone: "bg-[#f2f5b8]",
   },
   {
     title: "When a competitor gets louder",
     body: "A weaker offer that communicates better will win more often than it should. Clarity beats quality when buyers are in a hurry.",
     finding: "channels telling different stories, so none of them builds trust.",
-    position: "100% 100%",
+    image: "/images/moments/competitor.jpg",
     tone: "bg-peach",
   },
 ];
@@ -57,13 +58,16 @@ export function BigMoments() {
             slides={moments.map((m) => (
               <article
                 key={m.title}
-                className={cn("hover-lift h-full rounded-[28px] border-2 border-ink bg-pink-tint p-5 shadow-hard-lg", m.tone)}
+                className={cn("hover-lift flex h-full flex-col rounded-[28px] border-2 border-ink bg-pink-tint p-5 shadow-hard-lg", m.tone)}
               >
-                {/* each moment shows one quadrant of the same four-hands photo */}
-                <div
-                  aria-hidden
-                  className="aspect-[300/196] rounded-[18px] lg:aspect-auto lg:h-[170px] border-2 border-ink bg-[url(/images/devices-hands.jpg)] bg-[length:200%_200%] bg-no-repeat"
-                  style={{ backgroundPosition: m.position }}
+                {/* the image grows into any spare height so the text sits at the bottom of every card */}
+                <Image
+                  src={m.image}
+                  alt=""
+                  width={590}
+                  height={386}
+                  sizes="(min-width: 1280px) 300px, (min-width: 1024px) 45vw, 90vw"
+                  className="aspect-[300/196] w-full shrink-0 grow rounded-[18px] border-2 border-ink object-cover lg:aspect-auto lg:h-[170px]"
                 />
                 <h3 className="mt-4 text-[24px] font-bold lg:leading-[1.05]">{m.title}</h3>
                 <p className="mt-1 text-[14px] leading-relaxed lg:mt-2 lg:text-[15px] lg:leading-[1.5]">{m.body}</p>
