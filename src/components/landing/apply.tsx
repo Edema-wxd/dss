@@ -10,14 +10,14 @@ export async function Apply() {
     <section
       id="apply"
       aria-labelledby="apply-title"
-      className="scroll-mt-0 overflow-x-clip border-b-2 border-ink bg-pink px-4 pt-12 pb-14 lg:overflow-visible lg:border-t-2 lg:px-10 lg:pt-[88px] lg:pb-[68px]"
+      className="scroll-mt-0 overflow-x-clip border-b-2 border-ink bg-pink px-4 pt-10 pb-14 lg:overflow-visible lg:border-t-2 lg:px-10 lg:pt-[88px] lg:pb-[68px]"
     >
       <div className="relative mx-auto max-w-xl lg:max-w-[1280px]">
-        <div className="relative h-[100px] lg:absolute lg:inset-x-0 lg:top-0 lg:h-0">
+        <div className="relative h-[80px] min-[520px]:h-[44px] lg:absolute lg:inset-x-0 lg:top-0 lg:h-0">
           {/* straddles the section's top edge and bobs gently */}
-          <div className="float absolute -top-[70px] left-1/2 z-10 -translate-x-1/2 [--float-delay:-3.2s] lg:-top-[116px] lg:right-[58px] lg:left-auto lg:translate-x-0">
+          <div className="float absolute -top-[62px] left-1/2 z-10 -translate-x-1/2 [--float-delay:-3.2s] lg:-top-[116px] lg:right-[58px] lg:left-auto lg:translate-x-0">
             <p className="-rotate-6 rounded-[10px] border-2 border-ink bg-lime px-4 py-2 text-[15px] font-semibold whitespace-nowrap shadow-hard-sm lg:px-[18px] lg:py-3 lg:text-[16px] lg:shadow-hard">
-              {slots.per} founders a month
+              What are you waiting for?
             </p>
           </div>
           <Image
@@ -25,16 +25,16 @@ export async function Apply() {
             alt=""
             width={755}
             height={555}
-            sizes="(min-width: 1024px) 340px, 118px"
-            className="float hover-pop absolute top-3 -left-2 w-[118px] [--float-delay:-0.7s] lg:top-[127px] lg:right-[calc(50%+350px)] lg:left-auto lg:w-[calc(50%-316px)] lg:max-w-[340px] lg:-translate-y-1/2"
+            sizes="(min-width: 1024px) 340px, 104px"
+            className="float hover-pop absolute top-0 -left-2 w-[104px] [--float-delay:-0.7s] lg:top-[127px] lg:right-[calc(50%+350px)] lg:left-auto lg:w-[calc(50%-316px)] lg:max-w-[340px] lg:-translate-y-1/2"
           />
           <Image
             src="/images/camera-sticker.png"
             alt=""
             width={736}
             height={736}
-            sizes="(min-width: 1024px) 325px, 96px"
-            className="float hover-pop absolute top-5 right-0 w-[96px] [--float-delay:-2.4s] lg:top-[126px] lg:right-auto lg:left-[calc(50%+350px)] lg:w-[calc(50%-334px)] lg:max-w-[325px] lg:-translate-y-1/2"
+            sizes="(min-width: 1024px) 325px, 84px"
+            className="float hover-pop absolute top-0 right-0 w-[84px] [--float-delay:-2.4s] lg:top-[126px] lg:right-auto lg:left-[calc(50%+350px)] lg:w-[calc(50%-334px)] lg:max-w-[325px] lg:-translate-y-1/2"
           />
         </div>
 
