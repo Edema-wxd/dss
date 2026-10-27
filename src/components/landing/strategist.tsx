@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Eyebrow } from "./primitives";
+import { ScrapbookCollage } from "./scrapbook-collage";
 
 const caseStudyWork = [
   "A full-year digital marketing strategy and social media audit",
@@ -21,14 +22,7 @@ export function Strategist() {
         </h2>
 
         <div className="lg:mt-12 lg:grid lg:grid-cols-[minmax(0,620fr)_minmax(0,618fr)] lg:items-start lg:gap-x-[42px]">
-          <Image
-            src="/images/strategist-collage.png"
-            alt="Janefrances C. Obiajulu, your strategist, with Digital Savvy Studios brand stickers"
-            width={1460}
-            height={1380}
-            sizes="(max-width: 600px) 100vw, 640px"
-            className="reveal-pop mt-10 h-auto w-full lg:mt-0"
-          />
+          <ScrapbookCollage className="mt-10 lg:mt-0" />
 
           <div>
             <figure className="reveal relative mt-10 lg:mt-0">

@@ -127,6 +127,8 @@
    pulse-dot  blinking status dot with a soft glow
    blink      steady on/off blink for attention badges ("8 founders a month")
    fly        paper plane flies off and re-enters at its spot (on click)
+   scrap-in   scrapbook piece drops onto its .reveal-stage parent; set
+              --from-x/--from-y/--from-r and time with [--draw-delay:…]
    hover-lift / hover-pop   desktop-only hover (fine pointer, lg and up)
    Uses `transform` for float/hover and the `translate` property for
    reveal, so they compose with Tailwind's translate/rotate utilities. */
@@ -231,6 +233,29 @@
   :root.reveal-ready &:not(.is-revealed) {
     opacity: 0;
     scale: 0.6;
+  }
+}
+
+/* a trigger-only reveal: arms its children without moving itself */
+@utility reveal-stage {
+  :root.reveal-ready &:not(.is-revealed) {
+    pointer-events: none;
+  }
+}
+
+/* a piece tossed onto the page: comes in from off to one side, tilted and
+   lifted, then settles flat with a small overshoot */
+@utility scrap-in {
+  transition:
+    opacity 0.3s ease-out var(--draw-delay, 0ms),
+    translate 0.85s cubic-bezier(0.34, 1.25, 0.64, 1) var(--draw-delay, 0ms),
+    rotate 0.85s cubic-bezier(0.34, 1.25, 0.64, 1) var(--draw-delay, 0ms),
+    scale 0.85s cubic-bezier(0.34, 1.25, 0.64, 1) var(--draw-delay, 0ms);
+  :root.reveal-ready .reveal-stage:not(.is-revealed) & {
+    opacity: 0;
+    translate: var(--from-x, 0) var(--from-y, 0);
+    rotate: var(--from-r, 0deg);
+    scale: 1.12;
   }
 }
 
