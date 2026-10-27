@@ -1,6 +1,7 @@
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ChecklistDialog, checklistPdf } from "./checklist-dialog";
+import { checklistPdf } from "@/lib/checklist";
+import { ChecklistDialog } from "./checklist-dialog";
 
 // TODO: swap in the real booking link, WhatsApp number and Visibility Brief link.
 const bookingUrl = "#";

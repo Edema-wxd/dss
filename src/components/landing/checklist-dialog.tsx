@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
+import { checklistPdf } from "@/lib/checklist";
 import { sendToDesk } from "@/lib/visibility-client";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -61,8 +62,6 @@ function remember(storage: () => Storage, key: string) {
     // private mode or blocked storage: the pop-up may simply show again
   }
 }
-
-export const checklistPdf = "/downloads/The-Launch-Visibility-Checklist.pdf";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -192,7 +191,6 @@ function ChecklistForm({ onSent }: { onSent: (lead: { firstName: string; email: 
           document.getElementById(`checklist-${firstInvalid}`)?.focus();
           return;
         }
-        // TODO: also send to the email provider once one is chosen.
         void sendToDesk({ type: "checklist-lead", name: firstName, email, moment: nextUp });
         onSent({ firstName, email, nextUp });
       }}

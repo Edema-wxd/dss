@@ -3,6 +3,7 @@ import { BANDS } from "@/lib/desk/model";
 import { routeFor, statusForRoute } from "@/lib/desk/logic";
 import { scheduleMirror } from "@/lib/desk/sheets";
 import { NotConfiguredError, insertApplication, insertLead, loadDesk, markLeadApplied, newApplicationId, publicSettings } from "@/lib/desk/db";
+import { scheduleChecklistEmail } from "@/lib/mail";
 
 // The Visibility Session page talks to the desk here.
 // GET returns the public settings (seats left, waitlist, booking link). POST stores an
@@ -53,8 +54,10 @@ export async function POST(request: NextRequest) {
     if (!emailOk(email)) return NextResponse.json({ ok: false, error: "email" }, { status: 422 });
 
     if (body.type === "checklist-lead") {
-      await insertLead({ name: text(body.name, 120), email, moment: text(body.moment, 200), source: text(body.source, 120) || "website" });
+      const name = text(body.name, 120);
+      await insertLead({ name, email, moment: text(body.moment, 200), source: text(body.source, 120) || "website" });
       scheduleMirror();
+      scheduleChecklistEmail({ name, email, site: process.env.SITE_URL || request.nextUrl.origin });
       return NextResponse.json({ ok: true });
     }
 
