@@ -20,10 +20,10 @@ export function LookupTest() {
       <div className="mx-auto max-w-xl lg:grid lg:max-w-[1280px] lg:grid-cols-[minmax(0,582fr)_minmax(0,640fr)] lg:items-start lg:gap-x-[58px]">
         <div>
           <p aria-hidden className="flex flex-wrap gap-x-2 gap-y-4 px-1 text-[30px] lg:max-w-[440px] lg:gap-x-2 lg:gap-y-3 lg:px-0 lg:text-[60px]">
-            <Keycap tone="paper" className="reveal -rotate-2">the</Keycap>
-            <Keycap tone="pink" className="reveal rotate-[-3deg]">look-up</Keycap>
-            <Keycap tone="aqua" className="reveal rotate-2">test.</Keycap>
-            <Keycap tone="lime" className="reveal -rotate-3">&lt;3</Keycap>
+            <Keycap tone="paper" className="reveal key-press -rotate-2 [--press-delay:1.2s]">the</Keycap>
+            <Keycap tone="pink" className="reveal key-press rotate-[-3deg] [--press-delay:1.45s]">look-up</Keycap>
+            <Keycap tone="aqua" className="reveal key-press rotate-2 [--press-delay:1.7s]">test.</Keycap>
+            <Keycap tone="lime" className="reveal key-press -rotate-3 [--press-delay:2.05s]">&lt;3</Keycap>
           </p>
           <h2
             id="look-up-test-title"

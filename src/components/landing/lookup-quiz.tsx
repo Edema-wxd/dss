@@ -19,7 +19,7 @@ const results: Record<number, { title: string; body: string; cta: string }> = {
   0: {
     title: "Strong first impression.",
     body: "Buyers likely find a brand that matches your ambition. The session would focus on what to sharpen before your next big moment.",
-    cta: "Apply for a session",
+    cta: "Pressure-test it in a session",
   },
   // TODO(copy): no 1-gap state in the design yet; adapted from the 2-gap state.
   1: {
@@ -34,19 +34,18 @@ const results: Record<number, { title: string; body: string; cta: string }> = {
   },
   3: {
     title: "3 of 5 doors left open.",
-    body: "Your business is likely ahead of how it looks online. That gap is costing you clients you never hear from. This is exactly what the session is for",
+    body: "Your business is likely ahead of how it looks online. That gap is costing you clients you never hear from. This is exactly what the session is for.",
     cta: "Apply for one of 8 sessions",
   },
   4: {
     title: "4 of 5 doors left open.",
-    body: "Your business is likely ahead of how it looks online. That gap is costing you clients you never hear from. This is exactly what the session is for.",
-    cta: "Apply for one of 8 sessions",
+    body: "Four checks didn't pass. You got one working in your favor and right now it's carrying your whole brand. Let's give it some support before your next big moment.",
+    cta: "Find the fix in 30 minutes",
   },
-  // TODO(copy): no 5-gap state in the design yet; reuses the 4-gap copy.
   5: {
-    title: "5 of 5 doors left open.",
-    body: "Your business is likely ahead of how it looks online. That gap is costing you clients you never hear from. This is exactly what the session is for.",
-    cta: "Apply for one of 8 sessions",
+    title: "0 of 5 passed",
+    body: "None of the five checks passed. That usually means the company grew faster than the way it presents itself. It's also the most fixable position to be in, because the substance is already there.",
+    cta: "Let's fix it together",
   },
 };
 
