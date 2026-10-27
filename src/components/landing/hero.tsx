@@ -20,7 +20,7 @@ export function Hero() {
       <AnnouncementBar />
       <SiteHeader />
 
-      <section className="relative mx-auto max-w-xl px-5 pt-14 pb-10 text-center lg:max-w-[1440px] lg:px-20 lg:pt-[148px] lg:pb-6">
+      <section className="relative mx-auto max-w-xl px-5 pt-16 pb-10 text-center lg:max-w-[1440px] lg:px-20 lg:pt-[148px] lg:pb-6">
         <Sparkle className="twinkle absolute top-2 left-6 size-3.5 text-ink lg:top-[88px] lg:left-[51px] lg:size-[26px]" />
         <Sparkle className="twinkle absolute top-0 right-1/2 size-3.5 text-gold [--float-delay:-1.2s] lg:top-[63px] lg:right-[calc(50%+min(28.7vw,413px))] lg:size-7" />
         <PaperPlane className="top-9 left-3 size-12 rotate-14 lg:top-[120px] lg:right-[calc(50%+min(25.4vw,366px))] lg:left-auto lg:size-[90.68px]" />
@@ -29,8 +29,8 @@ export function Hero() {
           alt=""
           width={389}
           height={265}
-          sizes="(min-width: 1024px) 180px, 96px"
-          className="float hover-pop absolute top-8 -right-1 w-[96px] [--float-delay:-0.8s] lg:top-[97px] lg:right-auto lg:left-[calc(50%+min(27.4vw,395px))] lg:w-[180px]"
+          sizes="(min-width: 1024px) 180px, 80px"
+          className="float hover-pop absolute top-0 -right-1 w-[80px] [--float-delay:-0.8s] lg:top-[97px] lg:right-auto lg:left-[calc(50%+min(27.4vw,395px))] lg:w-[180px]"
         />
 
         <p className="rise-in relative mx-auto inline-block border-[1.5px] border-dashed border-[#d4477a] rounded-[6px] bg-pink-tint px-3.5 py-2 text-center align-middle font-sans text-[11px] leading-[11px] font-bold tracking-[1.1px] text-ink uppercase lg:px-5 lg:py-3 lg:text-[14px] lg:leading-[14.3px]">
