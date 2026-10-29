@@ -208,6 +208,6 @@ export const SETTING_DEFAULTS: Settings = {
   client_slots_total: "5",
   clients_won_other_routes: "0",
   client_period_start: "2026-10-01",
-  booking_link: "",
+  booking_link: "https://calendly.com/digitalsavvystudios/30min",
   whatsapp_number: "",
 };

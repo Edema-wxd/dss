@@ -1,10 +1,11 @@
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { checklistPdf } from "@/lib/checklist";
+import { SETTING_DEFAULTS } from "@/lib/desk/model";
 import { ChecklistDialog } from "./checklist-dialog";
 
-// TODO: swap in the real booking link, WhatsApp number and Visibility Brief link.
-const bookingUrl = "#";
+// TODO: swap in the real WhatsApp number and Visibility Brief link.
+const bookingUrl = SETTING_DEFAULTS.booking_link;
 const whatsappUrl = "#";
 const briefUrl = "#";
 
@@ -126,7 +127,7 @@ export function ApplyResponse({
         <li>We meet for 30 minutes and you leave with three moves.</li>
       </ul>
       <div className="mt-6 flex flex-col gap-4 lg:mt-5 lg:items-start">
-        <a href={bookingUrl} className={cn(buttonVariants({ variant: "brand", size: "xl" }), "h-[52px] w-full lg:w-auto lg:px-7 lg:text-[15px]")}>
+        <a href={bookingUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: "brand", size: "xl" }), "h-[52px] w-full lg:w-auto lg:px-7 lg:text-[15px]")}>
           Choose your session time
         </a>
         <a href={whatsappUrl} className={cn(buttonVariants({ variant: "paper", size: "xl" }), "h-[52px] w-full lg:w-auto lg:px-7 lg:text-[15px]")}>
