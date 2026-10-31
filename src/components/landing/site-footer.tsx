@@ -17,7 +17,7 @@ export function SiteFooter() {
         </a>
         <p
           aria-hidden
-          className="group reveal font-display text-outline mt-6 text-[84px] transition-colors duration-500 leading-[0.92] font-medium tracking-[-0.04em] lg:mt-0 lg:text-[min(calc((100vw-80px)/9.4),144px)] lg:leading-[1.05] lg:whitespace-nowrap is-revealed"
+          className="group reveal font-display text-outline mt-6 text-[84px] transition-colors duration-500 leading-[0.92] font-bold tracking-[-0.04em] lg:mt-0 lg:text-[min(calc((100vw-80px)/9.4),144px)] lg:leading-[1.05] lg:whitespace-nowrap is-revealed"
         >
           Digital{" "}
           <span className="text-[#aaa] transition-colors duration-500 lg:group-hover:text-pink lg:group-hover:[-webkit-text-stroke-color:var(--color-pink)]">
