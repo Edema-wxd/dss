@@ -55,9 +55,9 @@ export async function POST(request: NextRequest) {
 
     if (body.type === "checklist-lead") {
       const name = text(body.name, 120);
-      await insertLead({ name, email, moment: text(body.moment, 200), source: text(body.source, 120) || "website" });
+      const leadId = await insertLead({ name, email, moment: text(body.moment, 200), source: text(body.source, 120) || "website" });
+      scheduleChecklistEmail({ leadId, name, email, site: process.env.SITE_URL || request.nextUrl.origin });
       scheduleMirror();
-      scheduleChecklistEmail({ name, email, site: process.env.SITE_URL || request.nextUrl.origin });
       return NextResponse.json({ ok: true });
     }
 

@@ -3,7 +3,7 @@
 import { createContext, use, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import type { DeskData } from "@/lib/desk/model";
+import { type DeskData, hoursSince } from "@/lib/desk/model";
 import type { DeskUser } from "@/lib/desk/auth";
 import type { SyncStatus } from "@/lib/desk/sheets";
 import { type ActionResult, logout } from "@/app/admin/actions";
@@ -11,6 +11,7 @@ import { ToastProvider, useToast } from "./ui";
 import { Overview } from "./overview";
 import { Applications, type AppFilter } from "./applications";
 import { Leads } from "./leads";
+import { MailView } from "./mail";
 import { SettingsView } from "./settings";
 import { TeamView } from "./team";
 import { AppDrawer, type DrawerTarget } from "./drawer";
@@ -19,16 +20,19 @@ const VIEWS = [
   ["overview", "Overview"],
   ["applications", "Applications"],
   ["leads", "Checklist leads"],
+  ["mail", "Sent emails"],
   ["settings", "Website settings"],
   ["team", "Team and setup"],
 ] as const;
 export type View = (typeof VIEWS)[number][0];
 
 export type SheetInfo = { configured: boolean; url: string; last: SyncStatus };
-type DeskProps = { data: DeskData; user: DeskUser; users: DeskUser[]; team: string[]; sheet: SheetInfo };
+export type MailInfo = { configured: boolean; from: string };
+type DeskProps = { data: DeskData; user: DeskUser; users: DeskUser[]; team: string[]; sheet: SheetInfo; mail: MailInfo };
 
 type DeskContextValue = {
   sheet: SheetInfo;
+  mail: MailInfo;
   data: DeskData;
   user: DeskUser;
   users: DeskUser[];
@@ -57,7 +61,7 @@ export function Desk(props: DeskProps) {
   );
 }
 
-function DeskInner({ data, user, users, team, sheet }: DeskProps) {
+function DeskInner({ data, user, users, team, sheet, mail }: DeskProps) {
   const router = useRouter();
   const toast = useToast();
   const [view, setView] = useState<View>("overview");
@@ -95,10 +99,12 @@ function DeskInner({ data, user, users, team, sheet }: DeskProps) {
     });
 
   const newCount = data.apps.filter((a) => a.status === "New").length;
+  // failed in the last week, so a problem with the mailbox shows on every view
+  const failedMail = data.mails.filter((m) => m.status === "failed" && hoursSince(m.at) <= 24 * 7).length;
   const synced = new Date(data.loadedAt).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit" });
 
   return (
-    <DeskContext value={{ data, user, users, team, sheet, pending, run, go, open: setDrawer }}>
+    <DeskContext value={{ data, user, users, team, sheet, mail, pending, run, go, open: setDrawer }}>
       <header className="sticky top-0 z-30 bg-ink text-white">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 lg:px-6">
           <div className="flex items-center gap-2.5 whitespace-nowrap">
@@ -121,6 +127,11 @@ function DeskInner({ data, user, users, team, sheet }: DeskProps) {
                 {label}
                 {k === "applications" && newCount > 0 && (
                   <span className="ml-1.5 rounded-full bg-pink px-1.5 font-mono text-[11px] text-white">{newCount}</span>
+                )}
+                {k === "mail" && failedMail > 0 && (
+                  <span className="ml-1.5 rounded-full bg-pink px-1.5 font-mono text-[11px] text-white" title="Failed in the last week">
+                    {failedMail}
+                  </span>
                 )}
               </button>
             ))}
@@ -148,6 +159,7 @@ function DeskInner({ data, user, users, team, sheet }: DeskProps) {
         {view === "overview" && <Overview />}
         {view === "applications" && <Applications filter={filter} setFilter={setFilter} />}
         {view === "leads" && <Leads />}
+        {view === "mail" && <MailView />}
         {view === "settings" && <SettingsView />}
         {view === "team" && <TeamView />}
       </main>

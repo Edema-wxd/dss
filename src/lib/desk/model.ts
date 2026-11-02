@@ -153,9 +153,24 @@ export const EDITABLE_SETTINGS = [
 ] as const satisfies readonly SettingKey[];
 export type EditableSetting = (typeof EDITABLE_SETTINGS)[number];
 
+/** One email the website sent, or tried to: the desk's sent-mail log. */
+export type SentMail = {
+  id: number;
+  at: string;
+  kind: string;
+  to: string;
+  subject: string;
+  /** sent, failed, or skipped (email isn't set up on the server) */
+  status: string;
+  /** the mail server's message ID when sent, or the reason it wasn't */
+  detail: string;
+  leadId: number | null;
+};
+
 export type DeskData = {
   apps: Application[];
   leads: Lead[];
+  mails: SentMail[];
   settings: Settings;
   loadedAt: number;
 };

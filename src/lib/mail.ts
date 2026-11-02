@@ -4,6 +4,7 @@ import path from "node:path";
 import { after } from "next/server";
 import nodemailer from "nodemailer";
 import { checklistPdf } from "./checklist";
+import { logMail, setLeadFlag } from "./desk/db";
 
 // Emails the Launch Visibility Checklist to everyone who asks for it on the site,
 // sent from the studio's MangoMail mailbox over SMTP.
@@ -56,22 +57,48 @@ Founder and Creative Director, Digital Savvy Studios
 You're getting this because you asked for the checklist on our website. Reply "unsubscribe" and we won't email you again.`;
 }
 
+const CHECKLIST_SUBJECT = "Your Launch Visibility Checklist";
+
+/** Sends the checklist and returns the mail server's message ID. */
 export async function sendChecklistNow({ name, email, site }: { name: string; email: string; site: string }) {
   const firstName = name.split(/\s+/)[0] ?? "";
   const attachment = await pdfAttachment();
-  await transport().sendMail({
+  const info = await transport().sendMail({
     from: process.env.MAIL_FROM || DEFAULT_FROM,
     to: email,
-    subject: "Your Launch Visibility Checklist",
+    subject: CHECKLIST_SUBJECT,
     text: checklistEmail(firstName, site),
     attachments: attachment ? [attachment] : [],
   });
+  return info.messageId ?? "";
 }
 
-/** Queues the checklist email to send after the response. Does nothing until SMTP is set up. */
-export function scheduleChecklistEmail(lead: { name: string; email: string; site: string }) {
-  if (!mailConfigured()) return;
-  after(() =>
-    sendChecklistNow(lead).catch((e) => console.error("Checklist email failed:", e instanceof Error ? e.message : e)),
-  );
+type ChecklistLead = { leadId: number | null; name: string; email: string; site: string };
+
+/**
+ * Sends the checklist and records the outcome in the desk's sent-mail log, ticking the
+ * lead's "Email 1 sent" on success. Never throws: a failure is logged, not raised.
+ */
+export async function deliverChecklist(lead: ChecklistLead) {
+  const entry = { kind: "checklist", to: lead.email, subject: CHECKLIST_SUBJECT, leadId: lead.leadId };
+  if (!mailConfigured()) {
+    await logMail({ ...entry, status: "skipped", detail: "Email isn't set up on this server (the SMTP settings are missing)." });
+    return false;
+  }
+  try {
+    const messageId = await sendChecklistNow(lead);
+    await logMail({ ...entry, status: "sent", detail: messageId });
+    if (lead.leadId) await setLeadFlag(lead.leadId, "email1", true);
+    return true;
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error("Checklist email failed:", detail);
+    await logMail({ ...entry, status: "failed", detail }).catch((logError) => console.error("Couldn't log the failed email:", logError));
+    return false;
+  }
+}
+
+/** Queues the checklist email to send after the response, so the visitor never waits on the mail server. */
+export function scheduleChecklistEmail(lead: ChecklistLead) {
+  after(() => deliverChecklist(lead).then(() => undefined));
 }
