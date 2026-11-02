@@ -5,6 +5,7 @@ import { TEAM } from "@/lib/desk/model";
 import { NotConfiguredError, loadDesk } from "@/lib/desk/db";
 import { listUsers, requireUser } from "@/lib/desk/auth";
 import { lastSync, mirrorConfigured, sheetUrl } from "@/lib/desk/sheets";
+import { listActivity } from "@/lib/desk/activity";
 
 export default function AdminPage() {
   return (
@@ -18,13 +19,13 @@ async function DeskLoader() {
   let loaded;
   try {
     const user = await requireUser();
-    const [data, users, synced] = await Promise.all([loadDesk(), listUsers(), lastSync()]);
-    loaded = { user, data, users, sheet: { configured: mirrorConfigured(), url: sheetUrl(), last: synced } };
+    const [data, users, synced, activity] = await Promise.all([loadDesk(), listUsers(), lastSync(), listActivity()]);
+    loaded = { user, data, users, activity, sheet: { configured: mirrorConfigured(), url: sheetUrl(), last: synced } };
   } catch (e) {
     if (e instanceof NotConfiguredError) return <DeskSetupNotice />;
     throw e;
   }
-  const { user, data, users, sheet } = loaded;
+  const { user, data, users, activity, sheet } = loaded;
   const team = [...new Set([...TEAM, ...users.map((u) => u.name.split(" ")[0])])];
-  return <Desk data={data} user={user} users={users} team={team} sheet={sheet} />;
+  return <Desk data={data} user={user} users={users} team={team} sheet={sheet} activity={activity} />;
 }

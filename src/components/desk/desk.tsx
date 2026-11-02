@@ -3,7 +3,7 @@
 import { createContext, use, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import type { DeskData } from "@/lib/desk/model";
+import type { ActivityEntry, DeskData } from "@/lib/desk/model";
 import type { DeskUser } from "@/lib/desk/auth";
 import type { SyncStatus } from "@/lib/desk/sheets";
 import { type ActionResult, logout } from "@/app/admin/actions";
@@ -13,6 +13,7 @@ import { Applications, type AppFilter } from "./applications";
 import { Leads } from "./leads";
 import { SettingsView } from "./settings";
 import { TeamView } from "./team";
+import { ActivityView } from "./activity";
 import { AppDrawer, type DrawerTarget } from "./drawer";
 
 const VIEWS = [
@@ -20,12 +21,13 @@ const VIEWS = [
   ["applications", "Applications"],
   ["leads", "Checklist leads"],
   ["settings", "Website settings"],
+  ["activity", "Activity log"],
   ["team", "Team and setup"],
 ] as const;
 export type View = (typeof VIEWS)[number][0];
 
 export type SheetInfo = { configured: boolean; url: string; last: SyncStatus };
-type DeskProps = { data: DeskData; user: DeskUser; users: DeskUser[]; team: string[]; sheet: SheetInfo };
+type DeskProps = { data: DeskData; user: DeskUser; users: DeskUser[]; team: string[]; sheet: SheetInfo; activity: ActivityEntry[] };
 
 type DeskContextValue = {
   sheet: SheetInfo;
@@ -33,6 +35,8 @@ type DeskContextValue = {
   user: DeskUser;
   users: DeskUser[];
   team: string[];
+  /** The newest entries in the activity log, refreshed with the rest of the desk. */
+  activity: ActivityEntry[];
   pending: boolean;
   /** Runs a server action, toasts its outcome and returns whether it worked. */
   run: (action: () => Promise<ActionResult>) => Promise<boolean>;
@@ -57,7 +61,7 @@ export function Desk(props: DeskProps) {
   );
 }
 
-function DeskInner({ data, user, users, team, sheet }: DeskProps) {
+function DeskInner({ data, user, users, team, sheet, activity }: DeskProps) {
   const router = useRouter();
   const toast = useToast();
   const [view, setView] = useState<View>("overview");
@@ -98,7 +102,7 @@ function DeskInner({ data, user, users, team, sheet }: DeskProps) {
   const synced = new Date(data.loadedAt).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit" });
 
   return (
-    <DeskContext value={{ data, user, users, team, sheet, pending, run, go, open: setDrawer }}>
+    <DeskContext value={{ data, user, users, team, sheet, activity, pending, run, go, open: setDrawer }}>
       <header className="sticky top-0 z-30 bg-ink text-white">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 lg:px-6">
           <div className="flex items-center gap-2.5 whitespace-nowrap">
@@ -149,6 +153,7 @@ function DeskInner({ data, user, users, team, sheet }: DeskProps) {
         {view === "applications" && <Applications filter={filter} setFilter={setFilter} />}
         {view === "leads" && <Leads />}
         {view === "settings" && <SettingsView />}
+        {view === "activity" && <ActivityView />}
         {view === "team" && <TeamView />}
       </main>
 

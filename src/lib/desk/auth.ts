@@ -53,16 +53,17 @@ export async function deleteUser(id: number) {
   await (await db()).query(`delete from desk_users where id = $1`, [id]);
 }
 
-export async function signIn(email: string, password: string) {
-  const rows = (await (await db()).query(`select id::int, password_hash from desk_users where email = lower($1)`, [
+/** Starts a session and returns the account, or null when the email and password don't match. */
+export async function signIn(email: string, password: string): Promise<DeskUser | null> {
+  const rows = (await (await db()).query(`select id::int, name, email, role, password_hash from desk_users where email = lower($1)`, [
     email.trim(),
-  ])) as { id: number; password_hash: string }[];
+  ])) as (DeskUser & { password_hash: string })[];
   const user = rows[0];
   // still hash when the account doesn't exist, so timing doesn't reveal which emails are real
   const ok = user ? await checkPassword(password, user.password_hash) : (await hashPassword(password), false);
-  if (!user || !ok) return false;
+  if (!user || !ok) return null;
   await startSession(user.id);
-  return true;
+  return { id: user.id, name: user.name, email: user.email, role: user.role };
 }
 
 export async function startSession(userId: number) {

@@ -4,6 +4,7 @@ import { routeFor, statusForRoute } from "@/lib/desk/logic";
 import { scheduleMirror } from "@/lib/desk/sheets";
 import { NotConfiguredError, insertApplication, insertLead, loadDesk, markLeadApplied, newApplicationId, publicSettings } from "@/lib/desk/db";
 import { scheduleChecklistEmail } from "@/lib/mail";
+import { appLabel, logActivity } from "@/lib/desk/activity";
 
 // The Visibility Session page talks to the desk here.
 // GET returns the public settings (seats left, waitlist, booking link). POST stores an
@@ -55,7 +56,14 @@ export async function POST(request: NextRequest) {
 
     if (body.type === "checklist-lead") {
       const name = text(body.name, 120);
-      await insertLead({ name, email, moment: text(body.moment, 200), source: text(body.source, 120) || "website" });
+      const source = text(body.source, 120) || "website";
+      await insertLead({ name, email, moment: text(body.moment, 200), source });
+      await logActivity("Website", "lead.signup", `${name || email} signed up for the Launch Visibility Checklist`, {
+        changes: [
+          { field: "Email", from: "", to: email },
+          { field: "Source", from: "", to: source },
+        ],
+      });
       scheduleMirror();
       scheduleChecklistEmail({ name, email, site: process.env.SITE_URL || request.nextUrl.origin });
       return NextResponse.json({ ok: true });
@@ -69,6 +77,7 @@ export async function POST(request: NextRequest) {
     const route = routeFor(budget, when, settings);
     const score = Number(body.lookupScore);
     const id = newApplicationId();
+    const status = statusForRoute(route);
     await insertApplication({
       id,
       name,
@@ -86,9 +95,16 @@ export async function POST(request: NextRequest) {
       source: text(body.source, 120) || "website",
       score: Number.isInteger(score) && score >= 0 && score <= 5 ? score : null,
       consent: body.consent === true,
-      status: statusForRoute(route),
+      status,
     });
     await markLeadApplied(email);
+    await logActivity("Website", "application.submitted", `${appLabel({ name, company: text(body.company, 160) })} applied on the website`, {
+      target: id,
+      changes: [
+        { field: "Route", from: "", to: route },
+        { field: "Status", from: "", to: status },
+      ],
+    });
     scheduleMirror();
     return NextResponse.json({ ok: true, id, route });
   } catch (e) {
