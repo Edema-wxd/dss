@@ -18,6 +18,7 @@ import {
 } from "@/lib/desk/model";
 import * as store from "@/lib/desk/db";
 import { mirrorConfigured, scheduleMirror, syncSheetNow } from "@/lib/desk/sheets";
+import { deliverChecklist } from "@/lib/mail";
 import { countUsers, createUser, currentUser, deleteUser, listUsers, requireUser, signIn, signOut, startSession } from "@/lib/desk/auth";
 import { appLabel, applicationChanges, diff, listActivity, logActivity, requestIp } from "@/lib/desk/activity";
 
@@ -187,6 +188,29 @@ export async function removeLead(id: number): Promise<ActionResult> {
   scheduleMirror();
   refresh();
   return { ok: true, message: "Lead deleted" };
+}
+
+/* ── Sent mail ───────────────────────────────────────────────────────── */
+
+/** Sends a logged checklist email again, as a new entry in the log. */
+export async function resendMail(id: number): Promise<ActionResult> {
+  const user = await requireUser();
+  const mail = await store.getMail(Number(id));
+  if (!mail) return fail("That email is no longer in the log.");
+  if (mail.kind !== "checklist") return fail("Only checklist emails can be sent again.");
+  const name = mail.leadId ? await store.getLeadName(mail.leadId) : "";
+  const site = process.env.SITE_URL || "https://www.digitalsavvystudios.com";
+  const sent = await deliverChecklist({ leadId: mail.leadId, name, email: mail.to, site });
+  await logActivity(user, "lead.email_resent", `${user.name} sent the checklist email to ${name || mail.to} again`, {
+    target: mail.leadId ? String(mail.leadId) : "",
+    changes: [
+      { field: "Email", from: "", to: mail.to },
+      { field: "Result", from: "", to: sent ? "Sent" : "Didn't send" },
+    ],
+  });
+  scheduleMirror();
+  refresh();
+  return sent ? { ok: true, message: `Checklist sent to ${mail.to}` } : fail("It didn't send. The new entry in the log says why.");
 }
 
 /* ── Settings ────────────────────────────────────────────────────────── */

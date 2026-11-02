@@ -57,15 +57,16 @@ export async function POST(request: NextRequest) {
     if (body.type === "checklist-lead") {
       const name = text(body.name, 120);
       const source = text(body.source, 120) || "website";
-      await insertLead({ name, email, moment: text(body.moment, 200), source });
+      const leadId = await insertLead({ name, email, moment: text(body.moment, 200), source });
       await logActivity("Website", "lead.signup", `${name || email} signed up for the Launch Visibility Checklist`, {
+        target: String(leadId),
         changes: [
           { field: "Email", from: "", to: email },
           { field: "Source", from: "", to: source },
         ],
       });
+      scheduleChecklistEmail({ leadId, name, email, site: process.env.SITE_URL || request.nextUrl.origin });
       scheduleMirror();
-      scheduleChecklistEmail({ name, email, site: process.env.SITE_URL || request.nextUrl.origin });
       return NextResponse.json({ ok: true });
     }
 

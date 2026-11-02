@@ -6,6 +6,7 @@ import { NotConfiguredError, loadDesk } from "@/lib/desk/db";
 import { listUsers, requireUser } from "@/lib/desk/auth";
 import { lastSync, mirrorConfigured, sheetUrl } from "@/lib/desk/sheets";
 import { listActivity } from "@/lib/desk/activity";
+import { mailConfigured } from "@/lib/mail";
 
 export default function AdminPage() {
   return (
@@ -26,12 +27,19 @@ async function DeskLoader() {
       lastSync(),
       user.role === "admin" ? listActivity() : [],
     ]);
-    loaded = { user, data, users, activity, sheet: { configured: mirrorConfigured(), url: sheetUrl(), last: synced } };
+    loaded = {
+      user,
+      data,
+      users,
+      activity,
+      sheet: { configured: mirrorConfigured(), url: sheetUrl(), last: synced },
+      mail: { configured: mailConfigured(), from: process.env.SMTP_USER ?? "" },
+    };
   } catch (e) {
     if (e instanceof NotConfiguredError) return <DeskSetupNotice />;
     throw e;
   }
-  const { user, data, users, activity, sheet } = loaded;
+  const { user, data, users, activity, sheet, mail } = loaded;
   const team = [...new Set([...TEAM, ...users.map((u) => u.name.split(" ")[0])])];
-  return <Desk data={data} user={user} users={users} team={team} sheet={sheet} activity={activity} />;
+  return <Desk data={data} user={user} users={users} team={team} sheet={sheet} mail={mail} activity={activity} />;
 }

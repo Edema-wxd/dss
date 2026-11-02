@@ -3,7 +3,7 @@
 import { createContext, use, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import type { ActivityEntry, DeskData } from "@/lib/desk/model";
+import { type ActivityEntry, type DeskData, hoursSince } from "@/lib/desk/model";
 import type { DeskUser } from "@/lib/desk/auth";
 import type { SyncStatus } from "@/lib/desk/sheets";
 import { type ActionResult, logout } from "@/app/admin/actions";
@@ -11,6 +11,7 @@ import { ToastProvider, useToast } from "./ui";
 import { Overview } from "./overview";
 import { Applications, type AppFilter } from "./applications";
 import { Leads } from "./leads";
+import { MailView } from "./mail";
 import { SettingsView } from "./settings";
 import { TeamView } from "./team";
 import { ActivityView } from "./activity";
@@ -20,6 +21,7 @@ const VIEWS = [
   ["overview", "Overview"],
   ["applications", "Applications"],
   ["leads", "Checklist leads"],
+  ["mail", "Sent emails"],
   ["settings", "Website settings"],
   ["activity", "Activity log"],
   ["team", "Team and setup"],
@@ -27,10 +29,20 @@ const VIEWS = [
 export type View = (typeof VIEWS)[number][0];
 
 export type SheetInfo = { configured: boolean; url: string; last: SyncStatus };
-type DeskProps = { data: DeskData; user: DeskUser; users: DeskUser[]; team: string[]; sheet: SheetInfo; activity: ActivityEntry[] };
+export type MailInfo = { configured: boolean; from: string };
+type DeskProps = {
+  data: DeskData;
+  user: DeskUser;
+  users: DeskUser[];
+  team: string[];
+  sheet: SheetInfo;
+  mail: MailInfo;
+  activity: ActivityEntry[];
+};
 
 type DeskContextValue = {
   sheet: SheetInfo;
+  mail: MailInfo;
   data: DeskData;
   user: DeskUser;
   users: DeskUser[];
@@ -61,7 +73,7 @@ export function Desk(props: DeskProps) {
   );
 }
 
-function DeskInner({ data, user, users, team, sheet, activity }: DeskProps) {
+function DeskInner({ data, user, users, team, sheet, mail, activity }: DeskProps) {
   const router = useRouter();
   const toast = useToast();
   const [view, setView] = useState<View>("overview");
@@ -99,10 +111,12 @@ function DeskInner({ data, user, users, team, sheet, activity }: DeskProps) {
     });
 
   const newCount = data.apps.filter((a) => a.status === "New").length;
+  // failed in the last week, so a problem with the mailbox shows on every view
+  const failedMail = data.mails.filter((m) => m.status === "failed" && hoursSince(m.at) <= 24 * 7).length;
   const synced = new Date(data.loadedAt).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit" });
 
   return (
-    <DeskContext value={{ data, user, users, team, sheet, activity, pending, run, go, open: setDrawer }}>
+    <DeskContext value={{ data, user, users, team, sheet, mail, activity, pending, run, go, open: setDrawer }}>
       <header className="sticky top-0 z-30 bg-ink text-white">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 lg:px-6">
           <div className="flex items-center gap-2.5 whitespace-nowrap">
@@ -125,6 +139,11 @@ function DeskInner({ data, user, users, team, sheet, activity }: DeskProps) {
                 {label}
                 {k === "applications" && newCount > 0 && (
                   <span className="ml-1.5 rounded-full bg-pink px-1.5 font-mono text-[11px] text-white">{newCount}</span>
+                )}
+                {k === "mail" && failedMail > 0 && (
+                  <span className="ml-1.5 rounded-full bg-pink px-1.5 font-mono text-[11px] text-white" title="Failed in the last week">
+                    {failedMail}
+                  </span>
                 )}
               </button>
             ))}
@@ -152,6 +171,7 @@ function DeskInner({ data, user, users, team, sheet, activity }: DeskProps) {
         {view === "overview" && <Overview />}
         {view === "applications" && <Applications filter={filter} setFilter={setFilter} />}
         {view === "leads" && <Leads />}
+        {view === "mail" && <MailView />}
         {view === "settings" && <SettingsView />}
         {view === "activity" && user.role === "admin" && <ActivityView />}
         {view === "team" && <TeamView />}

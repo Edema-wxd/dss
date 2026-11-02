@@ -7,6 +7,7 @@ import {
   type EditableSetting,
   type Lead,
   type LeadFlag,
+  type SentMail,
   type Settings,
   SETTING_DEFAULTS,
   SETTING_KEYS,
@@ -76,6 +77,17 @@ const SCHEMA = [
     applied boolean not null default false,
     notes text not null default ''
   )`,
+  `create table if not exists vs_sent_mail (
+    id bigserial primary key,
+    at timestamptz not null default now(),
+    kind text not null default '',
+    to_email text not null default '',
+    subject text not null default '',
+    status text not null default '',
+    detail text not null default '',
+    lead_id bigint references vs_checklist_leads(id) on delete set null
+  )`,
+  `create index if not exists vs_sent_mail_at on vs_sent_mail (at desc)`,
   `create table if not exists vs_settings (
     key text primary key,
     value text not null default '',
@@ -158,17 +170,21 @@ export async function getApplication(id: string) {
 
 export async function loadDesk(): Promise<DeskData> {
   const q = await db();
-  const [apps, leads, settingRows] = await Promise.all([
+  const [apps, leads, mails, settingRows] = await Promise.all([
     q.query(`${APP_SELECT} order by submitted desc`) as Promise<unknown> as Promise<Application[]>,
     q.query(
       `select id, ${stampCol("at")} as at, name, email, moment, source, email1_sent as email1, email2_sent as email2, applied, notes
        from vs_checklist_leads order by at desc`,
     ) as Promise<unknown> as Promise<Lead[]>,
+    q.query(
+      `select id, ${stampCol("at")} as at, kind, to_email as "to", subject, status, detail, lead_id as "leadId"
+       from vs_sent_mail order by at desc limit 500`,
+    ) as Promise<unknown> as Promise<SentMail[]>,
     q.query(`select key, value from vs_settings`) as Promise<unknown> as Promise<{ key: string; value: string }[]>,
   ]);
   const stored: Settings = {};
   for (const r of settingRows) if ((SETTING_KEYS as readonly string[]).includes(r.key)) stored[r.key as keyof Settings] = r.value;
-  return { apps, leads, settings: derivedSettings(apps, stored), loadedAt: Date.now() };
+  return { apps, leads, mails, settings: derivedSettings(apps, stored), loadedAt: Date.now() };
 }
 
 /** The settings the public website may see. */
@@ -244,10 +260,18 @@ export async function getLead(id: number) {
   return rows[0] ?? null;
 }
 
+/** Saves a checklist sign-up and returns its id. */
 export async function insertLead(l: Pick<Lead, "name" | "email" | "moment" | "source">) {
-  await (await db()).query(`insert into vs_checklist_leads (name, email, moment, source) values ($1,$2,$3,$4)`, [
-    l.name, l.email, l.moment, l.source,
-  ]);
+  const rows = (await (await db()).query(
+    `insert into vs_checklist_leads (name, email, moment, source) values ($1,$2,$3,$4) returning id`,
+    [l.name, l.email, l.moment, l.source],
+  )) as { id: number }[];
+  return Number(rows[0].id);
+}
+
+export async function getLeadName(id: number) {
+  const rows = (await (await db()).query(`select name from vs_checklist_leads where id = $1`, [id])) as { name: string }[];
+  return rows[0]?.name ?? "";
 }
 
 const FLAG_COLS: Record<LeadFlag, string> = { email1: "email1_sent", email2: "email2_sent", applied: "applied" };
@@ -281,4 +305,21 @@ export async function saveSettings(values: Partial<Record<EditableSetting, strin
      on conflict (key) do update set value = excluded.value, updated = now(), updated_by = excluded.updated_by`,
     [keys, keys.map((k) => values[k as EditableSetting] ?? ""), by],
   );
+}
+
+/* ── Sent mail ───────────────────────────────────────────────────────── */
+
+export async function logMail(m: Pick<SentMail, "kind" | "to" | "subject" | "status" | "detail" | "leadId">) {
+  await (await db()).query(
+    `insert into vs_sent_mail (kind, to_email, subject, status, detail, lead_id) values ($1,$2,$3,$4,$5,$6)`,
+    [m.kind, m.to, m.subject, m.status, m.detail.slice(0, 1000), m.leadId],
+  );
+}
+
+export async function getMail(id: number) {
+  const rows = (await (await db()).query(
+    `select id, kind, to_email as "to", subject, status, detail, lead_id as "leadId" from vs_sent_mail where id = $1`,
+    [id],
+  )) as Omit<SentMail, "at">[];
+  return rows[0] ?? null;
 }
