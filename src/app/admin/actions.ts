@@ -293,8 +293,9 @@ export async function syncSheet(): Promise<ActionResult> {
 
 /* ── Activity log ────────────────────────────────────────────────────── */
 
-/** Older entries, for "Show older" at the foot of the log. */
+/** Older entries, for "Show older" at the foot of the log. Admins only. */
 export async function olderActivity(beforeId: number): Promise<ActivityEntry[]> {
-  await requireUser();
+  const user = await requireUser();
+  if (user.role !== "admin") throw new Error("Only an admin can see the activity log.");
   return listActivity(Number(beforeId) || undefined);
 }

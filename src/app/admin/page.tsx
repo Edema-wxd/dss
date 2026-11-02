@@ -19,7 +19,13 @@ async function DeskLoader() {
   let loaded;
   try {
     const user = await requireUser();
-    const [data, users, synced, activity] = await Promise.all([loadDesk(), listUsers(), lastSync(), listActivity()]);
+    // the activity log is for admins only, so team accounts never receive it
+    const [data, users, synced, activity] = await Promise.all([
+      loadDesk(),
+      listUsers(),
+      lastSync(),
+      user.role === "admin" ? listActivity() : [],
+    ]);
     loaded = { user, data, users, activity, sheet: { configured: mirrorConfigured(), url: sheetUrl(), last: synced } };
   } catch (e) {
     if (e instanceof NotConfiguredError) return <DeskSetupNotice />;

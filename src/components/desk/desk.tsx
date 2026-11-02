@@ -35,7 +35,7 @@ type DeskContextValue = {
   user: DeskUser;
   users: DeskUser[];
   team: string[];
-  /** The newest entries in the activity log, refreshed with the rest of the desk. */
+  /** The newest entries in the activity log, refreshed with the rest of the desk. Empty for team accounts. */
   activity: ActivityEntry[];
   pending: boolean;
   /** Runs a server action, toasts its outcome and returns whether it worked. */
@@ -111,7 +111,7 @@ function DeskInner({ data, user, users, team, sheet, activity }: DeskProps) {
             <span className="hidden text-sm text-white/60 sm:inline">Visibility Session</span>
           </div>
           <nav aria-label="Desk views" className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto lg:order-none lg:ml-auto lg:w-auto">
-            {VIEWS.map(([k, label]) => (
+            {VIEWS.filter(([k]) => k !== "activity" || user.role === "admin").map(([k, label]) => (
               <button
                 key={k}
                 type="button"
@@ -153,7 +153,7 @@ function DeskInner({ data, user, users, team, sheet, activity }: DeskProps) {
         {view === "applications" && <Applications filter={filter} setFilter={setFilter} />}
         {view === "leads" && <Leads />}
         {view === "settings" && <SettingsView />}
-        {view === "activity" && <ActivityView />}
+        {view === "activity" && user.role === "admin" && <ActivityView />}
         {view === "team" && <TeamView />}
       </main>
 

@@ -53,7 +53,7 @@ export function TeamView() {
               <Field label="Access">
                 <select name="role" className={fieldClass} defaultValue="team">
                   <option value="team">Team: manage applications and settings</option>
-                  <option value="admin">Admin: also add and remove people</option>
+                  <option value="admin">Admin: also add and remove people, and see the activity log</option>
                 </select>
               </Field>
               <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
