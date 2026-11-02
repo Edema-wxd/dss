@@ -5,6 +5,7 @@ import { TEAM } from "@/lib/desk/model";
 import { NotConfiguredError, loadDesk } from "@/lib/desk/db";
 import { listUsers, requireUser } from "@/lib/desk/auth";
 import { lastSync, mirrorConfigured, sheetUrl } from "@/lib/desk/sheets";
+import { listActivity } from "@/lib/desk/activity";
 import { mailConfigured } from "@/lib/mail";
 
 export default function AdminPage() {
@@ -19,11 +20,18 @@ async function DeskLoader() {
   let loaded;
   try {
     const user = await requireUser();
-    const [data, users, synced] = await Promise.all([loadDesk(), listUsers(), lastSync()]);
+    // the activity log is for admins only, so team accounts never receive it
+    const [data, users, synced, activity] = await Promise.all([
+      loadDesk(),
+      listUsers(),
+      lastSync(),
+      user.role === "admin" ? listActivity() : [],
+    ]);
     loaded = {
       user,
       data,
       users,
+      activity,
       sheet: { configured: mirrorConfigured(), url: sheetUrl(), last: synced },
       mail: { configured: mailConfigured(), from: process.env.SMTP_USER ?? "" },
     };
@@ -31,7 +39,7 @@ async function DeskLoader() {
     if (e instanceof NotConfiguredError) return <DeskSetupNotice />;
     throw e;
   }
-  const { user, data, users, sheet, mail } = loaded;
+  const { user, data, users, activity, sheet, mail } = loaded;
   const team = [...new Set([...TEAM, ...users.map((u) => u.name.split(" ")[0])])];
-  return <Desk data={data} user={user} users={users} team={team} sheet={sheet} mail={mail} />;
+  return <Desk data={data} user={user} users={users} team={team} sheet={sheet} mail={mail} activity={activity} />;
 }

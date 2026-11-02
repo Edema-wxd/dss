@@ -3,7 +3,7 @@
 import { createContext, use, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { type DeskData, hoursSince } from "@/lib/desk/model";
+import { type ActivityEntry, type DeskData, hoursSince } from "@/lib/desk/model";
 import type { DeskUser } from "@/lib/desk/auth";
 import type { SyncStatus } from "@/lib/desk/sheets";
 import { type ActionResult, logout } from "@/app/admin/actions";
@@ -14,6 +14,7 @@ import { Leads } from "./leads";
 import { MailView } from "./mail";
 import { SettingsView } from "./settings";
 import { TeamView } from "./team";
+import { ActivityView } from "./activity";
 import { AppDrawer, type DrawerTarget } from "./drawer";
 
 const VIEWS = [
@@ -22,13 +23,22 @@ const VIEWS = [
   ["leads", "Checklist leads"],
   ["mail", "Sent emails"],
   ["settings", "Website settings"],
+  ["activity", "Activity log"],
   ["team", "Team and setup"],
 ] as const;
 export type View = (typeof VIEWS)[number][0];
 
 export type SheetInfo = { configured: boolean; url: string; last: SyncStatus };
 export type MailInfo = { configured: boolean; from: string };
-type DeskProps = { data: DeskData; user: DeskUser; users: DeskUser[]; team: string[]; sheet: SheetInfo; mail: MailInfo };
+type DeskProps = {
+  data: DeskData;
+  user: DeskUser;
+  users: DeskUser[];
+  team: string[];
+  sheet: SheetInfo;
+  mail: MailInfo;
+  activity: ActivityEntry[];
+};
 
 type DeskContextValue = {
   sheet: SheetInfo;
@@ -37,6 +47,8 @@ type DeskContextValue = {
   user: DeskUser;
   users: DeskUser[];
   team: string[];
+  /** The newest entries in the activity log, refreshed with the rest of the desk. Empty for team accounts. */
+  activity: ActivityEntry[];
   pending: boolean;
   /** Runs a server action, toasts its outcome and returns whether it worked. */
   run: (action: () => Promise<ActionResult>) => Promise<boolean>;
@@ -61,7 +73,7 @@ export function Desk(props: DeskProps) {
   );
 }
 
-function DeskInner({ data, user, users, team, sheet, mail }: DeskProps) {
+function DeskInner({ data, user, users, team, sheet, mail, activity }: DeskProps) {
   const router = useRouter();
   const toast = useToast();
   const [view, setView] = useState<View>("overview");
@@ -104,7 +116,7 @@ function DeskInner({ data, user, users, team, sheet, mail }: DeskProps) {
   const synced = new Date(data.loadedAt).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit" });
 
   return (
-    <DeskContext value={{ data, user, users, team, sheet, mail, pending, run, go, open: setDrawer }}>
+    <DeskContext value={{ data, user, users, team, sheet, mail, activity, pending, run, go, open: setDrawer }}>
       <header className="sticky top-0 z-30 bg-ink text-white">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 lg:px-6">
           <div className="flex items-center gap-2.5 whitespace-nowrap">
@@ -113,7 +125,7 @@ function DeskInner({ data, user, users, team, sheet, mail }: DeskProps) {
             <span className="hidden text-sm text-white/60 sm:inline">Visibility Session</span>
           </div>
           <nav aria-label="Desk views" className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto lg:order-none lg:ml-auto lg:w-auto">
-            {VIEWS.map(([k, label]) => (
+            {VIEWS.filter(([k]) => k !== "activity" || user.role === "admin").map(([k, label]) => (
               <button
                 key={k}
                 type="button"
@@ -161,6 +173,7 @@ function DeskInner({ data, user, users, team, sheet, mail }: DeskProps) {
         {view === "leads" && <Leads />}
         {view === "mail" && <MailView />}
         {view === "settings" && <SettingsView />}
+        {view === "activity" && user.role === "admin" && <ActivityView />}
         {view === "team" && <TeamView />}
       </main>
 

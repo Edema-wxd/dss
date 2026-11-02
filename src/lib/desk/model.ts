@@ -226,3 +226,94 @@ export const SETTING_DEFAULTS: Settings = {
   booking_link: "https://calendly.com/digitalsavvystudios/30min",
   whatsapp_number: "",
 };
+
+/* ── Activity log ────────────────────────────────────────────────────── */
+
+/** What happened. The part before the dot is the area, used for filtering. */
+export const ACTIVITY_KINDS = [
+  "auth.signin",
+  "auth.signin_failed",
+  "auth.signout",
+  "auth.setup",
+  "application.submitted",
+  "application.added",
+  "application.updated",
+  "application.deleted",
+  "lead.signup",
+  "lead.updated",
+  "lead.deleted",
+  "lead.email_resent",
+  "settings.updated",
+  "team.added",
+  "team.removed",
+  "sheet.synced",
+] as const;
+export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
+
+export const ACTIVITY_AREAS = [
+  ["application", "Applications"],
+  ["lead", "Checklist leads"],
+  ["settings", "Settings"],
+  ["team", "Team"],
+  ["auth", "Sign-ins"],
+  ["sheet", "Sheet copy"],
+] as const;
+export type ActivityArea = (typeof ACTIVITY_AREAS)[number][0];
+export const areaOf = (kind: string) => kind.split(".")[0] as ActivityArea;
+
+/** One field that changed: its label, and the value before and after. */
+export type ActivityChange = { field: string; from: string; to: string };
+
+export type ActivityEntry = {
+  id: number;
+  /** Lagos time, "YYYY-MM-DD HH:MM:SS". */
+  at: string;
+  /** Milliseconds since 1970, for working out "how long ago" in any time zone. */
+  ms: number;
+  /** A desk member's name, or "Website" for submissions from the public site. */
+  actor: string;
+  actorEmail: string;
+  kind: ActivityKind;
+  /** The application id or lead id the entry is about, when there is one. */
+  target: string;
+  summary: string;
+  changes: ActivityChange[];
+  /** The address a sign-in came from. Empty for other entries. */
+  ip: string;
+};
+
+/** Labels for the application fields the team edits, as the activity log names them. */
+export const EDIT_LABELS: Record<EditKey, string> = {
+  status: "Status",
+  owner: "Owner",
+  sessionDate: "Session date",
+  sessionTime: "Session time",
+  firstReply: "First reply",
+  reviewLink: "Review link",
+  outcome: "Outcome",
+  dealValue: "Deal value",
+  followUp: "Follow-up date",
+  notes: "Notes",
+};
+
+/** Labels for the website settings, as the activity log names them. */
+export const SETTING_LABELS: Record<EditableSetting, string> = {
+  sessions_per_month: "Complimentary sessions each month",
+  applications_open: "Applications open",
+  waitlist_when_full: "Offer a waitlist when full",
+  minimum_monthly_budget: "Minimum monthly budget",
+  priority_from_band: "Priority from this budget band",
+  session_value: "Review value shown",
+  reply_promise_hours: "Reply promise (hours)",
+  booking_link: "Booking link",
+  whatsapp_number: "WhatsApp number",
+  client_slots_total: "Client places this period",
+  client_period_start: "Client period started",
+  clients_won_other_routes: "Clients onboarded another way",
+};
+
+export const LEAD_FLAG_LABELS: Record<LeadFlag, string> = {
+  email1: "Email 1 sent",
+  email2: "Email 2 sent",
+  applied: "Applied",
+};

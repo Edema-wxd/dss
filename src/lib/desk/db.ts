@@ -107,6 +107,19 @@ const SCHEMA = [
     user_id bigint not null references desk_users(id) on delete cascade,
     expires timestamptz not null
   )`,
+  // an append-only record of who did what and when. Names are copied in, not referenced,
+  // so entries survive the person or the application being deleted.
+  `create table if not exists desk_activity (
+    id bigserial primary key,
+    at timestamptz not null default now(),
+    actor text not null default '',
+    actor_email text not null default '',
+    kind text not null,
+    target text not null default '',
+    summary text not null default '',
+    changes jsonb not null default '[]',
+    ip text not null default ''
+  )`,
 ];
 
 let ready: Promise<void> | null = null;
@@ -239,6 +252,14 @@ export async function deleteApplication(id: string) {
   await (await db()).query(`delete from vs_applications where id = $1`, [id]);
 }
 
+export async function getLead(id: number) {
+  const rows = (await (await db()).query(
+    `select id::int, name, email, email1_sent as email1, email2_sent as email2, applied from vs_checklist_leads where id = $1`,
+    [id],
+  )) as Pick<Lead, "id" | "name" | "email" | "email1" | "email2" | "applied">[];
+  return rows[0] ?? null;
+}
+
 /** Saves a checklist sign-up and returns its id. */
 export async function insertLead(l: Pick<Lead, "name" | "email" | "moment" | "source">) {
   const rows = (await (await db()).query(
@@ -265,6 +286,14 @@ export async function markLeadApplied(email: string) {
 
 export async function deleteLead(id: number) {
   await (await db()).query(`delete from vs_checklist_leads where id = $1`, [id]);
+}
+
+/** The stored value of each setting, before derived values are worked out. */
+export async function storedSettings(): Promise<Settings> {
+  const rows = (await (await db()).query(`select key, value from vs_settings`)) as { key: string; value: string }[];
+  const out: Settings = {};
+  for (const r of rows) if ((SETTING_KEYS as readonly string[]).includes(r.key)) out[r.key as keyof Settings] = r.value;
+  return out;
 }
 
 export async function saveSettings(values: Partial<Record<EditableSetting, string>>, by: string) {
