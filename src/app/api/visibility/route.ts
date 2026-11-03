@@ -3,6 +3,7 @@ import { BANDS } from "@/lib/desk/model";
 import { routeFor, statusForRoute } from "@/lib/desk/logic";
 import { scheduleMirror } from "@/lib/desk/sheets";
 import { NotConfiguredError, insertApplication, insertLead, loadDesk, markLeadApplied, newApplicationId, publicSettings } from "@/lib/desk/db";
+import { scheduleKitSubscribe } from "@/lib/kit";
 import { scheduleChecklistEmail } from "@/lib/mail";
 
 // The Visibility Session page talks to the desk here.
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
       const name = text(body.name, 120);
       const leadId = await insertLead({ name, email, moment: text(body.moment, 200), source: text(body.source, 120) || "website" });
       scheduleChecklistEmail({ leadId, name, email, site: process.env.SITE_URL || request.nextUrl.origin });
+      scheduleKitSubscribe({ name, email });
       scheduleMirror();
       return NextResponse.json({ ok: true });
     }
