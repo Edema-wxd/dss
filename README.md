@@ -51,3 +51,6 @@ The admin dashboard for Visibility Session applications lives at `/admin`.
   and `GOOGLE_PRIVATE_KEY` (from a service account JSON key with the Sheets API on), share the
   Sheet with that email as an Editor, and optionally set `GOOGLE_SHEET_ID`. Without them the
   desk works as normal and skips the copy.
+- **Kit subscribers**: everyone who asks for the checklist is also added to Kit and tagged
+  "Launch Visibility Checklist". Set `KIT_API_KEY` (a Kit v4 API key) and optionally
+  `KIT_CHECKLIST_TAG_ID`. Without the key the checklist still sends and Kit is skipped.
