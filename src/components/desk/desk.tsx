@@ -14,6 +14,7 @@ import { Leads } from "./leads";
 import { MailView } from "./mail";
 import { SettingsView } from "./settings";
 import { TeamView } from "./team";
+import { ActivityView } from "./activity";
 import { AppDrawer, type DrawerTarget } from "./drawer";
 
 const VIEWS = [
@@ -23,6 +24,7 @@ const VIEWS = [
   ["mail", "Sent emails"],
   ["settings", "Website settings"],
   ["team", "Team and setup"],
+  ["activity", "Activity"],
 ] as const;
 export type View = (typeof VIEWS)[number][0];
 
@@ -113,7 +115,7 @@ function DeskInner({ data, user, users, team, sheet, mail }: DeskProps) {
             <span className="hidden text-sm text-white/60 sm:inline">Visibility Session</span>
           </div>
           <nav aria-label="Desk views" className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto lg:order-none lg:ml-auto lg:w-auto">
-            {VIEWS.map(([k, label]) => (
+            {VIEWS.filter(([k]) => k !== "activity" || user.role === "admin").map(([k, label]) => (
               <button
                 key={k}
                 type="button"
@@ -162,6 +164,7 @@ function DeskInner({ data, user, users, team, sheet, mail }: DeskProps) {
         {view === "mail" && <MailView />}
         {view === "settings" && <SettingsView />}
         {view === "team" && <TeamView />}
+        {view === "activity" && user.role === "admin" && <ActivityView />}
       </main>
 
       {drawer && <AppDrawer key={drawer.kind === "edit" ? drawer.id : "new"} target={drawer} onClose={() => setDrawer(null)} />}

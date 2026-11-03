@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Desk } from "@/components/desk/desk";
 import { DeskSetupNotice } from "@/components/desk/setup-notice";
 import { TEAM } from "@/lib/desk/model";
-import { NotConfiguredError, loadDesk } from "@/lib/desk/db";
+import { NotConfiguredError, loadAudit, loadDesk } from "@/lib/desk/db";
 import { listUsers, requireUser } from "@/lib/desk/auth";
 import { lastSync, mirrorConfigured, sheetUrl } from "@/lib/desk/sheets";
 import { mailConfigured } from "@/lib/mail";
@@ -19,10 +19,15 @@ async function DeskLoader() {
   let loaded;
   try {
     const user = await requireUser();
-    const [data, users, synced] = await Promise.all([loadDesk(), listUsers(), lastSync()]);
+    const [data, users, synced, audit] = await Promise.all([
+      loadDesk(),
+      listUsers(),
+      lastSync(),
+      user.role === "admin" ? loadAudit() : [],
+    ]);
     loaded = {
       user,
-      data,
+      data: { ...data, audit },
       users,
       sheet: { configured: mirrorConfigured(), url: sheetUrl(), last: synced },
       mail: { configured: mailConfigured(), from: process.env.SMTP_USER ?? "" },

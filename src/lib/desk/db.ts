@@ -3,6 +3,7 @@ import { neon } from "@neondatabase/serverless";
 import {
   type Application,
   type ApplicationEdit,
+  type AuditEntry,
   type DeskData,
   type EditableSetting,
   type Lead,
@@ -107,6 +108,17 @@ const SCHEMA = [
     user_id bigint not null references desk_users(id) on delete cascade,
     expires timestamptz not null
   )`,
+  `create table if not exists desk_audit (
+    id bigserial primary key,
+    at timestamptz not null default now(),
+    actor text not null default '',
+    actor_email text not null default '',
+    action text not null,
+    target text not null default '',
+    summary text not null default '',
+    changes jsonb
+  )`,
+  `create index if not exists desk_audit_at on desk_audit (at desc)`,
 ];
 
 let ready: Promise<void> | null = null;
@@ -171,7 +183,7 @@ export async function loadDesk(): Promise<DeskData> {
   ]);
   const stored: Settings = {};
   for (const r of settingRows) if ((SETTING_KEYS as readonly string[]).includes(r.key)) stored[r.key as keyof Settings] = r.value;
-  return { apps, leads, mails, settings: derivedSettings(apps, stored), loadedAt: Date.now() };
+  return { apps, leads, mails, settings: derivedSettings(apps, stored), audit: [], loadedAt: Date.now() };
 }
 
 /** The settings the public website may see. */
@@ -285,6 +297,35 @@ export async function logMail(m: Pick<SentMail, "kind" | "to" | "subject" | "sta
     `insert into vs_sent_mail (kind, to_email, subject, status, detail, lead_id) values ($1,$2,$3,$4,$5,$6)`,
     [m.kind, m.to, m.subject, m.status, m.detail.slice(0, 1000), m.leadId],
   );
+}
+
+/* ── Audit log ───────────────────────────────────────────────────────── */
+
+/** Records one desk action. Never throws: a failed log line shouldn't undo work that already saved. */
+export async function audit(e: Omit<AuditEntry, "id" | "at">) {
+  try {
+    await (await db()).query(
+      `insert into desk_audit (actor, actor_email, action, target, summary, changes) values ($1,$2,$3,$4,$5,$6::jsonb)`,
+      [e.actor, e.actorEmail, e.action, e.target, e.summary.slice(0, 1000), e.changes ? JSON.stringify(e.changes) : null],
+    );
+  } catch (err) {
+    console.error("audit log write failed", err);
+  }
+}
+
+export async function loadAudit() {
+  return (await (await db()).query(
+    `select id, ${stampCol("at")} as at, actor, actor_email as "actorEmail", action, target, summary, changes
+     from desk_audit order by at desc limit 1000`,
+  )) as AuditEntry[];
+}
+
+export async function getSettingValues(keys: string[]) {
+  const rows = (await (await db()).query(`select key, value from vs_settings where key = any($1::text[])`, [keys])) as {
+    key: string;
+    value: string;
+  }[];
+  return Object.fromEntries(rows.map((r) => [r.key, r.value])) as Record<string, string>;
 }
 
 export async function getMail(id: number) {
