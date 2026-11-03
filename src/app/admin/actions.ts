@@ -3,7 +3,9 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  type Application,
   type ApplicationEdit,
+  type AUDIT_ACTIONS,
   type EditableSetting,
   type LeadFlag,
   BANDS,
@@ -16,7 +18,18 @@ import {
 import * as store from "@/lib/desk/db";
 import { mirrorConfigured, scheduleMirror, syncSheetNow } from "@/lib/desk/sheets";
 import { deliverChecklist } from "@/lib/mail";
-import { countUsers, createUser, deleteUser, listUsers, requireUser, signIn, signOut, startSession } from "@/lib/desk/auth";
+import {
+  type DeskUser,
+  countUsers,
+  createUser,
+  currentUser,
+  deleteUser,
+  listUsers,
+  requireUser,
+  signIn,
+  signOut,
+  startSession,
+} from "@/lib/desk/auth";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -24,11 +37,38 @@ const text = (v: unknown, max = 2000) => String(v ?? "").slice(0, max);
 const fail = (error: string): ActionResult => ({ ok: false, error });
 const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
 
+type Changes = Record<string, [string, string]>;
+
+/** Writes one line to the audit log for what `user` just did. */
+function audit(
+  user: Pick<DeskUser, "name" | "email"> | null,
+  action: keyof typeof AUDIT_ACTIONS,
+  target: string,
+  summary: string,
+  changes: Changes | null = null,
+) {
+  return store.audit({ actor: user?.name ?? "", actorEmail: user?.email ?? "", action, target, summary, changes });
+}
+
+/** Field-by-field before/after for the keys that differ. */
+function diff<T extends Record<string, unknown>>(before: T, after: T, keys: readonly (keyof T & string)[]) {
+  const out: Changes = {};
+  for (const k of keys) if (String(before[k] ?? "") !== String(after[k] ?? "")) out[k] = [String(before[k] ?? ""), String(after[k] ?? "")];
+  return out;
+}
+
+const appLabel = (a: Pick<Application, "id" | "name" | "company">) => [a.name, a.company].filter(Boolean).join(", ") || a.id;
+
 /* ── Signing in ──────────────────────────────────────────────────────── */
 
 export async function login(_: ActionResult | null, form: FormData): Promise<ActionResult> {
-  const ok = await signIn(text(form.get("email"), 200), text(form.get("password"), 200));
-  if (!ok) return fail("That email and password don't match a desk account.");
+  const email = text(form.get("email"), 200).trim();
+  const user = await signIn(email, text(form.get("password"), 200));
+  if (!user) {
+    await audit(null, "auth.login_failed", email, `Wrong email or password for ${email}`);
+    return fail("That email and password don't match a desk account.");
+  }
+  await audit(user, "auth.login", user.email, `${user.name} signed in`);
   redirect("/admin");
 }
 
@@ -44,10 +84,13 @@ export async function setupFirstUser(_: ActionResult | null, form: FormData): Pr
   await createUser({ name, email, password, role: "admin" });
   const first = (await listUsers())[0];
   await startSession(first.id);
+  await audit(first, "auth.setup", first.email, `${first.name} created the first desk account`);
   redirect("/admin");
 }
 
 export async function logout() {
+  const user = await currentUser();
+  if (user) await audit(user, "auth.logout", user.email, `${user.name} signed out`);
   await signOut();
   redirect("/admin/login");
 }
@@ -61,9 +104,17 @@ function readEdit(input: Record<string, unknown>): ApplicationEdit {
 }
 
 export async function saveApplication(id: string, version: string, input: Record<string, unknown>): Promise<ActionResult> {
-  await requireUser();
-  const saved = await store.updateApplication(text(id, 40), readEdit(input), text(version, 40));
+  const user = await requireUser();
+  const appId = text(id, 40);
+  const before = await store.getApplication(appId);
+  const saved = await store.updateApplication(appId, readEdit(input), text(version, 40));
   if (!saved) return fail("Someone else saved this application since you opened it. Reopen it to see their changes.");
+  const after = await store.getApplication(appId);
+  if (before && after) {
+    const changes = diff(before, after, EDIT_KEYS);
+    const fields = Object.keys(changes);
+    if (fields.length) await audit(user, "application.update", appId, `${appLabel(after)}: changed ${fields.join(", ")}`, changes);
+  }
   scheduleMirror();
   refresh();
   return { ok: true, message: "Saved" };
@@ -77,8 +128,9 @@ export async function addApplication(input: Record<string, unknown>): Promise<Ac
   const route = ROUTES.find((r) => r === input.route) ?? "fit";
   const budget = BANDS.find(([b]) => b === input.budget)?.[0] ?? "";
   const edit = readEdit(input);
+  const id = store.newApplicationId();
   await store.insertApplication({
-    id: store.newApplicationId(),
+    id,
     name,
     role: text(input.role, 120),
     company: text(input.company, 160),
@@ -97,14 +149,18 @@ export async function addApplication(input: Record<string, unknown>): Promise<Ac
     owner: edit.owner,
     notes: edit.notes,
   });
+  await audit(user, "application.create", id, `${appLabel({ id, name, company: text(input.company, 160) })} added by hand`);
   scheduleMirror();
   refresh();
   return { ok: true, message: "Application added" };
 }
 
 export async function removeApplication(id: string): Promise<ActionResult> {
-  await requireUser();
-  await store.deleteApplication(text(id, 40));
+  const user = await requireUser();
+  const appId = text(id, 40);
+  const app = await store.getApplication(appId);
+  await store.deleteApplication(appId);
+  await audit(user, "application.delete", appId, app ? `Deleted ${appLabel(app)} (${app.email}, status ${app.status})` : `Deleted ${appId}`);
   scheduleMirror();
   refresh();
   return { ok: true, message: "Application deleted" };
@@ -113,17 +169,23 @@ export async function removeApplication(id: string): Promise<ActionResult> {
 /* ── Checklist leads ─────────────────────────────────────────────────── */
 
 export async function setLeadFlag(id: number, flag: LeadFlag, value: boolean): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   if (!LEAD_FLAGS.includes(flag)) return fail("Unknown field.");
   await store.setLeadFlag(Number(id), flag, Boolean(value));
+  const name = (await store.getLeadName(Number(id))) || `Lead ${id}`;
+  await audit(user, "lead.flag", `lead ${id}`, `${name}: ${flag} set to ${value ? "yes" : "no"}`, {
+    [flag]: [value ? "FALSE" : "TRUE", value ? "TRUE" : "FALSE"],
+  });
   scheduleMirror();
   refresh();
   return { ok: true, message: "Saved" };
 }
 
 export async function removeLead(id: number): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
+  const name = (await store.getLeadName(Number(id))) || `Lead ${id}`;
   await store.deleteLead(Number(id));
+  await audit(user, "lead.delete", `lead ${id}`, `Deleted ${name}`);
   scheduleMirror();
   refresh();
   return { ok: true, message: "Lead deleted" };
@@ -133,13 +195,14 @@ export async function removeLead(id: number): Promise<ActionResult> {
 
 /** Sends a logged checklist email again, as a new entry in the log. */
 export async function resendMail(id: number): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   const mail = await store.getMail(Number(id));
   if (!mail) return fail("That email is no longer in the log.");
   if (mail.kind !== "checklist") return fail("Only checklist emails can be sent again.");
   const name = mail.leadId ? await store.getLeadName(mail.leadId) : "";
   const site = process.env.SITE_URL || "https://www.digitalsavvystudios.com";
   const sent = await deliverChecklist({ leadId: mail.leadId, name, email: mail.to, site });
+  await audit(user, "mail.resend", mail.to, `Resent "${mail.subject}" to ${mail.to}: ${sent ? "sent" : "didn't send"}`);
   scheduleMirror();
   refresh();
   return sent ? { ok: true, message: `Checklist sent to ${mail.to}` } : fail("It didn't send. The new entry in the log says why.");
@@ -174,7 +237,11 @@ export async function saveSettings(input: Partial<Record<EditableSetting, unknow
       values[k] = link;
     } else values[k] = text(v, 500).trim();
   }
+  const before = await store.getSettingValues(Object.keys(values));
   await store.saveSettings(values, user.name);
+  const changes = diff(before, values, Object.keys(values) as EditableSetting[]);
+  const fields = Object.keys(changes);
+  if (fields.length) await audit(user, "settings.update", "settings", `Changed ${fields.join(", ")}`, changes);
   scheduleMirror();
   refresh();
   return { ok: true, message: "Saved. The website picks this up straight away." };
@@ -196,6 +263,7 @@ export async function addTeamMember(_: ActionResult | null, form: FormData): Pro
   } catch {
     return fail("That email already has a desk account.");
   }
+  await audit(user, "team.add", email, `Added ${name} (${email}) as ${role}`);
   refresh();
   return { ok: true, message: `${name} can now sign in` };
 }
@@ -204,7 +272,9 @@ export async function removeTeamMember(id: number): Promise<ActionResult> {
   const user = await requireUser();
   if (user.role !== "admin") return fail("Only an admin can remove people.");
   if (Number(id) === user.id) return fail("You can't remove your own account.");
+  const gone = (await listUsers()).find((u) => u.id === Number(id));
   await deleteUser(Number(id));
+  await audit(user, "team.remove", gone?.email ?? `user ${id}`, gone ? `Removed ${gone.name} (${gone.email})` : `Removed user ${id}`);
   refresh();
   return { ok: true, message: "Removed" };
 }
@@ -212,9 +282,10 @@ export async function removeTeamMember(id: number): Promise<ActionResult> {
 /* ── Google Sheet copy ───────────────────────────────────────────────── */
 
 export async function syncSheet(): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   if (!mirrorConfigured()) return fail("The Google Sheet copy isn't set up yet. See the steps under Team and setup.");
   const r = await syncSheetNow();
+  await audit(user, "sheet.sync", "Google Sheet", `${r.ok ? "Synced" : "Sync failed"}: ${r.detail}`);
   refresh();
   return r.ok ? { ok: true, message: r.detail } : fail(r.detail);
 }

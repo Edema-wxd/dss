@@ -167,11 +167,46 @@ export type SentMail = {
   leadId: number | null;
 };
 
+/** One thing someone did on the desk: the audit log. */
+export type AuditEntry = {
+  id: number;
+  at: string;
+  /** the desk user's name, or blank for a failed sign-in */
+  actor: string;
+  actorEmail: string;
+  /** a key from AUDIT_ACTIONS */
+  action: string;
+  /** what it was done to: an application id, a lead, an email address */
+  target: string;
+  summary: string;
+  /** field → [before, after], for edits */
+  changes: Record<string, [string, string]> | null;
+};
+
+export const AUDIT_ACTIONS = {
+  "auth.login": "Signed in",
+  "auth.login_failed": "Failed sign-in",
+  "auth.logout": "Signed out",
+  "auth.setup": "Created the first account",
+  "application.update": "Edited application",
+  "application.create": "Added application",
+  "application.delete": "Deleted application",
+  "lead.flag": "Changed lead",
+  "lead.delete": "Deleted lead",
+  "mail.resend": "Resent email",
+  "settings.update": "Changed settings",
+  "team.add": "Added team member",
+  "team.remove": "Removed team member",
+  "sheet.sync": "Synced Google Sheet",
+} as const;
+
 export type DeskData = {
   apps: Application[];
   leads: Lead[];
   mails: SentMail[];
   settings: Settings;
+  /** only loaded for admins; empty for everyone else */
+  audit: AuditEntry[];
   loadedAt: number;
 };
 
