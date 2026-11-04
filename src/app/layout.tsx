@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Poppins } from "next/font/google";
-import Script from "next/script";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import "./globals.css";
-
-const GA_MEASUREMENT_ID = "G-4864WG85RQ";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -31,18 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${fraunces.variable} ${poppins.variable} h-full`}>
       <body className="min-h-full">{children}</body>
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-        strategy="afterInteractive"
-      />
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${GA_MEASUREMENT_ID}');
-        `}
-      </Script>
+      <GoogleAnalytics />
     </html>
   );
 }
