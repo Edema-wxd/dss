@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Poppins } from "next/font/google";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${fraunces.variable} ${poppins.variable} h-full`}>
       <body className="min-h-full">{children}</body>
+      <GoogleAnalytics />
     </html>
   );
 }
