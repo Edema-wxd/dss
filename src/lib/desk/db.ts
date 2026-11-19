@@ -1,5 +1,6 @@
 import "server-only";
-import { neon } from "@neondatabase/serverless";
+import { connect } from "../driver";
+import { ensureCurrentSchema } from "../schema";
 import {
   type Application,
   type ApplicationEdit,
@@ -30,104 +31,16 @@ export class NotConfiguredError extends Error {
 function sql() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new NotConfiguredError();
-  return neon(url);
+  return connect(url);
 }
-
-const SCHEMA = [
-  `create table if not exists vs_applications (
-    id text primary key,
-    submitted timestamptz not null default now(),
-    name text not null default '',
-    role text not null default '',
-    company text not null default '',
-    site text not null default '',
-    email text not null default '',
-    whatsapp text not null default '',
-    moment text not null default '',
-    timing text not null default '',
-    budget text not null default '',
-    decider text not null default '',
-    worth text not null default '',
-    route text not null default 'fit',
-    source text not null default '',
-    lookup_score integer,
-    consent boolean not null default false,
-    status text not null default 'New',
-    owner text not null default '',
-    session_date date,
-    session_time text not null default '',
-    first_reply timestamptz,
-    review_link text not null default '',
-    outcome text not null default '',
-    deal_value bigint,
-    follow_up date,
-    notes text not null default '',
-    updated timestamptz not null default now()
-  )`,
-  `create index if not exists vs_applications_status on vs_applications (status)`,
-  `create index if not exists vs_applications_session on vs_applications (session_date)`,
-  `create table if not exists vs_checklist_leads (
-    id bigserial primary key,
-    at timestamptz not null default now(),
-    name text not null default '',
-    email text not null default '',
-    moment text not null default '',
-    source text not null default '',
-    email1_sent boolean not null default false,
-    email2_sent boolean not null default false,
-    applied boolean not null default false,
-    notes text not null default ''
-  )`,
-  `create table if not exists vs_sent_mail (
-    id bigserial primary key,
-    at timestamptz not null default now(),
-    kind text not null default '',
-    to_email text not null default '',
-    subject text not null default '',
-    status text not null default '',
-    detail text not null default '',
-    lead_id bigint references vs_checklist_leads(id) on delete set null
-  )`,
-  `create index if not exists vs_sent_mail_at on vs_sent_mail (at desc)`,
-  `create table if not exists vs_settings (
-    key text primary key,
-    value text not null default '',
-    updated timestamptz not null default now(),
-    updated_by text not null default ''
-  )`,
-  `create table if not exists desk_users (
-    id bigserial primary key,
-    email text not null unique,
-    name text not null,
-    role text not null default 'team',
-    password_hash text not null,
-    created timestamptz not null default now()
-  )`,
-  `create table if not exists desk_sessions (
-    token_hash text primary key,
-    user_id bigint not null references desk_users(id) on delete cascade,
-    expires timestamptz not null
-  )`,
-  `create table if not exists desk_audit (
-    id bigserial primary key,
-    at timestamptz not null default now(),
-    actor text not null default '',
-    actor_email text not null default '',
-    action text not null,
-    target text not null default '',
-    summary text not null default '',
-    changes jsonb
-  )`,
-  `create index if not exists desk_audit_at on desk_audit (at desc)`,
-];
 
 let ready: Promise<void> | null = null;
 
-/** Creates the tables on first use, and seeds the default settings without overwriting any. */
+/** Brings the tables up to date on first use, and seeds the default settings without overwriting any. */
 export function ensureSchema() {
   ready ??= (async () => {
     const db = sql();
-    for (const stmt of SCHEMA) await db.query(stmt);
+    if (!(await ensureCurrentSchema(db))) return;
     const keys = Object.keys(SETTING_DEFAULTS);
     await db.query(
       `insert into vs_settings (key, value) select * from unnest($1::text[], $2::text[]) on conflict (key) do nothing`,
@@ -183,7 +96,7 @@ export async function loadDesk(): Promise<DeskData> {
   ]);
   const stored: Settings = {};
   for (const r of settingRows) if ((SETTING_KEYS as readonly string[]).includes(r.key)) stored[r.key as keyof Settings] = r.value;
-  return { apps, leads, mails, settings: derivedSettings(apps, stored), audit: [], loadedAt: Date.now() };
+  return { apps, leads, mails, settings: derivedSettings(apps, stored), loadedAt: Date.now() };
 }
 
 /** The settings the public website may see. */

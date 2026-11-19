@@ -6,15 +6,14 @@ import { cn } from "@/lib/utils";
 import { type DeskData, hoursSince } from "@/lib/desk/model";
 import type { DeskUser } from "@/lib/desk/auth";
 import type { SyncStatus } from "@/lib/desk/sheets";
-import { type ActionResult, logout } from "@/app/admin/actions";
-import { ToastProvider, useToast } from "./ui";
+import type { ActionResult } from "@/app/admin/actions";
+import { PageHeader } from "@/components/hq/shell";
+import { useToast } from "./ui";
 import { Overview } from "./overview";
 import { Applications, type AppFilter } from "./applications";
 import { Leads } from "./leads";
 import { MailView } from "./mail";
 import { SettingsView } from "./settings";
-import { TeamView } from "./team";
-import { ActivityView } from "./activity";
 import { AppDrawer, type DrawerTarget } from "./drawer";
 
 const VIEWS = [
@@ -23,21 +22,18 @@ const VIEWS = [
   ["leads", "Checklist leads"],
   ["mail", "Sent emails"],
   ["settings", "Website settings"],
-  ["team", "Team and setup"],
-  ["activity", "Activity"],
 ] as const;
 export type View = (typeof VIEWS)[number][0];
 
 export type SheetInfo = { configured: boolean; url: string; last: SyncStatus };
 export type MailInfo = { configured: boolean; from: string };
-type DeskProps = { data: DeskData; user: DeskUser; users: DeskUser[]; team: string[]; sheet: SheetInfo; mail: MailInfo };
+type DeskProps = { data: DeskData; user: DeskUser; team: string[]; sheet: SheetInfo; mail: MailInfo };
 
 type DeskContextValue = {
   sheet: SheetInfo;
   mail: MailInfo;
   data: DeskData;
   user: DeskUser;
-  users: DeskUser[];
   team: string[];
   pending: boolean;
   /** Runs a server action, toasts its outcome and returns whether it worked. */
@@ -55,15 +51,8 @@ export function useDesk() {
 
 const REFRESH_SECONDS = 90;
 
-export function Desk(props: DeskProps) {
-  return (
-    <ToastProvider>
-      <DeskInner {...props} />
-    </ToastProvider>
-  );
-}
-
-function DeskInner({ data, user, users, team, sheet, mail }: DeskProps) {
+/** Visibility Sessions: the website's application desk, now one area of HQ. Toasts come from the HQ frame. */
+export function Desk({ data, user, team, sheet, mail }: DeskProps) {
   const router = useRouter();
   const toast = useToast();
   const [view, setView] = useState<View>("overview");
@@ -106,65 +95,52 @@ function DeskInner({ data, user, users, team, sheet, mail }: DeskProps) {
   const synced = new Date(data.loadedAt).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit" });
 
   return (
-    <DeskContext value={{ data, user, users, team, sheet, mail, pending, run, go, open: setDrawer }}>
-      <header className="sticky top-0 z-30 bg-ink text-white">
-        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 lg:px-6">
-          <div className="flex items-center gap-2.5 whitespace-nowrap">
-            <Spectrum className="size-7 overflow-hidden rounded-lg" />
-            <span className="font-display text-lg font-bold">Session Desk</span>
-            <span className="hidden text-sm text-white/60 sm:inline">Visibility Session</span>
-          </div>
-          <nav aria-label="Desk views" className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto lg:order-none lg:ml-auto lg:w-auto">
-            {VIEWS.filter(([k]) => k !== "activity" || user.role === "admin").map(([k, label]) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => go(k)}
-                aria-current={view === k ? "page" : undefined}
-                className={cn(
-                  "rounded-full px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-white/65 hover:text-white",
-                  view === k && "bg-white/15 text-white",
-                )}
-              >
-                {label}
-                {k === "applications" && newCount > 0 && (
-                  <span className="ml-1.5 rounded-full bg-pink px-1.5 font-mono text-[11px] text-white">{newCount}</span>
-                )}
-                {k === "mail" && failedMail > 0 && (
-                  <span className="ml-1.5 rounded-full bg-pink px-1.5 font-mono text-[11px] text-white" title="Failed in the last week">
-                    {failedMail}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-2 text-xs whitespace-nowrap text-white/60 lg:ml-0">
+    <DeskContext value={{ data, user, team, sheet, mail, pending, run, go, open: setDrawer }}>
+      <div className="mx-auto max-w-[1280px] px-4 pt-6 lg:px-8 lg:pt-8">
+        <PageHeader title="Visibility Sessions" lead="Applications from the website, checklist leads, sent emails and the settings the site reads.">
+          <div className="flex items-center gap-2 text-xs whitespace-nowrap text-slate">
             <span>{refreshing ? "Syncing…" : `Synced ${synced}`}</span>
             <button
               type="button"
               onClick={() => startRefresh(() => router.refresh())}
-              className="rounded-full border border-white/25 bg-white/10 px-3 py-1 font-semibold text-white"
+              className="rounded-full border-2 border-ink bg-white px-3 py-1 font-semibold text-ink"
             >
               Refresh
             </button>
-            <form action={logout}>
-              <button type="submit" className="rounded-full px-2 py-1 font-semibold text-white/70 hover:text-white" title={`Signed in as ${user.email}`}>
-                Sign out {user.name.split(" ")[0]}
-              </button>
-            </form>
           </div>
-        </div>
-        <Spectrum className="h-1" />
-      </header>
+        </PageHeader>
+        <nav aria-label="Visibility Sessions views" className="-mx-1 mb-1 flex gap-1 overflow-x-auto px-1 pb-1">
+          {VIEWS.map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => go(k)}
+              aria-current={view === k ? "page" : undefined}
+              className={cn(
+                "rounded-full border-2 border-transparent px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap text-slate hover:text-ink",
+                view === k && "border-ink bg-ink text-white hover:text-white",
+              )}
+            >
+              {label}
+              {k === "applications" && newCount > 0 && (
+                <span className="ml-1.5 rounded-full bg-pink px-1.5 font-mono text-[11px] text-white">{newCount}</span>
+              )}
+              {k === "mail" && failedMail > 0 && (
+                <span className="ml-1.5 rounded-full bg-pink px-1.5 font-mono text-[11px] text-white" title="Failed in the last week">
+                  {failedMail}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+      </div>
 
-      <main className="mx-auto max-w-[1280px] px-4 pt-6 pb-20 lg:px-6">
+      <main className="mx-auto max-w-[1280px] px-4 pt-4 pb-20 lg:px-8">
         {view === "overview" && <Overview />}
         {view === "applications" && <Applications filter={filter} setFilter={setFilter} />}
         {view === "leads" && <Leads />}
         {view === "mail" && <MailView />}
         {view === "settings" && <SettingsView />}
-        {view === "team" && <TeamView />}
-        {view === "activity" && user.role === "admin" && <ActivityView />}
       </main>
 
       {drawer && <AppDrawer key={drawer.kind === "edit" ? drawer.id : "new"} target={drawer} onClose={() => setDrawer(null)} />}

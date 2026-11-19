@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { AUDIT_ACTIONS, type AuditEntry } from "@/lib/desk/model";
-import { useDesk } from "./desk";
-import { ago } from "./ui";
+import { ago } from "@/components/desk/ui";
 
 // the first part of an action key, so the filter can group them
 const GROUPS = [
@@ -16,6 +15,8 @@ const GROUPS = [
   ["auth", "Sign-ins"],
   ["mail", "Email"],
   ["sheet", "Sheet"],
+  ["activity", "HQ updates"],
+  ["hq", "Imports"],
 ] as const;
 
 const TONE: Record<string, string> = {
@@ -25,6 +26,10 @@ const TONE: Record<string, string> = {
   "team.remove": "bg-pink-soft",
   "settings.update": "bg-orange/30",
   "team.add": "bg-aqua",
+  "team.roles": "bg-aqua",
+  "team.active": "bg-orange/30",
+  "team.password": "bg-orange/30",
+  "hq.import": "bg-lime/60",
 };
 
 function ActionPill({ action }: { action: string }) {
@@ -59,9 +64,7 @@ function Changes({ changes }: { changes: AuditEntry["changes"] }) {
   );
 }
 
-export function ActivityView() {
-  const { data } = useDesk();
-  const entries = data.audit;
+export function ActivityView({ entries }: { entries: AuditEntry[] }) {
   const [group, setGroup] = useState("");
   const [who, setWho] = useState("");
   const people = [...new Set(entries.map((e) => e.actor).filter(Boolean))].sort();
@@ -69,11 +72,6 @@ export function ActivityView() {
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="text-3xl font-bold tracking-[-0.03em]">Activity</h1>
-        <span className="text-sm text-slate">Everything done on the desk, newest first. Only admins see this.</span>
-      </div>
-
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div role="group" aria-label="Filter by kind" className="flex flex-wrap gap-2">
           {GROUPS.map(([value, label]) => (
@@ -146,7 +144,7 @@ export function ActivityView() {
         <div className="grid justify-items-center gap-2 rounded-[24px] border-2 border-dashed border-ink/30 bg-white px-6 py-10 text-center">
           <h2 className="text-xl font-bold">{entries.length ? "Nothing matches that filter" : "No activity yet"}</h2>
           <p className="max-w-[56ch] text-slate">
-            Sign-ins, edits to applications and leads, settings changes, team changes and resent emails are all logged here.
+            Sign-ins, edits in every area of HQ, team and role changes, resent emails and data imports are all logged here.
           </p>
         </div>
       )}

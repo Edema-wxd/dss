@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "./db";
+import { type ModuleKey, type Role, canUse, cleanRoles, isOwner } from "../hq/access";
 
 // Team logins for the desk. Accounts live in desk_users; a session is a random token in an
 // httpOnly cookie, stored hashed in desk_sessions so a database leak can't be replayed.
@@ -21,6 +22,7 @@ export async function hashPassword(password: string) {
 
 async function checkPassword(password: string, stored: string) {
   const [scheme, salt, key] = stored.split("$");
+  // accounts brought over from HQ have no password until the owner sets one
   if (scheme !== "scrypt" || !salt || !key) return false;
   const expected = Buffer.from(key, "hex");
   const actual = await scrypt(password, Buffer.from(salt, "hex"), expected.length);
@@ -29,7 +31,16 @@ async function checkPassword(password: string, stored: string) {
 
 const sha256 = (v: string) => createHash("sha256").update(v).digest("hex");
 
-export type DeskUser = { id: number; name: string; email: string; role: string };
+/** A signed-in person. `roles` are HQ roles (see src/lib/hq/access.ts). */
+export type DeskUser = { id: number; name: string; email: string; roles: Role[] };
+
+/** A person as the Team page lists them. */
+export type TeamMember = DeskUser & { active: boolean; hasPassword: boolean; title: string };
+
+const USER_COLS = `id::int, name, email, roles`;
+
+/** The legacy desk level kept in step with roles, so an older deploy still reads it. */
+const legacyRole = (roles: readonly string[]) => (isOwner(roles) ? "admin" : "team");
 
 export async function countUsers() {
   const rows = await (await db()).query(`select count(*)::int as n from desk_users`);
@@ -37,16 +48,39 @@ export async function countUsers() {
 }
 
 export async function listUsers() {
-  return (await (await db()).query(`select id::int, name, email, role from desk_users order by id`)) as DeskUser[];
+  const rows = await (await db()).query(
+    `select ${USER_COLS}, active, title, password_hash like 'scrypt$%' as "hasPassword" from desk_users order by active desc, id`,
+  );
+  return rows.map((r) => ({ ...r, roles: cleanRoles(r.roles) })) as TeamMember[];
 }
 
-export async function createUser(u: { name: string; email: string; password: string; role?: string }) {
-  await (await db()).query(`insert into desk_users (name, email, role, password_hash) values ($1, lower($2), $3, $4)`, [
+export async function createUser(u: { name: string; email: string; password: string; roles: Role[] }) {
+  const roles = cleanRoles(u.roles);
+  await (await db()).query(`insert into desk_users (name, email, role, roles, password_hash) values ($1, lower($2), $3, $4, $5)`, [
     u.name.trim(),
     u.email.trim(),
-    u.role ?? "team",
+    legacyRole(roles),
+    roles,
     await hashPassword(u.password),
   ]);
+}
+
+export async function setUserRoles(id: number, roles: Role[]) {
+  const clean = cleanRoles(roles);
+  await (await db()).query(`update desk_users set roles = $2, role = $3 where id = $1`, [id, clean, legacyRole(clean)]);
+}
+
+export async function setUserActive(id: number, active: boolean) {
+  const q = await db();
+  await q.query(`update desk_users set active = $2 where id = $1`, [id, active]);
+  // switching someone off signs them out everywhere
+  if (!active) await q.query(`delete from desk_sessions where user_id = $1`, [id]);
+}
+
+export async function setUserPassword(id: number, password: string) {
+  const q = await db();
+  await q.query(`update desk_users set password_hash = $2 where id = $1`, [id, await hashPassword(password)]);
+  await q.query(`delete from desk_sessions where user_id = $1`, [id]);
 }
 
 export async function deleteUser(id: number) {
@@ -54,15 +88,16 @@ export async function deleteUser(id: number) {
 }
 
 export async function signIn(email: string, password: string) {
-  const rows = (await (await db()).query(`select id::int, name, email, role, password_hash from desk_users where email = lower($1)`, [
-    email.trim(),
-  ])) as (DeskUser & { password_hash: string })[];
+  const rows = (await (await db()).query(
+    `select ${USER_COLS}, active, password_hash from desk_users where email = lower($1)`,
+    [email.trim()],
+  )) as (DeskUser & { active: boolean; password_hash: string })[];
   const user = rows[0];
   // still hash when the account doesn't exist, so timing doesn't reveal which emails are real
   const ok = user ? await checkPassword(password, user.password_hash) : (await hashPassword(password), false);
-  if (!user || !ok) return null;
+  if (!user || !ok || !user.active) return null;
   await startSession(user.id);
-  return { id: user.id, name: user.name, email: user.email, role: user.role } satisfies DeskUser;
+  return { id: user.id, name: user.name, email: user.email, roles: cleanRoles(user.roles) } satisfies DeskUser;
 }
 
 export async function startSession(userId: number) {
@@ -92,11 +127,12 @@ export async function currentUser(): Promise<DeskUser | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const rows = (await (await db()).query(
-    `select u.id::int, u.name, u.email, u.role from desk_sessions s join desk_users u on u.id = s.user_id
-     where s.token_hash = $1 and s.expires > now()`,
+    `select u.id::int, u.name, u.email, u.roles from desk_sessions s join desk_users u on u.id = s.user_id
+     where s.token_hash = $1 and s.expires > now() and u.active`,
     [sha256(token)],
   )) as DeskUser[];
-  return rows[0] ?? null;
+  const user = rows[0];
+  return user ? { ...user, roles: cleanRoles(user.roles) } : null;
 }
 
 /** For pages and actions: the signed-in team member, or a redirect to the login page. */
@@ -104,4 +140,17 @@ export async function requireUser() {
   const user = await currentUser();
   if (!user) redirect("/admin/login");
   return user;
+}
+
+/** For a page or action in one area: the signed-in person, sent to the admin home if their roles don't cover it. */
+export async function requireModule(mod: ModuleKey) {
+  const user = await requireUser();
+  if (!canUse(user.roles, mod)) redirect("/admin");
+  return user;
+}
+
+/** For owner-only actions. Returns null instead of redirecting, so an action can say why it refused. */
+export async function ownerOrNull() {
+  const user = await requireUser();
+  return isOwner(user.roles) ? user : null;
 }

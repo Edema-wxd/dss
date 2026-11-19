@@ -1,0 +1,28 @@
+import { Suspense } from "react";
+import { ToastProvider } from "@/components/desk/ui";
+import { ShellNav } from "@/components/hq/shell";
+import { currentUser } from "@/lib/desk/auth";
+import { navFor } from "@/lib/hq/access";
+
+// The HQ frame: the dark sidebar on wide screens, a floating pill nav on phones.
+// Signing in happens at /admin/login, outside this frame.
+
+export default function HqLayout({ children }: LayoutProps<"/admin">) {
+  return (
+    <ToastProvider>
+      <div className="min-h-dvh lg:grid lg:grid-cols-[232px_minmax(0,1fr)]">
+        <Suspense fallback={<div aria-hidden className="sticky top-0 hidden h-dvh bg-hq-side lg:block" />}>
+          <Nav />
+        </Suspense>
+        <div className="min-w-0 pb-28 lg:col-start-2 lg:pb-0">{children}</div>
+      </div>
+    </ToastProvider>
+  );
+}
+
+async function Nav() {
+  const user = await currentUser().catch(() => null);
+  if (!user) return null;
+  const items = navFor(user.roles).map(({ key, label }) => ({ key, label }));
+  return <ShellNav items={items} me={{ name: user.name, email: user.email, role: user.roles.join(", ") }} />;
+}

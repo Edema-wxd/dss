@@ -50,6 +50,12 @@
   --color-slate: #5f5f63;
   --color-maroon: #5e0827;
   --color-navy: #212845;
+  --color-sky: #5568af;
+
+  /* DSS HQ admin: the dark sidebar and its muted text */
+  --color-hq-side: #201c2b;
+  --color-hq-side-2: #2c2739;
+  --color-hq-muted: #a9a2b4;
 
   /* Hard offset shadows used across cards and buttons */
   --shadow-hard-sm: 3px 3px 0 var(--color-ink);
