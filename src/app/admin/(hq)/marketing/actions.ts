@@ -13,6 +13,7 @@ import * as mkt from "@/lib/hq/marketing";
 import { AD_OBJ, AD_PLATFORMS, AD_STATUS, NEWS_TAGS, PLATFORMS, POST_FORMATS, POST_STATUS } from "@/lib/hq/marketing-model";
 import { patchGeneral } from "@/lib/hq/data";
 import { lagosToday } from "@/lib/hq/work";
+import { saveExpense } from "@/lib/hq/finance";
 
 const fail = (error: string): ActionResult => ({ ok: false, error });
 const text = (v: unknown, max = 300) => String(v ?? "").slice(0, max).trim();
@@ -221,7 +222,8 @@ export async function saveAdAction(id: string | null, input: Record<string, unkn
   if (!user) return fail(CLOSED);
   const name = text(input.name, 200);
   if (!name) return fail("Name the campaign.");
-  await mkt.saveAd(
+  const before = id ? (await mkt.listAds()).find((a) => a.id === String(id)) : undefined;
+  const adId = await mkt.saveAd(
     id ? String(id) : null,
     {
       name,
@@ -237,6 +239,20 @@ export async function saveAdAction(id: string | null, input: Record<string, unkn
     },
     user.id,
   );
+  // New spend goes into Finance as Paid ads, when DSS paid for it and the person keeps the books.
+  const spend = n(input.spend) ?? 0;
+  const delta = spend - (before?.loggedSpend ?? 0);
+  if ((input.logFin === true || input.logFin === "on") && canUse(user.roles, "finance") && delta > 0) {
+    const currency = ["NGN", "USD", "GBP", "EUR", "CAD"].includes(String(input.currency)) ? String(input.currency) : "NGN";
+    await saveExpense(
+      null,
+      { description: `Ads: ${name}`, amount: delta, currency, cat: "ads", date: lagosToday(), vendor: label(PLATFORMS, String(input.platform)), method: "Card", recurring: false, clientId: text(input.clientId, 40) || null },
+      user.id,
+    );
+    await mkt.saveAd(adId, { loggedSpend: spend }, user.id);
+    refresh();
+    return { ok: true, message: `Campaign saved. ${currency} ${delta.toLocaleString("en-GB")} of new spend logged in Finance.` };
+  }
   refresh();
   return { ok: true, message: "Campaign saved." };
 }

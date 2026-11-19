@@ -9,7 +9,9 @@ import { PageHeader } from "@/components/hq/shell";
 import { NotConfiguredError } from "@/lib/desk/db";
 import { requireModule } from "@/lib/desk/auth";
 import { canUse, isOwner, seesMoney } from "@/lib/hq/access";
-import { getStandups, kpiStates, listClients, listContacts, listKpis, listPeople, listTasks, liveDeals } from "@/lib/hq/data";
+import { getGeneral, getStandups, kpiStates, listClients, listContacts, listKpis, listPeople, listTasks, liveDeals } from "@/lib/hq/data";
+import { loadBooks } from "@/lib/hq/finance";
+import { finance } from "@/lib/hq/finance-model";
 import { addDays, compactNaira, lagosToday, longDate, personScore, relDay } from "@/lib/hq/work";
 
 import { listContracts } from "@/lib/hq/sales";
@@ -62,12 +64,16 @@ async function Overview() {
     const contractAlerts = canUse(user.roles, "contracts")
       ? (await listContracts()).map((c) => ({ c, s: contractState(c, today) })).filter(({ s }) => s.k === "decide" || s.k === "lapsed")
       : [];
-    v = { user, today, people: people.filter((p) => p.active), standups, tasks, contacts, clients, deals, contractAlerts, kpis: await kpiStates(kpis, today) };
+    // Money tiles for anyone with Invoices access (HQ's finOK); without Finance they count invoices only.
+    const fin = canUse(user.roles, "invoices")
+      ? { stats: finance(await loadBooks({ ledger: canUse(user.roles, "finance") }, today)).finStats(), goal: Number((await getGeneral()).monthlyGoal) || 20000000 }
+      : null;
+    v = { user, today, people: people.filter((p) => p.active), standups, tasks, contacts, clients, deals, contractAlerts, kpis: await kpiStates(kpis, today), fin };
   } catch (e) {
     if (e instanceof NotConfiguredError) return <DeskSetupNotice />;
     throw e;
   }
-  const { user, today, people, standups, tasks, contacts, clients, deals, kpis, contractAlerts } = v;
+  const { user, today, people, standups, tasks, contacts, clients, deals, kpis, contractAlerts, fin } = v;
   const money = seesMoney(user.roles);
   const open = tasks.filter((t) => t.status !== "done");
   const overdue = open.filter((t) => t.due && t.due < today);
@@ -95,6 +101,9 @@ async function Overview() {
       sub: "Contract needs a decision",
       href: "/admin/contracts",
     })),
+    ...(fin?.stats.overdue
+      ? [{ icon: <AlertTriangle className="size-4 text-[#c42b3c]" aria-hidden />, text: `${fin.stats.overdue} invoice${fin.stats.overdue === 1 ? " is" : "s are"} overdue`, sub: "Chase today", href: "/admin/invoices" }]
+      : []),
     ...(overdueFollowUps.length
       ? [{ icon: <Phone className="size-4 text-[#a35c0a]" aria-hidden />, text: `${overdueFollowUps.length} follow-ups are overdue`, sub: [...new Set(overdueFollowUps.map((c) => first(c.ownerId)))].join(", ") }]
       : []),
@@ -117,6 +126,18 @@ async function Overview() {
         <Stat label="Overdue tasks" value={overdue.length} sub={overdue.length ? "across the team" : "nothing late"} />
         <Stat label="Open pipeline" value={money ? compactNaira(pipeline) : openSales.length} sub={`${openSales.length} prospects, ${wonMonth.length} won this month`} />
         <Stat label="Checked in today" value={`${checked.length}/${people.length}`} sub={people.length - checked.length ? `${people.length - checked.length} not yet` : "Everyone's in"} />
+        {fin && (
+          <>
+            <Stat
+              label="DSS revenue this month"
+              value={compactNaira(fin.stats.revNGN)}
+              sub={`${Math.round((fin.stats.revNGN / fin.goal) * 100)}% of goal · ${compactNaira(fin.stats.cashNGN)} cash in${fin.stats.missing ? " · set FX rates" : ""}`}
+            >
+              <Bar pct={(fin.stats.revNGN / fin.goal) * 100} label="Revenue against the monthly goal" />
+            </Stat>
+            <Stat label="Outstanding" value={compactNaira(fin.stats.outNGN)} sub={fin.stats.overdue ? `${fin.stats.overdue} overdue invoice${fin.stats.overdue === 1 ? "" : "s"}` : "nothing overdue"} />
+          </>
+        )}
       </div>
 
       <div className="mb-4 grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">

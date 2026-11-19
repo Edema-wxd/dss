@@ -69,6 +69,8 @@ test("the first account becomes an Owner and lands in HQ", async ({ page }) => {
     "CRM",
     "Talent",
     "Marketing",
+    "Finance",
+    "Invoices",
     "KPIs",
     "Contracts",
     "Procedures",
@@ -495,4 +497,87 @@ test("the data feed job refuses without the secret, and explains a missing servi
   expect((await request.get("/api/cron/data-feed")).status()).toBe(401);
   const res = await request.get("/api/cron/data-feed", { headers: { authorization: `Bearer ${E2E_CRON_SECRET}` } });
   expect(await res.json()).toEqual({ ok: false, reason: "The Google service account isn't set up." });
+});
+
+/* ── Phase 4: Finance and Invoices ───────────────────────────────────── */
+
+test("finance: log an expense and see it in spend and profit and loss", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/finance");
+  await expect(page.getByRole("heading", { name: "Money, clearly." })).toBeVisible();
+  await page.getByRole("button", { name: "Expense", exact: true }).first().click();
+  const form = page.getByRole("dialog", { name: "Add an expense" });
+  await form.getByLabel("What was it for?").fill("Design software");
+  await form.getByLabel("Amount").fill("25000");
+  await form.getByLabel("Category").selectOption("subs");
+  await form.getByRole("button", { name: "Add expense" }).click();
+  await expect(page.getByText("Expense added.")).toBeVisible();
+
+  await page.getByRole("navigation", { name: "Finance" }).getByRole("button", { name: "Spend" }).click();
+  await expect(page.getByRole("row", { name: /Design software/ })).toContainText("Software and subscriptions");
+  await page.getByRole("navigation", { name: "Finance" }).getByRole("button", { name: "Profit and loss" }).click();
+  await expect(page.getByRole("row", { name: /^Software and subscriptions/ })).toContainText("₦25K");
+});
+
+test("invoices: add a bank account, raise an invoice, send it and record a part payment", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/settings");
+  const details = page.locator("#invoice-details");
+  await details.getByRole("button", { name: "Add account" }).click();
+  const bank = page.getByRole("dialog", { name: "Add account" });
+  await bank.getByLabel("Bank", { exact: true }).fill("Test Bank");
+  await bank.getByLabel("Account number").fill("0123456789");
+  await bank.getByRole("button", { name: "Save account" }).click();
+  await expect(page.getByText("Bank account saved.")).toBeVisible();
+
+  await page.goto("/admin/invoices");
+  await page.getByRole("button", { name: "New invoice" }).click();
+  const ed = page.getByRole("dialog", { name: "New invoice" });
+  await expect(ed.getByLabel("Invoice number")).toHaveValue(/^DSS-INV-\d{4}-001$/);
+  await ed.getByLabel("Name or company").fill("Brandco Test");
+  await ed.getByLabel("Line 1 description").fill("Brand Strategy Consulting");
+  await ed.getByLabel("Line 1 price").fill("200000");
+  await ed.getByLabel("Line 1 percent off").fill("10");
+  // the live preview prints the bank account and the discounted total
+  await expect(ed.getByRole("article")).toContainText("0123456789");
+  await expect(ed.getByRole("article")).toContainText("₦180,000");
+  await ed.getByRole("button", { name: "Mark as sent" }).click();
+  await expect(page.getByText(/marked as sent/)).toBeVisible();
+
+  const card = page.getByRole("button", { name: /Brandco Test/ });
+  await expect(card).toContainText("Sent");
+  await card.click();
+  await page.getByRole("dialog").getByRole("button", { name: "Record payment" }).click();
+  const pay = page.getByRole("dialog", { name: /Record payment/ });
+  await pay.getByLabel(/Amount received/).fill("80000");
+  await pay.getByRole("button", { name: "Record payment" }).click();
+  await expect(page.getByText("Payment recorded. ₦100,000 left.")).toBeVisible();
+  await expect(card).toContainText("Part paid");
+
+  // the PDF is made on the server
+  await card.click();
+  const href = await page.getByRole("dialog").getByRole("link", { name: "Download PDF" }).getAttribute("href");
+  const pdf = await page.request.get(href!);
+  expect(pdf.headers()["content-type"]).toBe("application/pdf");
+  expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
+});
+
+test("an Admin gets Invoices but not Finance", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/team");
+  await addPerson(page, { name: "Dee Admin", email: "dee@example.test", password: "dee-pass-1234" }, ["Admin"]);
+  await signOut(page);
+  await signedIn(page, { email: "dee@example.test", password: "dee-pass-1234" });
+  await expect(sidebar(page).getByRole("link", { name: "Invoices" })).toBeVisible();
+  await expect(sidebar(page).getByRole("link", { name: "Finance" })).toHaveCount(0);
+  await page.goto("/admin/finance");
+  await expect(page).toHaveURL(/\/admin\/today$/);
+  await page.goto("/admin/invoices");
+  await expect(page.getByRole("button", { name: /Brandco Test/ })).toBeVisible();
+});
+
+test("the nightly records job refuses without the secret, and still files retainers without a sheet", async ({ request }) => {
+  expect((await request.get("/api/cron/records-sheet")).status()).toBe(401);
+  const res = await request.get("/api/cron/records-sheet", { headers: { authorization: `Bearer ${E2E_CRON_SECRET}` } });
+  expect(await res.json()).toMatchObject({ ok: false, booked: expect.any(Array), reason: "The Records sheet or the Google service account isn't set up." });
 });

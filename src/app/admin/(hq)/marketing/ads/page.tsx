@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { DeskSetupNotice } from "@/components/desk/setup-notice";
 import { AdsView } from "@/components/hq/marketing";
-import { seesMoney } from "@/lib/hq/access";
+import { canUse, seesMoney } from "@/lib/hq/access";
 import { listAds } from "@/lib/hq/marketing";
 import { listClientsFull } from "@/lib/hq/sales";
 import { NotConfiguredError } from "@/lib/desk/db";
@@ -24,7 +24,7 @@ async function Tab() {
   try {
     user = await requireMarketingDashboard();
     const [ads, clients] = await Promise.all([listAds(), listClientsFull()]);
-    props = { ads, clients: clients.filter((c) => c.status !== "ended").map((c) => ({ id: c.id, name: c.name })), money: seesMoney(user.roles) };
+    props = { ads, clients: clients.filter((c) => c.status !== "ended").map((c) => ({ id: c.id, name: c.name })), money: seesMoney(user.roles), fin: canUse(user.roles, "finance") };
   } catch (e) {
     if (e instanceof NotConfiguredError) return <DeskSetupNotice />;
     throw e;

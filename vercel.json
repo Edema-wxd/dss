@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/data-feed",
       "schedule": "17 5 * * *"
+    },
+    {
+      "path": "/api/cron/records-sheet",
+      "schedule": "17 22 * * *"
     }
   ]
 }

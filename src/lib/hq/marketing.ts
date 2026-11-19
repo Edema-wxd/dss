@@ -164,16 +164,20 @@ export type Ad = {
   revenue: number | null;
   notes: string;
   clientId: string | null;
+  /** how much of `spend` is already in Finance as Paid ads */
+  loggedSpend: number | null;
 };
 
 const AD_NUMS = ["budget", "spend", "impressions", "clicks", "leads", "conversions", "revenue"];
+const AD_READ = [...AD_NUMS, "loggedSpend"];
 
 export async function listAds(): Promise<Ad[]> {
   const rows = await (await db()).query(
-    `select id, name, platform, objective, status, currency, ${day("start_date")} as start, ${day("end_date")} as "end", ${AD_NUMS.join(", ")}, notes, client_id as "clientId"
+    `select id, name, platform, objective, status, currency, ${day("start_date")} as start, ${day("end_date")} as "end", ${AD_NUMS.join(", ")}, notes, client_id as "clientId",
+       logged_spend as "loggedSpend"
      from hq_mkt_ads order by start_date desc nulls last`,
   );
-  return rows.map((r) => nums(r, AD_NUMS)) as Ad[];
+  return rows.map((r) => nums(r, AD_READ)) as Ad[];
 }
 
 const AD_FIELDS: FieldMap = {
@@ -186,6 +190,7 @@ const AD_FIELDS: FieldMap = {
   end: ["end_date", "date"],
   notes: ["notes", "text"],
   clientId: ["client_id", "text"],
+  loggedSpend: ["logged_spend", "numeric"],
   ...Object.fromEntries(AD_NUMS.map((k) => [k, [k, "numeric"] as const])),
 };
 

@@ -18,6 +18,7 @@ import {
 } from "@/app/admin/(hq)/clients/actions";
 import { Button, Field, Panel, btn, fieldClass } from "@/components/desk/ui";
 import type { Task } from "@/lib/hq/data";
+import { INV_STATUS, type InvStatus } from "@/lib/hq/invoice-model";
 import type { Client, TimelineEntry } from "@/lib/hq/sales";
 import { CLIENT_STATUS, CURRENCIES, HEALTH, LIVE, ONB_STATUS, SERVICES, contractState, label, stepDone } from "@/lib/hq/sales-model";
 import { addDays, compactNaira, relDay, sortTasks } from "@/lib/hq/work";
@@ -282,6 +283,19 @@ type DetailProps = {
   money: boolean;
   owner: boolean;
   canContracts: boolean;
+  clientMoney?: ClientMoney | null;
+};
+
+export type ClientMoney = {
+  ledger: boolean;
+  inAll: number;
+  inMonth: number;
+  out: number;
+  owed: number;
+  profit: number;
+  margin: number | null;
+  counting: string;
+  invoices: { id: string; no: string; issueDate: string; currency: string; total: number; balance: number; status: InvStatus }[];
 };
 
 const TABS = [
@@ -293,7 +307,7 @@ const TABS = [
 
 export function ClientDetail(p: DetailProps) {
   const { client: c, w } = p;
-  const [tab, setTab] = useState<(typeof TABS)[number][0]>(c.onb && c.onb.status !== "approved" ? "onboarding" : "overview");
+  const [tab, setTab] = useState<(typeof TABS)[number][0] | "money">(c.onb && c.onb.status !== "approved" ? "onboarding" : "overview");
   const [editing, setEditing] = useState<Partial<Task> | null>(null);
   const open = sortTasks(p.tasks.filter((t) => t.status !== "done"));
   const late = open.filter((t) => t.due && t.due < w.today).length;
@@ -321,7 +335,7 @@ export function ClientDetail(p: DetailProps) {
         </button>
       </div>
       <div role="tablist" className="mb-4 flex flex-wrap gap-1.5">
-        {TABS.map(([k, l]) => (
+        {[...TABS, ...(p.clientMoney ? ([["money", "Money"]] as const) : [])].map(([k, l]) => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cn("rounded-full border-2 border-ink px-3.5 py-1 text-sm font-semibold", tab === k ? "bg-ink text-white" : "bg-white")}>
             {l}
           </button>
@@ -352,6 +366,7 @@ export function ClientDetail(p: DetailProps) {
         </Panel>
       )}
       {tab === "updates" && <Updates id={c.id} timeline={p.timeline} />}
+      {tab === "money" && p.clientMoney && <MoneyTab m={p.clientMoney} />}
       <TaskEditor task={editing} w={w} onClose={() => setEditing(null)} />
     </>
   );
@@ -588,6 +603,53 @@ function OnboardingTab({ client: c, owner, w, doneIds }: DetailProps & { doneIds
         ) : null}
       </div>
     </Panel>
+  );
+}
+
+/** What the client has paid, cost and still owes. Invoices access; in, out and profit need Finance. */
+function MoneyTab({ m }: { m: ClientMoney }) {
+  const n = (v: number) => `₦${Math.round(v).toLocaleString("en-GB")}`;
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          ["Paid in total", n(m.inAll), m.counting],
+          ["Paid this month", n(m.inMonth), ""],
+          ["Still owed", n(m.owed), m.invoices.filter((i) => i.status === "overdue").length ? `${m.invoices.filter((i) => i.status === "overdue").length} overdue` : ""],
+          ...(m.ledger ? [["Profit from this client", n(m.profit), `${n(m.out)} spent on them${m.margin === null ? "" : ` · ${Math.round(m.margin)}% margin`}`]] : []),
+        ].map(([l, v, s]) => (
+          <div key={l} className="grid content-start gap-1 rounded-[20px] border-2 border-ink bg-white p-4">
+            <span className="text-xs font-bold tracking-[0.06em] text-slate uppercase">{l}</span>
+            <b className="font-display text-2xl tabular-nums">{v}</b>
+            {s && <span className="text-sm text-slate">{s}</span>}
+          </div>
+        ))}
+      </div>
+      <Panel>
+        <div className="mb-2 flex items-center gap-2">
+          <b className="flex-1">Invoices</b>
+          <Link href="/admin/invoices" className={cn(btn.base, btn.sm)}>
+            Open Invoices
+          </Link>
+        </div>
+        {m.invoices.length ? (
+          <ul className="grid gap-1.5">
+            {m.invoices.map((i) => (
+              <li key={i.id}>
+                <Link href={`/admin/invoices?open=${encodeURIComponent(i.id)}`} className="flex items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-paper">
+                  <span className="font-mono text-xs text-slate">{i.no}</span>
+                  <Pill tone={INV_STATUS[i.status][1]}>{INV_STATUS[i.status][0]}</Pill>
+                  <span className="flex-1 text-slate">{i.issueDate}</span>
+                  <b className="tabular-nums">{i.currency === "NGN" ? n(i.total) : `${i.currency} ${i.total.toLocaleString("en-GB")}`}</b>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyNote title="No invoices yet.">Invoices you raise for this client show here.</EmptyNote>
+        )}
+      </Panel>
+    </div>
   );
 }
 
