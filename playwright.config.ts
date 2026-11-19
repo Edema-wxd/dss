@@ -6,6 +6,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 3100;
 export const E2E_DATABASE_URL = process.env.E2E_DATABASE_URL ?? "postgres://localhost:5432/dss_e2e";
+// test-only secrets, so the browser tests can sign one-tap links and call the cron jobs
+export const E2E_CRON_SECRET = "e2e-cron-secret-0123456789";
+export const E2E_LINK_SECRET = "e2e-link-secret-0123456789";
 
 export default defineConfig({
   testDir: "e2e",
@@ -30,7 +33,7 @@ export default defineConfig({
     port: PORT,
     // a fresh server each run, so it never holds on to a schema from before the wipe
     reuseExistingServer: false,
-    env: { DATABASE_URL: E2E_DATABASE_URL },
+    env: { DATABASE_URL: E2E_DATABASE_URL, CRON_SECRET: E2E_CRON_SECRET, HQ_LINK_SECRET: E2E_LINK_SECRET },
     timeout: 60_000,
   },
 });

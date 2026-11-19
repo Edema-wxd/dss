@@ -29,7 +29,7 @@ export const MODULES = [
 export type ModuleKey = (typeof MODULES)[number]["key"];
 
 /** Areas that exist in this build. The rest are listed above so access rules are settled once. */
-export const BUILT: readonly ModuleKey[] = ["sessions", "team", "activity"];
+export const BUILT: readonly ModuleKey[] = ["today", "overview", "tasks", "sessions", "kpis", "procedures", "team", "activity", "settings"];
 
 export const ROLES = [
   "Owner",
@@ -144,3 +144,19 @@ export function navFor(roles: readonly string[]) {
 
 /** Keeps known roles only, in the canonical order, without repeats. */
 export const cleanRoles = (roles: readonly unknown[]): Role[] => ROLES.filter((r) => roles.includes(r));
+
+/* ── Who can change what inside an area (HQ's hasRole checks) ────────── */
+
+const hasAny = (roles: readonly string[], list: readonly Role[]) => roles.some((r) => (list as readonly string[]).includes(r));
+
+/** Write and edit procedures. Everyone else can read and follow them. */
+export const canEditProcedures = (roles: readonly string[]) => hasAny(roles, ["Owner", "Admin", "Operations (EA)", "Operations", "Project Manager"]);
+
+/** Set and edit anyone's KPIs, and see the whole team's. Everyone else sees their own. */
+export const canManageKpis = (roles: readonly string[]) => hasAny(roles, ["Owner", "Admin", "Operations (EA)", "Operations", "Project Manager"]);
+
+/** Change the revenue goals, exchange rates and working hours in Settings. */
+export const canEditGoals = (roles: readonly string[]) => hasAny(roles, ["Owner", "Operations (EA)", "Operations"]);
+
+/** Contractors only ever see and change their own tasks. */
+export const ownTasksOnly = (roles: readonly string[]) => !roles.some((r) => r !== "Contractor");

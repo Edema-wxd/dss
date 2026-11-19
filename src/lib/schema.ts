@@ -335,6 +335,46 @@ const HQ = [
     ${stamps}, ${extra}
   )`,
 
+  // Phase 2: tasks remember the procedure they follow, focus time and how often they were carried over
+  `alter table hq_tasks add column if not exists sop_id text`,
+  `alter table hq_tasks add column if not exists focus_mins integer`,
+  `alter table hq_tasks add column if not exists carried integer not null default 0`,
+  `alter table hq_kpis add column if not exists ${by("proposed_by")}`,
+  `alter table desk_users add column if not exists kpi_self boolean not null default false`,
+  // one logged number per KPI per period (HQ's kpilogs)
+  `create table if not exists hq_kpi_logs (
+    id text primary key,
+    kpi_id text not null references hq_kpis(id) on delete cascade,
+    period_key text not null,
+    value numeric(16,2) not null,
+    ${by("user_id")},
+    at timestamptz not null default now(),
+    ${extra},
+    unique (kpi_id, period_key)
+  )`,
+  // KPIs staff propose for the owner's approval (HQ's kpiprops)
+  `create table if not exists hq_kpi_proposals (
+    id text primary key,
+    user_id bigint not null references desk_users(id) on delete cascade,
+    title text not null,
+    unit text not null default 'number',
+    target numeric(16,2) not null default 0,
+    period text not null default 'month',
+    direction text not null default 'up',
+    source text not null default 'manual',
+    how text not null default '',
+    why text not null default '',
+    status text not null default 'pending',
+    final text not null default '',
+    note text not null default '',
+    kpi_id text references hq_kpis(id) on delete set null,
+    ${by("reviewed_by")},
+    reviewed_at timestamptz,
+    created_at timestamptz not null default now(),
+    ${extra}
+  )`,
+  `create index if not exists hq_kpi_proposals_status on hq_kpi_proposals (status)`,
+
   `create table if not exists hq_sops (
     id text primary key,
     title text not null,

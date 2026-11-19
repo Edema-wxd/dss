@@ -384,6 +384,9 @@ export const SPECS: readonly Spec[] = [
       ["checklist", "checklist", "json[]"],
       ["repeat", "repeat"],
       ["done_at", "doneAt", "ts"],
+      ["sop_id", "sopId", "textOrNull"],
+      ["focus_mins", "focusMins", "int"],
+      ["carried", "carried", "int", 0],
       ...STAMPS,
     ],
   },
@@ -412,7 +415,46 @@ export const SPECS: readonly Spec[] = [
       ["unit", "unit"],
       ["weight", "weight", "num"],
       ["how", "how"],
+      ["proposed_by", "proposedBy", "user"],
       ...STAMPS,
+    ],
+  },
+  {
+    pattern: /^kpilogs\/([^/]+)$/,
+    table: "hq_kpi_logs",
+    key: ["id"],
+    ids: byId,
+    required: ["kpi_id", "period_key", "value"],
+    fields: [
+      ["kpi_id", "kpiId", "ref:kpis"],
+      ["period_key", "periodKey", "textOrNull"],
+      ["value", "value", "num"],
+      ["user_id", "uid", "user"],
+      ["at", "at", "stamp"],
+    ],
+  },
+  {
+    pattern: /^kpiprops\/([^/]+)\/items\/([^/]+)$/,
+    table: "hq_kpi_proposals",
+    key: ["id"],
+    ids: (m, ctx) => ({ id: m[2], user_id: toUser(m[1], ctx, `kpiprops/${m[1]}`) }),
+    required: ["user_id", "title"],
+    fields: [
+      ["title", "title"],
+      ["unit", "unit", "text", "number"],
+      ["target", "target", "num", 0],
+      ["period", "period", "text", "month"],
+      ["direction", "direction", "text", "up"],
+      ["source", "source", "text", "manual"],
+      ["how", "how"],
+      ["why", "why"],
+      ["status", "status", "text", "pending"],
+      ["final", "final"],
+      ["note", "note"],
+      ["kpi_id", "kpiId", "ref:kpis"],
+      ["reviewed_by", "reviewedBy", "user"],
+      ["reviewed_at", "reviewedAt", "ts"],
+      ["created_at", "createdAt", "stamp"],
     ],
   },
   {
@@ -602,6 +644,7 @@ export type Person = {
   notifyEmail: string;
   notifyMode: string;
   pattern: string | null;
+  kpiSelf: boolean;
   joinedAt: string | null;
   extra: string;
 };
@@ -625,7 +668,7 @@ export function classify(docs: Docs) {
 }
 
 const PEOPLE_KNOWN = new Set(["name", "email", "notifyEmail", "notifyMode", "title", "hours", "whatsapp", "joinedAt", "updatedAt"]);
-const ROLES_KNOWN = new Set(["role", "roles", "active", "pattern"]);
+const ROLES_KNOWN = new Set(["role", "roles", "active", "pattern", "kpiSelf"]);
 
 /** HQ's people and roles documents, one person each. People without an email can't sign in, so they're reported. */
 export function planPeople(docs: Docs, warn: (m: string) => void): { people: Person[]; ownerUid: string | null } {
@@ -660,6 +703,7 @@ export function planPeople(docs: Docs, warn: (m: string) => void): { people: Per
       notifyEmail: String(p.notifyEmail ?? ""),
       notifyMode: ["instant", "digest", "off"].includes(String(p.notifyMode)) ? String(p.notifyMode) : "instant",
       pattern: r.pattern && typeof r.pattern === "object" ? JSON.stringify(r.pattern) : null,
+      kpiSelf: r.kpiSelf === true,
       joinedAt: isStamp(p.joinedAt) ? String(p.joinedAt) : null,
       extra: JSON.stringify(extra),
     });
@@ -827,15 +871,16 @@ export async function runImport(sql: Sql, file: ExportFile, opts: ImportOptions 
       continue;
     }
     const rows = await sql.query(
-      `insert into desk_users (email, name, role, roles, password_hash, active, hq_uid, title, hours, whatsapp, notify_email, notify_mode, pattern, joined_at, extra)
-       values ($1, $2, $3, $4::text[], 'none', $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13::timestamptz, $14::jsonb)
+      `insert into desk_users (email, name, role, roles, password_hash, active, hq_uid, title, hours, whatsapp, notify_email, notify_mode, pattern, joined_at, extra, kpi_self)
+       values ($1, $2, $3, $4::text[], 'none', $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13::timestamptz, $14::jsonb, $15)
        on conflict (email) do update set roles = excluded.roles, role = excluded.role, active = excluded.active, hq_uid = excluded.hq_uid,
          title = excluded.title, hours = excluded.hours, whatsapp = excluded.whatsapp, notify_email = excluded.notify_email,
-         notify_mode = excluded.notify_mode, pattern = excluded.pattern, joined_at = excluded.joined_at, extra = desk_users.extra || excluded.extra
+         notify_mode = excluded.notify_mode, pattern = excluded.pattern, joined_at = excluded.joined_at, kpi_self = excluded.kpi_self,
+         extra = desk_users.extra || excluded.extra
        returning id::int`,
       [
         p.email, p.name, isOwner(p.roles) ? "admin" : "team", p.roles, p.active, p.uid, p.title, p.hours, p.whatsapp,
-        p.notifyEmail, p.notifyMode, p.pattern, p.joinedAt, p.extra,
+        p.notifyEmail, p.notifyMode, p.pattern, p.joinedAt, p.extra, p.kpiSelf,
       ],
     );
     users.set(p.uid, Number(rows[0].id));

@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
-import { type ActionResult, addTeamMember, removeTeamMember, setTeamActive, setTeamPassword, setTeamRoles, syncSheet } from "@/app/admin/actions";
+import { useActionState, useState } from "react";
+import { addTeamMember, removeTeamMember, setTeamActive, setTeamPassword, setTeamRoles, syncSheet } from "@/app/admin/actions";
 import type { DeskUser, TeamMember } from "@/lib/desk/auth";
 import type { SyncStatus } from "@/lib/desk/sheets";
 import { ROLES, ROLE_NOTES, type Role } from "@/lib/hq/access";
-import { Button, Field, Panel, btn, fieldClass, useToast } from "@/components/desk/ui";
+import { Button, Field, Panel, btn, fieldClass } from "@/components/desk/ui";
+import { useRun } from "./kit";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -15,26 +16,6 @@ type Props = {
   canSync: boolean;
   sheet: { configured: boolean; url: string; last: SyncStatus };
 };
-
-/** Runs a server action, toasts its outcome and returns whether it worked. */
-function useRun() {
-  const toast = useToast();
-  const [pending, start] = useTransition();
-  const run = (action: () => Promise<ActionResult>) =>
-    new Promise<boolean>((resolve) =>
-      start(async () => {
-        try {
-          const r = await action();
-          toast(r.ok ? (r.message ?? "Saved") : r.error);
-          resolve(r.ok);
-        } catch {
-          toast("Something went wrong saving that. Check your connection and try again.");
-          resolve(false);
-        }
-      }),
-    );
-  return { run, pending };
-}
 
 function RolePicker({ value, onChange, name }: { value: Role[]; onChange?: (v: Role[]) => void; name?: string }) {
   return (

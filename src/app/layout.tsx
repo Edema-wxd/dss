@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Poppins } from "next/font/google";
 import { GoogleAnalytics } from "@/components/google-analytics";
@@ -29,7 +30,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${fraunces.variable} ${poppins.variable} h-full`}>
       <body className="min-h-full">{children}</body>
-      <GoogleAnalytics />
+      {/* it reads the URL, so dynamic routes need it behind a boundary */}
+      <Suspense fallback={null}>
+        <GoogleAnalytics />
+      </Suspense>
     </html>
   );
 }
