@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MODULES, ROLES, canUse, cleanRoles, isOwner, modulesFor, navFor } from "./access";
+import { type Cover, MODULES, ROLES, canUse, cleanRoles, effectiveRoles, isOwner, marketingTabsFor, modulesFor, navFor, seesMoney } from "./access";
 
 describe("role access", () => {
   it("covers all 13 HQ roles", () => {
@@ -49,5 +49,52 @@ describe("role access", () => {
   it("knows who is an owner", () => {
     expect(isOwner(["Admin", "Owner"])).toBe(true);
     expect(isOwner(["Admin"])).toBe(false);
+  });
+});
+
+describe("v24 rules", () => {
+  it("gives a Talent Manager Marketing, but only the Publicity tab", () => {
+    expect(canUse(["Talent Manager"], "marketing")).toBe(true);
+    expect(marketingTabsFor(["Talent Manager"])).toEqual(["publicity"]);
+  });
+
+  it("gives every tab to a role with full Marketing, even alongside Talent Manager", () => {
+    expect(marketingTabsFor(["Marketing"])).toBeNull();
+    expect(marketingTabsFor(["Talent Manager", "Assistant (VA)"])).toBeNull();
+  });
+
+  it("lists exactly HQ's money roles", () => {
+    expect(ROLES.filter((r) => seesMoney([r]))).toEqual(["Owner", "Admin", "Finance", "Operations (EA)", "Operations", "Sales", "Talent Manager"]);
+    expect(seesMoney(["Contributor", "Marketing"])).toBe(false);
+  });
+});
+
+describe("relief cover", () => {
+  const roles: Record<number, string[]> = { 1: ["Finance"], 2: ["Contributor"], 3: ["Contractor"], 4: ["Talent Manager"] };
+  const rolesOf = (id: number) => roles[id] ?? [];
+  const leave = (over: Partial<Cover>): Cover => ({ reliefId: 2, absentId: 1, start: "2026-12-01", end: "2026-12-05", status: "approved", ...over });
+
+  it("lends the absent person's roles to their relief for the dates of the leave, inclusive", () => {
+    const covers = [leave({})];
+    expect(effectiveRoles(2, roles[2], "2026-12-01", covers, rolesOf)).toEqual(["Finance", "Contributor"]);
+    expect(effectiveRoles(2, roles[2], "2026-12-05", covers, rolesOf)).toEqual(["Finance", "Contributor"]);
+    expect(effectiveRoles(2, roles[2], "2026-12-06", covers, rolesOf)).toEqual(["Contributor"]);
+    expect(effectiveRoles(2, roles[2], "2026-11-30", covers, rolesOf)).toEqual(["Contributor"]);
+  });
+
+  it("grants nothing for pending leave, or to anyone but the named relief", () => {
+    expect(effectiveRoles(2, roles[2], "2026-12-02", [leave({ status: "pending" })], rolesOf)).toEqual(["Contributor"]);
+    expect(effectiveRoles(3, roles[3], "2026-12-02", [leave({})], rolesOf)).toEqual(["Contractor"]);
+  });
+
+  it("treats a one-day leave with no end date as that day", () => {
+    expect(effectiveRoles(2, roles[2], "2026-12-01", [leave({ end: "" })], rolesOf)).toEqual(["Finance", "Contributor"]);
+    expect(effectiveRoles(2, roles[2], "2026-12-02", [leave({ end: "" })], rolesOf)).toEqual(["Contributor"]);
+  });
+
+  it("doesn't chain: covering someone who is covering only passes on their own roles", () => {
+    // 4 is away and 1 covers for 4; 1 is also away and 2 covers for 1
+    const covers = [leave({ reliefId: 1, absentId: 4 }), leave({ reliefId: 2, absentId: 1 })];
+    expect(effectiveRoles(2, roles[2], "2026-12-02", covers, rolesOf)).toEqual(["Finance", "Contributor"]);
   });
 });

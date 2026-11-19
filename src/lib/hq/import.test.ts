@@ -134,4 +134,32 @@ describe("documents", () => {
       { ref: "activity/act-1", at: "2026-01-12T11:00:00Z", byUid: OWNER_UID, action: "activity.update", target: "client:acme", summary: "Done: Send the report" },
     ]);
   });
+
+  it("brings over v24 talent profiles, keeping fields it doesn't know yet", () => {
+    const { batches } = plan();
+    const t = row(batches, "hq_talents", (r) => r.id === "tal-1");
+    expect(t).toMatchObject({ trial_ends: "2026-03-01", interests: ["food"], industries: ["Beverages"], avoid: ["Rival Cola"], partners: ["Acme Test Co"], rate_notes: "Before VAT" });
+    expect(JSON.parse(t.socials as string)[0]).toMatchObject({ platform: "instagram", followers: 1200 });
+    expect(JSON.parse(t.rates as string)).toHaveLength(1);
+    expect(JSON.parse(t.audience as string)).toMatchObject({ female: 60 });
+    expect(JSON.parse(t.extra as string)).toEqual({ futureField: "kept" });
+  });
+
+  it("brings over the brand tracker, with status updates pointing at people", () => {
+    const { batches } = plan();
+    const d = row(batches, "hq_deals", (r) => r.id === "deal-1");
+    expect(d).toMatchObject({ health: "watch", proposed: 800, fee: 500, received: 250, next_step: "Send the contract", next_date: "2026-02-03", usage: "3 months organic" });
+    expect(JSON.parse(d.updates as string)).toEqual([{ at: "2026-01-20T10:00:00Z", by: 2, text: "Brand came back with 500" }]);
+    expect(JSON.parse(d.extra as string)).toEqual({});
+  });
+
+  it("brings over Publicity: outlets, and pitches linked to them", () => {
+    const { batches, warnings } = plan();
+    expect(row(batches, "hq_media", (r) => r.id === "out-1")).toMatchObject({ name: "Test FM", type: "radio", show: "Morning Drive", industries: ["Lifestyle"], status: "warm", owner_id: 2 });
+    expect(row(batches, "hq_pitches", (r) => r.id === "p-1")).toMatchObject({ for_key: "talent:tal-1", outlet_id: "out-1", status: "pitched", pitched_on: "2026-01-21", owner_id: 1 });
+    expect(row(batches, "hq_pitches", (r) => r.id === "p-2")).toMatchObject({ for_key: "dss", outlet_id: null });
+    expect(warnings.join()).toContain("media/out-gone");
+    const order = batches.map((b) => b.table);
+    expect(order.indexOf("hq_media")).toBeLessThan(order.indexOf("hq_pitches"));
+  });
 });

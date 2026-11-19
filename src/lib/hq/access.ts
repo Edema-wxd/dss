@@ -1,6 +1,7 @@
 // Who can open which part of the admin. Shared by the server (every page and action checks it)
-// and the client (the nav only lists what someone can open). Taken from HQ's ROLES table in
-// c-core.js, plus the two areas the merge added: Visibility Sessions and the Activity log.
+// and the client (the nav only lists what someone can open). Taken from HQ's ROLES, SEES_MONEY
+// and MKT_ONLY tables in c-core.js (HQ version 24), plus the two areas the merge added:
+// Visibility Sessions and the Activity log.
 
 export const MODULES = [
   { key: "today", label: "Today", phase: 2 },
@@ -61,7 +62,7 @@ const HQ_ROLE_MODULES: Record<Role, readonly ModuleKey[]> = {
   "Project Manager": ["today", "overview", "tasks", "clients", "kpis", "team", "procedures", "settings", "chat", "plan", "time"],
   Sales: ["today", "tasks", "crm", "clients", "marketing", "kpis", "team", "procedures", "settings", "chat", "plan", "time"],
   Strategist: ["today", "tasks", "clients", "crm", "marketing", "kpis", "team", "procedures", "settings", "chat", "plan", "time"],
-  "Talent Manager": ["today", "tasks", "talent", "crm", "clients", "kpis", "team", "contracts", "procedures", "settings", "chat", "plan", "time"],
+  "Talent Manager": ["today", "tasks", "talent", "crm", "clients", "marketing", "kpis", "team", "contracts", "procedures", "settings", "chat", "plan", "time"],
   "Assistant (VA)": ["today", "tasks", "crm", "talent", "clients", "marketing", "kpis", "team", "procedures", "settings", "chat", "plan", "time"],
   Contributor: ["today", "tasks", "kpis", "team", "procedures", "settings", "chat", "plan", "time"],
   Contractor: ALL_STAFF,
@@ -69,19 +70,25 @@ const HQ_ROLE_MODULES: Record<Role, readonly ModuleKey[]> = {
 
 export const ROLE_NOTES: Record<Role, string> = {
   Owner: "Everything, including Finance, the Activity log, and adding or removing people.",
-  Admin: "Runs the business day to day. Everything except Finance.",
+  Admin: "Runs the business day to day. Sees everything except the Finance area.",
   Finance: "Budgets, spend, profit and loss, tax, invoices and the report archive.",
-  "Operations (EA)": "Tasks, clients, CRM, talent, contracts and invoices.",
-  Marketing: "Marketing dashboard, content planner, ads, CRM and clients.",
+  "Operations (EA)": "Tasks, clients, CRM, talent and invoices.",
+  Marketing: "Marketing dashboard, content planner, ads, Publicity, CRM and clients.",
   Operations: "Runs delivery and the back office: tasks, clients, CRM, talent and contracts.",
-  "Project Manager": "Tasks, clients and the command centre.",
-  Sales: "CRM, clients and marketing.",
-  Strategist: "Clients, CRM and marketing.",
-  "Talent Manager": "Talent roster, deals, CRM and contracts.",
-  "Assistant (VA)": "CRM, talent, clients and marketing support.",
-  Contributor: "Their own tasks, KPIs, attendance, plan, procedures and messages.",
-  Contractor: "Only their tasks, KPIs, procedures, plan and messages. No Team list or Visibility Sessions.",
+  "Project Manager": "Keeps client work on time: tasks, clients, deadlines and the Command centre.",
+  Sales: "Finds and closes new business: CRM pipeline, leads, clients and marketing.",
+  Strategist: "Client work, CRM and marketing.",
+  "Talent Manager": "Talent roster, deals and brand relationships, and Publicity in Marketing.",
+  "Assistant (VA)": "Tasks, CRM, talent, the content planner and Publicity.",
+  Contributor: "Their own tasks, KPIs and the team page.",
+  Contractor: "Their own tasks and KPIs only. No Team list or Visibility Sessions.",
 };
+
+/** Roles that see money: fees, deal values, rates' totals. Everyone else sees the work without the figures. */
+export const SEES_MONEY: readonly Role[] = ["Owner", "Admin", "Finance", "Operations (EA)", "Operations", "Sales", "Talent Manager"];
+
+/** Roles whose Marketing access is limited to some tabs. Every other role with Marketing sees every tab. */
+const MARKETING_ONLY: Partial<Record<Role, readonly string[]>> = { "Talent Manager": ["publicity"] };
 
 export const isRole = (v: unknown): v is Role => (ROLES as readonly string[]).includes(String(v));
 
@@ -101,6 +108,33 @@ export function modulesFor(roles: readonly string[]): Set<ModuleKey> {
 export const canUse = (roles: readonly string[], mod: ModuleKey) => modulesFor(roles).has(mod);
 
 export const isOwner = (roles: readonly string[]) => roles.includes("Owner");
+
+export const seesMoney = (roles: readonly string[]) => roles.some((r) => (SEES_MONEY as readonly string[]).includes(r));
+
+/**
+ * The Marketing tabs someone can open: null for every tab, or a list when all their Marketing
+ * access comes from limited roles (a Talent Manager gets ["publicity"]).
+ */
+export function marketingTabsFor(roles: readonly string[]): string[] | null {
+  const withMarketing = roles.filter((r) => isRole(r) && HQ_ROLE_MODULES[r].includes("marketing")) as Role[];
+  if (withMarketing.some((r) => !MARKETING_ONLY[r])) return null;
+  return [...new Set(withMarketing.flatMap((r) => MARKETING_ONLY[r] ?? []))];
+}
+
+/** An approved leave with a named relief. Dates are YYYY-MM-DD, inclusive. */
+export type Cover = { reliefId: number; absentId: number; start: string; end: string; status: string };
+
+/**
+ * Someone's roles for the day, as HQ's effRoles(): their own, plus the roles of anyone they are
+ * the relief for on approved leave that covers `day`. One level only: covering for someone
+ * who is themselves covering doesn't pass the second person's roles on. Pending leave grants nothing.
+ */
+export function effectiveRoles(userId: number, own: readonly string[], day: string, covers: readonly Cover[], rolesOf: (id: number) => readonly string[]): Role[] {
+  const borrowed = covers
+    .filter((c) => c.status === "approved" && c.reliefId === userId && c.absentId !== userId && day >= c.start && day <= (c.end || c.start))
+    .flatMap((c) => rolesOf(c.absentId));
+  return cleanRoles([...own, ...borrowed]);
+}
 
 /** The built areas someone can open, in nav order. */
 export function navFor(roles: readonly string[]) {
