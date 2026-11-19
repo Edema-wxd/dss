@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowRight, Check, Copy, MessageCircle, Plus } from "lucide-react";
 import { addTodayTask, startDay, swapThree } from "@/app/admin/(hq)/today/actions";
 import { toggleTask } from "@/app/admin/(hq)/tasks/actions";
+import { quickTouch } from "@/app/admin/(hq)/crm/actions";
+import { QUICK_TOUCHES } from "@/lib/hq/sales-model";
 import { Button, Panel, btn, fieldClass, useToast } from "@/components/desk/ui";
 import type { ClientLite, ContactLite, KpiWithState, Standup, Task } from "@/lib/hq/data";
 import { formatKpi, minutes, relDay, sortTasks } from "@/lib/hq/work";
@@ -14,6 +16,7 @@ import { TaskEditor, TaskRow, type WorkProps } from "./tasks";
 
 export type TodayProps = {
   w: WorkProps;
+  banners: { text: string; href: string; action: string }[];
   greeting: string;
   tasks: Task[];
   standup: Standup | null;
@@ -72,6 +75,14 @@ export function TodayView(p: TodayProps) {
         <p className="mt-1 text-slate">{sub}</p>
       </div>
       <Tape words={["Excellence, made visible", "One thing at a time", "Done beats perfect", "Protect your focus", "Make the call"]} />
+      {p.banners.map((b) => (
+        <div key={b.href + b.text} className="mb-3 flex flex-wrap items-center gap-3 rounded-2xl bg-[#eceef8] p-3 text-sm">
+          <span className="flex-1">{b.text}</span>
+          <Link href={b.href} className={cn(btn.base, btn.plain, btn.sm)}>
+            {b.action}
+          </Link>
+        </div>
+      ))}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="grid content-start gap-4">
@@ -325,6 +336,7 @@ function SwapThree({ open, onClose, tasks, current }: { open: boolean; onClose: 
 
 function Calls({ calls, today }: { calls: ContactLite[]; today: string }) {
   const toast = useToast();
+  const { run, pending } = useRun();
   const copy = async (v: string) => {
     try {
       await navigator.clipboard.writeText(v);
@@ -367,12 +379,20 @@ function Calls({ calls, today }: { calls: ContactLite[]; today: string }) {
                     )}
                   </div>
                 )}
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="text-slate">Log:</span>
+                  {QUICK_TOUCHES.map(([k, l]) => (
+                    <Button key={k} size="sm" disabled={pending} onClick={() => run(() => quickTouch(c.id, k))}>
+                      {l}
+                    </Button>
+                  ))}
+                </div>
               </div>
             );
           })}
         </div>
       ) : (
-        <EmptyNote title="No follow-ups due.">Set a next follow-up on any contact and it lands here on the day. Logging calls arrives with the CRM.</EmptyNote>
+        <EmptyNote title="No follow-ups due.">Set a next follow-up on any contact and it lands here on the day.</EmptyNote>
       )}
     </Panel>
   );

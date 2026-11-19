@@ -8,10 +8,12 @@ import { ClearBlocker } from "@/components/hq/overview-bits";
 import { PageHeader } from "@/components/hq/shell";
 import { NotConfiguredError } from "@/lib/desk/db";
 import { requireModule } from "@/lib/desk/auth";
-import { isOwner, seesMoney } from "@/lib/hq/access";
+import { canUse, isOwner, seesMoney } from "@/lib/hq/access";
 import { getStandups, kpiStates, listClients, listContacts, listKpis, listPeople, listTasks, liveDeals } from "@/lib/hq/data";
 import { addDays, compactNaira, lagosToday, longDate, personScore, relDay } from "@/lib/hq/work";
 
+import { listContracts } from "@/lib/hq/sales";
+import { LIVE, contractState } from "@/lib/hq/sales-model";
 export default function OverviewPage() {
   return (
     <main className="mx-auto max-w-[1280px] px-4 pt-6 pb-20 lg:px-8 lg:pt-8">
@@ -31,7 +33,6 @@ const SALES_STAGES = [
   ["negotiating", "Negotiating"],
   ["won", "Won"],
 ] as const;
-const LIVE = ["active", "onboarding", "paused"];
 
 function Stat({ label, value, sub, children }: { label: string; value: React.ReactNode; sub: string; children?: React.ReactNode }) {
   return (
@@ -58,12 +59,15 @@ async function Overview() {
       liveDeals(),
       listKpis(),
     ]);
-    v = { user, today, people: people.filter((p) => p.active), standups, tasks, contacts, clients, deals, kpis: await kpiStates(kpis, today) };
+    const contractAlerts = canUse(user.roles, "contracts")
+      ? (await listContracts()).map((c) => ({ c, s: contractState(c, today) })).filter(({ s }) => s.k === "decide" || s.k === "lapsed")
+      : [];
+    v = { user, today, people: people.filter((p) => p.active), standups, tasks, contacts, clients, deals, contractAlerts, kpis: await kpiStates(kpis, today) };
   } catch (e) {
     if (e instanceof NotConfiguredError) return <DeskSetupNotice />;
     throw e;
   }
-  const { user, today, people, standups, tasks, contacts, clients, deals, kpis } = v;
+  const { user, today, people, standups, tasks, contacts, clients, deals, kpis, contractAlerts } = v;
   const money = seesMoney(user.roles);
   const open = tasks.filter((t) => t.status !== "done");
   const overdue = open.filter((t) => t.due && t.due < today);
@@ -85,6 +89,12 @@ async function Overview() {
   const attention: { icon: React.ReactNode; text: string; sub: string; href?: string; action?: React.ReactNode }[] = [
     ...risk.map((c) => ({ icon: <AlertTriangle className="size-4 text-[#c42b3c]" aria-hidden />, text: `${c.name} is at risk`, sub: "Client" })),
     ...renew.map((c) => ({ icon: <CalendarClock className="size-4 text-[#a35c0a]" aria-hidden />, text: `${c.name} renews ${relDay(c.endDate, today).toLowerCase()}`, sub: "Plan the renewal conversation" })),
+    ...contractAlerts.map(({ c, s }) => ({
+      icon: <CalendarClock className="size-4 text-[#c42b3c]" aria-hidden />,
+      text: `${c.party || clients.find((x) => x.id === c.clientId)?.name || "A contract"}: ${s.l.toLowerCase()}`,
+      sub: "Contract needs a decision",
+      href: "/admin/contracts",
+    })),
     ...(overdueFollowUps.length
       ? [{ icon: <Phone className="size-4 text-[#a35c0a]" aria-hidden />, text: `${overdueFollowUps.length} follow-ups are overdue`, sub: [...new Set(overdueFollowUps.map((c) => first(c.ownerId)))].join(", ") }]
       : []),

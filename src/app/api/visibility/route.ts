@@ -1,4 +1,5 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse, after } from "next/server";
+import { syncApplicationToCrm } from "@/lib/hq/crm-sync";
 import { BANDS } from "@/lib/desk/model";
 import { routeFor, statusForRoute } from "@/lib/desk/logic";
 import { scheduleMirror } from "@/lib/desk/sheets";
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest) {
       status: statusForRoute(route),
     });
     await markLeadApplied(email);
+    after(() => syncApplicationToCrm(id));
     scheduleMirror();
     return NextResponse.json({ ok: true, id, route });
   } catch (e) {
