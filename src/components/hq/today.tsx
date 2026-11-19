@@ -17,6 +17,7 @@ import { TaskEditor, TaskRow, type WorkProps } from "./tasks";
 export type TodayProps = {
   w: WorkProps;
   banners: { text: string; href: string; action: string }[];
+  cards: { title: string; href: string; items: { title: string; sub: string }[] }[];
   greeting: string;
   tasks: Task[];
   standup: Standup | null;
@@ -173,6 +174,21 @@ export function TodayView(p: TodayProps) {
 
         <div className="grid content-start gap-4">
           <Calls calls={p.calls} today={w.today} />
+          {p.cards.map((c) => (
+            <Panel key={c.title}>
+              <CardHead title={c.title} count={c.items.length}>
+                <Link href={c.href} className="text-sm font-semibold text-pink underline">
+                  Open
+                </Link>
+              </CardHead>
+              {c.items.slice(0, 8).map((x, i) => (
+                <div key={i} className="border-t border-ink/10 py-2 first:border-t-0">
+                  <b className="block text-sm font-semibold">{x.title}</b>
+                  <span className="text-xs text-slate">{x.sub}</span>
+                </div>
+              ))}
+            </Panel>
+          ))}
           <Panel>
             <CardHead title="Today's load">
               <span className="text-sm text-slate">

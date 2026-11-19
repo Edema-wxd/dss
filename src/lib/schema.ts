@@ -309,6 +309,8 @@ const HQ = [
     "rates jsonb not null default '[]'",
     "rate_notes text not null default ''",
     "rate_at timestamptz",
+    "start_date date",
+    "handles text not null default ''",
   ].map((col) => `alter table hq_talents add column if not exists ${col}`),
   ...[
     "health text not null default ''",

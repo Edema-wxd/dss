@@ -3,7 +3,7 @@ import { ToastProvider } from "@/components/desk/ui";
 import { ShellNav } from "@/components/hq/shell";
 import { CaptureBar } from "@/components/hq/tasks";
 import { currentUser } from "@/lib/desk/auth";
-import { navFor } from "@/lib/hq/access";
+import { marketingTabsFor, navFor } from "@/lib/hq/access";
 
 // The HQ frame: the dark sidebar on wide screens, a floating pill nav on phones.
 // Signing in happens at /admin/login, outside this frame.
@@ -31,6 +31,8 @@ export default function HqLayout({ children }: LayoutProps<"/admin">) {
 async function Nav() {
   const user = await currentUser().catch(() => null);
   if (!user) return null;
-  const items = navFor(user.roles).map(({ key, label }) => ({ key, label }));
+  // someone whose Marketing is only Publicity (a Talent Manager) sees it named that way
+  const pubOnly = marketingTabsFor(user.roles)?.length === 1;
+  const items = navFor(user.roles).map(({ key, label }) => ({ key, label: key === "marketing" && pubOnly ? "Publicity" : label }));
   return <ShellNav items={items} me={{ name: user.name, email: user.email, role: user.roles.join(", ") }} />;
 }

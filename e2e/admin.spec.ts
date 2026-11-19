@@ -67,6 +67,8 @@ test("the first account becomes an Owner and lands in HQ", async ({ page }) => {
     "Visibility Sessions",
     "Clients",
     "CRM",
+    "Talent",
+    "Marketing",
     "KPIs",
     "Contracts",
     "Procedures",
@@ -374,4 +376,62 @@ test("a contributor can't open Clients, CRM or Contracts", async ({ page }) => {
     await page.goto(`/admin/${area}`);
     await expect(page).toHaveURL(/\/admin\/today$/);
   }
+});
+
+/* ── Phase 3b: talent and publicity ──────────────────────────────────── */
+
+test("talent: add someone to the roster, track a brand and post an update", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/talent");
+  await page.getByRole("button", { name: "Talent", exact: true }).click();
+  const form = page.getByRole("dialog", { name: "Add talent" });
+  await form.getByLabel("Name").fill("Test Talent");
+  await form.getByRole("button", { name: "Add talent" }).click();
+  await expect(page).toHaveURL(/\/admin\/talent\//);
+  await expect(page.getByRole("heading", { name: "Test Talent", level: 1 })).toBeVisible();
+
+  await page.getByRole("button", { name: "Add a brand" }).click();
+  const deal = page.getByRole("dialog", { name: "Add a brand for Test" });
+  await deal.getByLabel("Brand", { exact: true }).fill("Rival Cola");
+  await deal.getByRole("button", { name: "Add deal" }).click();
+  await expect(page.getByText("Brand added to the tracker.")).toBeVisible();
+
+  await page.getByRole("row", { name: /Rival Cola/ }).click();
+  const panel = page.getByRole("dialog", { name: "Rival Cola" });
+  await panel.getByLabel("Status update").fill("Sent the deck to their brand manager");
+  await panel.getByRole("button", { name: "Post update" }).click();
+  await expect(page.getByText("Status update posted.")).toBeVisible();
+  await expect(panel.getByText("Sent the deck to their brand manager").first()).toBeVisible();
+});
+
+test("publicity: a pitch warms the outlet up", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/marketing");
+  await expect(page).toHaveURL(/\/admin\/marketing\/publicity$/);
+  await page.getByRole("button", { name: "Media contact" }).click();
+  const m = page.getByRole("dialog", { name: "Add a media contact" });
+  await m.getByLabel("Outlet or agency name").fill("Test FM");
+  await m.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByText("Media contact added.")).toBeVisible();
+  await expect(page.getByRole("row", { name: /Test FM/ }).getByText("Not contacted")).toBeVisible();
+
+  await page.getByRole("row", { name: /Test FM/ }).getByRole("button", { name: "Pitch" }).click();
+  const p = page.getByRole("dialog", { name: "Log a pitch" });
+  await p.getByLabel("Story or angle").fill("A founder story");
+  await p.getByRole("button", { name: "Log pitch" }).click();
+  await expect(page.getByText("Pitch logged.")).toBeVisible();
+  await expect(page.getByRole("row", { name: /Test FM/ }).getByText("Contacted")).toBeVisible();
+});
+
+test("a Talent Manager sees Publicity, not the rest of Marketing", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/team");
+  await addPerson(page, { name: "Tia Talent", email: "tia@example.test", password: "tia-pass-1234" }, ["Talent Manager"]);
+  await signOut(page);
+  await signedIn(page, { email: "tia@example.test", password: "tia-pass-1234" });
+  await expect(sidebar(page).getByRole("link", { name: "Publicity" })).toBeVisible();
+  await expect(sidebar(page).getByRole("link", { name: "Marketing" })).toHaveCount(0);
+  await page.goto("/admin/marketing/publicity");
+  await expect(page.getByRole("heading", { name: "Publicity", level: 1 })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Marketing" })).toHaveCount(0);
 });

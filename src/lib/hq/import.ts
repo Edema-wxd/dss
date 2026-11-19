@@ -258,6 +258,8 @@ export const SPECS: readonly Spec[] = [
       ["rates", "rates", "json[]"],
       ["rate_notes", "rateNotes"],
       ["rate_at", "rateAt", "ts"],
+      ["start_date", "startDate", "date"],
+      ["handles", "handles"],
       ...STAMPS,
     ],
   },
