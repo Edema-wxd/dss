@@ -35,6 +35,7 @@ type Conv =
   | "users" // bigint[] of person ids
   | "reactions" // {emoji: [uid]} to {emoji: [id]}
   | "last" // a channel's {at, by, text}, with by as a person id
+  | "updates" // a status log [{at, by, text}], with each by as a person id
   | `ref:${string}`; // another document's id, or null when that document isn't in the export
 
 /** [column, source field, conversion, default when missing] */
@@ -55,6 +56,7 @@ const CAST: Partial<Record<string, string>> = {
   users: "bigint[]",
   reactions: "jsonb",
   last: "jsonb",
+  updates: "jsonb",
 };
 const castOf = (conv: Conv = "text") => CAST[conv] ?? "text";
 
@@ -126,6 +128,12 @@ function convert(v: unknown, conv: Conv, ctx: Context, where: string): unknown {
           out[emoji] = (Array.isArray(who) ? who : []).map((u) => toUser(u, ctx, where)).filter((x): x is number => x !== null);
       return JSON.stringify(out);
     }
+    case "updates":
+      return JSON.stringify(
+        (Array.isArray(v) ? v : []).map((u) =>
+          u && typeof u === "object" ? { ...(u as Record<string, unknown>), by: toUser((u as Record<string, unknown>).by, ctx, where) } : u,
+        ),
+      );
     case "last": {
       if (!v || typeof v !== "object") return null;
       const l = v as Record<string, unknown>;
@@ -228,6 +236,22 @@ export const SPECS: readonly Spec[] = [
       ["pay_flow", "payFlow"],
       ["priorities", "priorities"],
       ["terms", "terms"],
+      ["bio", "bio"],
+      ["location", "location"],
+      ["email", "email"],
+      ["phone", "phone"],
+      ["media_kit", "mediaKit"],
+      ["trial_ends", "trialEnds", "date"],
+      ["goals", "goals", "json[]"],
+      ["interests", "interests", "texts"],
+      ["industries", "industries", "texts"],
+      ["avoid", "avoid", "texts"],
+      ["partners", "partners", "texts"],
+      ["socials", "socials", "json[]"],
+      ["audience", "audience", "jsonOrNull"],
+      ["rates", "rates", "json[]"],
+      ["rate_notes", "rateNotes"],
+      ["rate_at", "rateAt", "ts"],
       ...STAMPS,
     ],
   },
@@ -280,6 +304,64 @@ export const SPECS: readonly Spec[] = [
       ["due_date", "dueDate", "date"],
       ["deliverables", "deliverables", "json[]"],
       ["notes", "notes"],
+      ["health", "health"],
+      ["contact_person", "contactPerson"],
+      ["contact_role", "contactRole"],
+      ["contact_channel", "contactChannel"],
+      ["proposed", "proposed", "num"],
+      ["received", "received", "num"],
+      ["next_step", "nextStep"],
+      ["next_date", "nextDate", "date"],
+      ["updates", "updates", "updates"],
+      ["usage", "usage"],
+      ...STAMPS,
+    ],
+  },
+  {
+    pattern: /^media\/([^/]+)$/,
+    table: "hq_media",
+    key: ["id"],
+    ids: byId,
+    required: ["name"],
+    fields: [
+      ["name", "name"],
+      ["type", "type"],
+      ["show", "show"],
+      ["host", "host"],
+      ["industries", "industries", "texts"],
+      ["city", "city"],
+      ["region", "region"],
+      ["reach", "reach"],
+      ["cost", "cost"],
+      ["contact_name", "contactName"],
+      ["contact_role", "contactRole"],
+      ["email", "email"],
+      ["phone", "phone"],
+      ["link", "link"],
+      ["status", "status", "text", "new"],
+      ["next_date", "nextDate", "date"],
+      ["owner_id", "ownerUid", "user"],
+      ["how_to_pitch", "howToPitch"],
+      ["notes", "notes"],
+      ...STAMPS,
+    ],
+  },
+  {
+    pattern: /^pitches\/([^/]+)$/,
+    table: "hq_pitches",
+    key: ["id"],
+    ids: byId,
+    fields: [
+      ["for_key", "forKey", "text", "dss"],
+      ["outlet_id", "outletId", "ref:media"],
+      ["angle", "angle"],
+      ["status", "status", "text", "idea"],
+      ["pitched_on", "pitchedOn", "date"],
+      ["run_date", "runDate", "date"],
+      ["link", "link"],
+      ["next_date", "nextDate", "date"],
+      ["owner_id", "ownerUid", "user"],
+      ["updates", "updates", "updates"],
       ...STAMPS,
     ],
   },

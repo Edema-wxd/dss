@@ -246,6 +246,81 @@ const HQ = [
     ${stamps}, ${extra}
   )`,
 
+  // HQ version 24: talent profiles (goals, socials, audience, rate cards) and the brand tracker.
+  // Added as columns so databases created before v24 pick them up too.
+  ...[
+    "bio text not null default ''",
+    "location text not null default ''",
+    "email text not null default ''",
+    "phone text not null default ''",
+    "media_kit text not null default ''",
+    "trial_ends date",
+    "goals jsonb not null default '[]'",
+    "interests text[] not null default '{}'",
+    "industries text[] not null default '{}'",
+    "avoid text[] not null default '{}'",
+    "partners text[] not null default '{}'",
+    "socials jsonb not null default '[]'",
+    "audience jsonb",
+    "rates jsonb not null default '[]'",
+    "rate_notes text not null default ''",
+    "rate_at timestamptz",
+  ].map((col) => `alter table hq_talents add column if not exists ${col}`),
+  ...[
+    "health text not null default ''",
+    "contact_person text not null default ''",
+    "contact_role text not null default ''",
+    "contact_channel text not null default ''",
+    "proposed numeric(14,2)",
+    "received numeric(14,2)",
+    "next_step text not null default ''",
+    "next_date date",
+    "updates jsonb not null default '[]'",
+    "usage text not null default ''",
+  ].map((col) => `alter table hq_deals add column if not exists ${col}`),
+  `create index if not exists hq_deals_talent on hq_deals (talent_id, stage)`,
+
+  /* Publicity (Marketing): the shared media list, and pitches and placements */
+  `create table if not exists hq_media (
+    id text primary key,
+    name text not null,
+    type text not null default '',
+    show text not null default '',
+    host text not null default '',
+    industries text[] not null default '{}',
+    city text not null default '',
+    region text not null default '',
+    reach text not null default '',
+    cost text not null default '',
+    contact_name text not null default '',
+    contact_role text not null default '',
+    email text not null default '',
+    phone text not null default '',
+    link text not null default '',
+    status text not null default 'new',
+    next_date date,
+    ${by("owner_id")},
+    how_to_pitch text not null default '',
+    notes text not null default '',
+    ${stamps}, ${extra}
+  )`,
+  // for_key: client:<id>, talent:<id>, dss or jane
+  `create table if not exists hq_pitches (
+    id text primary key,
+    for_key text not null default 'dss',
+    outlet_id text references hq_media(id) on delete set null,
+    angle text not null default '',
+    status text not null default 'idea',
+    pitched_on date,
+    run_date date,
+    link text not null default '',
+    next_date date,
+    ${by("owner_id")},
+    updates jsonb not null default '[]',
+    ${stamps}, ${extra}
+  )`,
+  `create index if not exists hq_pitches_outlet on hq_pitches (outlet_id)`,
+
   `create table if not exists hq_kpis (
     id text primary key,
     title text not null,

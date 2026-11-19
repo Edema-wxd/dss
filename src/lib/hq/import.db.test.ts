@@ -62,4 +62,11 @@ describe.skipIf(!usable)("import into Postgres", () => {
     const [standup] = await sql.query(`select u.email, s.day::text from hq_standups s join desk_users u on u.id = s.user_id`);
     expect(standup).toEqual({ email: "bo@example.test", day: "2026-01-30" });
   });
+
+  it("links pitches to outlets and keeps talent profiles", async () => {
+    const [p] = await sql.query(`select m.name, p.for_key from hq_pitches p join hq_media m on m.id = p.outlet_id where p.id = 'p-1'`);
+    expect(p).toEqual({ name: "Test FM", for_key: "talent:tal-1" });
+    const [t] = await sql.query(`select avoid, jsonb_array_length(socials) as socials, trial_ends::text from hq_talents where id = 'tal-1'`);
+    expect(t).toEqual({ avoid: ["Rival Cola"], socials: 1, trial_ends: "2026-03-01" });
+  });
 });
