@@ -525,6 +525,83 @@ const HQ = [
     ${extra}
   )`,
 
+  /* Marketing dashboard: accounts, monthly and daily numbers (typed in or from the data feed), posts, website, ads */
+  `create table if not exists hq_mkt_accounts (
+    id text primary key,
+    platform text not null,
+    handle text not null default '',
+    url text not null default '',
+    goal numeric,
+    ${by("owner_id")},
+    ${stamps}, ${extra}
+  )`,
+  `create table if not exists hq_mkt_stats (
+    account_id text not null,
+    month text not null,
+    followers numeric, reach numeric, impressions numeric, engagements numeric, posts numeric, profile_visits numeric, link_clicks numeric, leads numeric,
+    source text not null default '',
+    at timestamptz not null default now(),
+    ${by("by_id")},
+    ${extra},
+    primary key (account_id, month)
+  )`,
+  `create table if not exists hq_mkt_daily (
+    account_id text not null,
+    date date not null,
+    followers numeric, reach numeric, impressions numeric, engagements numeric, posts numeric, profile_visits numeric, link_clicks numeric, leads numeric,
+    source text not null default '',
+    at timestamptz not null default now(),
+    ${extra},
+    primary key (account_id, date)
+  )`,
+  `create table if not exists hq_mkt_posts (
+    id text primary key,
+    title text not null default '',
+    platform text not null default 'instagram',
+    format text not null default '',
+    date date,
+    time text not null default '',
+    status text not null default 'idea',
+    pillar text not null default '',
+    ${by("owner_id")},
+    link text not null default '',
+    caption text not null default '',
+    reach numeric, engagements numeric, saves numeric, leads numeric, views numeric, likes numeric, comments numeric, shares numeric,
+    external_id text,
+    source text not null default '',
+    ${stamps}, ${extra}
+  )`,
+  `create index if not exists hq_mkt_posts_date on hq_mkt_posts (date)`,
+  `create table if not exists hq_mkt_web (
+    month text primary key,
+    data jsonb not null default '{}',
+    source text not null default '',
+    synced_at timestamptz not null default now()
+  )`,
+  `create table if not exists hq_mkt_sync (
+    platform text primary key,
+    status text not null default '',
+    last_success_at timestamptz,
+    message text not null default '',
+    rows integer,
+    at timestamptz not null default now()
+  )`,
+  `create table if not exists hq_mkt_ads (
+    id text primary key,
+    name text not null,
+    platform text not null default 'instagram',
+    objective text not null default '',
+    status text not null default 'planned',
+    currency text not null default 'NGN',
+    start_date date,
+    end_date date,
+    budget numeric, spend numeric, impressions numeric, clicks numeric, leads numeric, conversions numeric, revenue numeric,
+    notes text not null default '',
+    client_id text,
+    logged_spend numeric,
+    ${stamps}, ${extra}
+  )`,
+
   /* messages: channels only for now; private DMs were left out on purpose */
   `create table if not exists hq_chat_channels (
     id text primary key,

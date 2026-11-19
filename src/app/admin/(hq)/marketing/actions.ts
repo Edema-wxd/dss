@@ -8,6 +8,11 @@ import { label } from "@/lib/hq/sales-model";
 import * as sales from "@/lib/hq/sales";
 import * as talent from "@/lib/hq/talent";
 import { COSTS, MEDIA_STATUS, MEDIA_TYPES, PITCH_STATUS, REGIONS, addToList, mediaStatusAfterPitch } from "@/lib/hq/talent-model";
+import { canUse, isOwner, marketingTabsFor } from "@/lib/hq/access";
+import * as mkt from "@/lib/hq/marketing";
+import { AD_OBJ, AD_PLATFORMS, AD_STATUS, NEWS_TAGS, PLATFORMS, POST_FORMATS, POST_STATUS } from "@/lib/hq/marketing-model";
+import { patchGeneral } from "@/lib/hq/data";
+import { lagosToday } from "@/lib/hq/work";
 
 const fail = (error: string): ActionResult => ({ ok: false, error });
 const text = (v: unknown, max = 300) => String(v ?? "").slice(0, max).trim();
@@ -99,4 +104,177 @@ export async function removePitch(id: string): Promise<ActionResult> {
   await talent.deletePitch(String(id));
   refresh();
   return { ok: true, message: "Pitch deleted." };
+}
+
+/* ── Marketing dashboard ─────────────────────────────────────────────── */
+
+
+const n = (v: unknown) => (v === "" || v === null || v === undefined || !Number.isFinite(Number(v)) ? null : Math.max(0, Number(v)));
+
+/** The dashboard tabs other than Publicity are closed to someone whose Marketing is only Publicity. */
+async function dashboardUser() {
+  const user = await requireModule("marketing");
+  const tabs = marketingTabsFor(user.roles);
+  return tabs && !tabs.includes("overview") ? null : user;
+}
+const CLOSED = "Your role reaches Publicity only.";
+
+export async function saveAccountAction(id: string | null, input: Record<string, unknown>): Promise<ActionResult> {
+  const user = await dashboardUser();
+  if (!user) return fail(CLOSED);
+  await mkt.saveAccount(
+    id ? String(id) : null,
+    {
+      platform: oneOf(PLATFORMS, input.platform, "instagram"),
+      handle: text(input.handle, 120),
+      url: /^https?:\/\//.test(text(input.url, 500)) ? text(input.url, 500) : "",
+      goal: n(input.goal),
+      ownerId: await person(input.ownerId),
+    },
+    user.id,
+  );
+  refresh();
+  return { ok: true, message: "Account saved." };
+}
+
+export async function removeAccount(id: string): Promise<ActionResult> {
+  if (!(await dashboardUser())) return fail(CLOSED);
+  await mkt.deleteAccount(String(id));
+  refresh();
+  return { ok: true, message: "Account removed." };
+}
+
+/** A month's numbers for one account, copied from the platform's insights. */
+export async function saveMonthStatsAction(accountId: string, month: string, input: Record<string, unknown>): Promise<ActionResult> {
+  const user = await dashboardUser();
+  if (!user) return fail(CLOSED);
+  if (!/^\d{4}-\d{2}$/.test(String(month))) return fail("Pick a month.");
+  if (!(await mkt.listAccounts()).some((a) => a.id === accountId)) return fail("That account isn't there any more.");
+  if (n(input.followers) === null) return fail("Add the followers at month end.");
+  await mkt.saveMonthStats(
+    accountId,
+    month,
+    Object.fromEntries(["followers", "reach", "impressions", "engagements", "posts", "profileVisits", "linkClicks", "leads"].map((k) => [k, n(input[k])])),
+    user.id,
+  );
+  refresh();
+  return { ok: true, message: "Numbers saved." };
+}
+
+export async function savePillars(raw: string): Promise<ActionResult> {
+  const user = await dashboardUser();
+  if (!user) return fail(CLOSED);
+  const pillars = [...new Set(String(raw ?? "").split(",").map((p) => p.trim()).filter(Boolean))].slice(0, 12);
+  await patchGeneral({ mktPillars: pillars }, user.id);
+  refresh();
+  return { ok: true, message: "Pillars saved." };
+}
+
+export async function savePostAction(id: string | null, input: Record<string, unknown>): Promise<ActionResult> {
+  const user = await dashboardUser();
+  if (!user) return fail(CLOSED);
+  const title = text(input.title, 300);
+  if (!title) return fail("Add the post idea or hook.");
+  await mkt.savePost(
+    id ? String(id) : null,
+    {
+      title,
+      platform: oneOf(PLATFORMS, input.platform, "instagram"),
+      format: (POST_FORMATS as readonly string[]).includes(String(input.format)) ? String(input.format) : "Reel",
+      date: date(input.date),
+      time: /^\d{2}:\d{2}$/.test(String(input.time ?? "")) ? String(input.time) : "",
+      status: oneOf(POST_STATUS, input.status, "idea"),
+      pillar: text(input.pillar, 120),
+      ownerId: await person(input.ownerId),
+      link: /^https?:\/\//.test(text(input.link, 1000)) ? text(input.link, 1000) : "",
+      caption: text(input.caption, 3000),
+      reach: n(input.reach),
+      engagements: n(input.engagements),
+      saves: n(input.saves),
+      leads: n(input.leads),
+    },
+    user.id,
+  );
+  refresh();
+  return { ok: true, message: id ? "Post updated." : "Post added to the planner." };
+}
+
+/** Moving a post on the calendar or board changes only its date or status. */
+export async function movePost(id: string, patch: { date?: string; status?: string }): Promise<ActionResult> {
+  const user = await dashboardUser();
+  if (!user) return fail(CLOSED);
+  await mkt.savePost(String(id), { ...(patch.date ? { date: date(patch.date) } : {}), ...(patch.status ? { status: oneOf(POST_STATUS, patch.status, "idea") } : {}) }, user.id);
+  refresh();
+  return { ok: true, message: "Moved." };
+}
+
+export async function removePost(id: string): Promise<ActionResult> {
+  if (!(await dashboardUser())) return fail(CLOSED);
+  await mkt.deletePost(String(id));
+  refresh();
+  return { ok: true, message: "Post deleted." };
+}
+
+/** Ad campaigns. Logging new spend in Finance arrives with Finance. */
+export async function saveAdAction(id: string | null, input: Record<string, unknown>): Promise<ActionResult> {
+  const user = await dashboardUser();
+  if (!user) return fail(CLOSED);
+  const name = text(input.name, 200);
+  if (!name) return fail("Name the campaign.");
+  await mkt.saveAd(
+    id ? String(id) : null,
+    {
+      name,
+      platform: AD_PLATFORMS.includes(String(input.platform)) ? String(input.platform) : "instagram",
+      objective: (AD_OBJ as readonly string[]).includes(String(input.objective)) ? String(input.objective) : "Leads",
+      status: oneOf(AD_STATUS, input.status, "planned"),
+      currency: ["NGN", "USD", "GBP", "EUR", "CAD"].includes(String(input.currency)) ? String(input.currency) : "NGN",
+      start: date(input.start),
+      end: date(input.end),
+      notes: text(input.notes, 2000),
+      clientId: text(input.clientId, 40) || null,
+      ...Object.fromEntries(["budget", "spend", "impressions", "clicks", "leads", "conversions", "revenue"].map((k) => [k, n(input[k])])),
+    },
+    user.id,
+  );
+  refresh();
+  return { ok: true, message: "Campaign saved." };
+}
+
+export async function removeAd(id: string): Promise<ActionResult> {
+  if (!(await dashboardUser())) return fail(CLOSED);
+  await mkt.deleteAd(String(id));
+  refresh();
+  return { ok: true, message: "Campaign deleted." };
+}
+
+export async function addNewsAction(input: Record<string, unknown>): Promise<ActionResult> {
+  const user = await dashboardUser();
+  if (!user) return fail(CLOSED);
+  const title = text(input.title, 300);
+  if (!title) return fail("Add the headline.");
+  await mkt.addNews({
+    date: lagosToday(),
+    title,
+    url: /^https?:\/\//.test(text(input.url, 1000)) ? text(input.url, 1000) : "",
+    source: text(input.source, 120),
+    tag: (NEWS_TAGS as readonly string[]).includes(String(input.tag)) ? String(input.tag) : NEWS_TAGS[0],
+    summary: text(input.summary, 2000),
+    soWhat: text(input.soWhat, 2000),
+    addedBy: String(user.id),
+  });
+  refresh();
+  return { ok: true, message: "Story added." };
+}
+
+/** A story can be removed by whoever added it, or an owner or manager. */
+export async function removeNews(id: string): Promise<ActionResult> {
+  const user = await dashboardUser();
+  if (!user) return fail(CLOSED);
+  const item = await mkt.getNews(String(id));
+  if (!item) return fail("That story isn't there any more.");
+  if (item.addedBy !== String(user.id) && !isOwner(user.roles) && !canUse(user.roles, "overview")) return fail("Only whoever added it, or a manager, can remove it.");
+  await mkt.deleteNews(item.id);
+  refresh();
+  return { ok: true, message: "Story removed." };
 }

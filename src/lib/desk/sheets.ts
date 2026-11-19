@@ -62,6 +62,20 @@ async function sheets(path: string, init: { method: string; body?: unknown }) {
   return res.json() as Promise<Record<string, unknown>>;
 }
 
+/** Reads several ranges from any sheet shared with the service account (at least as a Viewer). */
+export async function readSheetRanges(spreadsheetId: string, ranges: string[]): Promise<Record<string, string[][]>> {
+  const q = ranges.map((r) => `ranges=${encodeURIComponent(r)}`).join("&");
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?${q}`, {
+    headers: { Authorization: `Bearer ${await accessToken()}` },
+  });
+  if (!res.ok) {
+    if (res.status === 403 || res.status === 404) throw new Error(`The service account can't read that sheet. Share it with ${process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL} as a Viewer.`);
+    throw new Error(`Google Sheets refused the read (${res.status}): ${(await res.text()).slice(0, 200)}`);
+  }
+  const json = (await res.json()) as { valueRanges?: { values?: string[][] }[] };
+  return Object.fromEntries(ranges.map((r, i) => [r.split("!")[0], json.valueRanges?.[i]?.values ?? []]));
+}
+
 /* ── The copy ────────────────────────────────────────────────────────── */
 
 const APPS = "Applications";
