@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# browser tests
+/test-results/
+/playwright-report/
+
+# HQ data exports hold client revenue, finances and staff details: never commit them
+hq-database-export*.json
+/data/

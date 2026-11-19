@@ -1,0 +1,424 @@
+import type { Sql } from "./driver.ts";
+
+// Every table the admin uses. Each statement is safe to run again: tables and columns are only
+// ever added, never dropped or rewritten, so the app can apply this on first use against any
+// database (production, a Neon dev branch, local Postgres) without a separate migration step.
+
+/* ── Visibility Session desk ─────────────────────────────────────────── */
+
+const DESK = [
+  `create table if not exists vs_applications (
+    id text primary key,
+    submitted timestamptz not null default now(),
+    name text not null default '',
+    role text not null default '',
+    company text not null default '',
+    site text not null default '',
+    email text not null default '',
+    whatsapp text not null default '',
+    moment text not null default '',
+    timing text not null default '',
+    budget text not null default '',
+    decider text not null default '',
+    worth text not null default '',
+    route text not null default 'fit',
+    source text not null default '',
+    lookup_score integer,
+    consent boolean not null default false,
+    status text not null default 'New',
+    owner text not null default '',
+    session_date date,
+    session_time text not null default '',
+    first_reply timestamptz,
+    review_link text not null default '',
+    outcome text not null default '',
+    deal_value bigint,
+    follow_up date,
+    notes text not null default '',
+    updated timestamptz not null default now()
+  )`,
+  `create index if not exists vs_applications_status on vs_applications (status)`,
+  `create index if not exists vs_applications_session on vs_applications (session_date)`,
+  `create table if not exists vs_checklist_leads (
+    id bigserial primary key,
+    at timestamptz not null default now(),
+    name text not null default '',
+    email text not null default '',
+    moment text not null default '',
+    source text not null default '',
+    email1_sent boolean not null default false,
+    email2_sent boolean not null default false,
+    applied boolean not null default false,
+    notes text not null default ''
+  )`,
+  `create table if not exists vs_sent_mail (
+    id bigserial primary key,
+    at timestamptz not null default now(),
+    kind text not null default '',
+    to_email text not null default '',
+    subject text not null default '',
+    status text not null default '',
+    detail text not null default '',
+    lead_id bigint references vs_checklist_leads(id) on delete set null
+  )`,
+  `create index if not exists vs_sent_mail_at on vs_sent_mail (at desc)`,
+  `create table if not exists vs_settings (
+    key text primary key,
+    value text not null default '',
+    updated timestamptz not null default now(),
+    updated_by text not null default ''
+  )`,
+  `create table if not exists desk_users (
+    id bigserial primary key,
+    email text not null unique,
+    name text not null,
+    role text not null default 'team',
+    password_hash text not null,
+    created timestamptz not null default now()
+  )`,
+  `create table if not exists desk_sessions (
+    token_hash text primary key,
+    user_id bigint not null references desk_users(id) on delete cascade,
+    expires timestamptz not null
+  )`,
+  `create table if not exists desk_audit (
+    id bigserial primary key,
+    at timestamptz not null default now(),
+    actor text not null default '',
+    actor_email text not null default '',
+    action text not null,
+    target text not null default '',
+    summary text not null default '',
+    changes jsonb
+  )`,
+  `create index if not exists desk_audit_at on desk_audit (at desc)`,
+];
+
+/* ── People: desk accounts become HQ people ──────────────────────────── */
+
+// desk_users stays the one list of people who can sign in. HQ's people and roles documents
+// become columns on it. `role` (admin or team) is the old desk access level, kept in step with
+// `roles` so an older deploy still reads something sensible.
+const PEOPLE = [
+  `alter table desk_users add column if not exists roles text[] not null default '{}'`,
+  `alter table desk_users add column if not exists active boolean not null default true`,
+  `alter table desk_users add column if not exists hq_uid text`,
+  `create unique index if not exists desk_users_hq_uid on desk_users (hq_uid) where hq_uid is not null`,
+  `alter table desk_users add column if not exists title text not null default ''`,
+  `alter table desk_users add column if not exists hours integer`,
+  `alter table desk_users add column if not exists whatsapp text not null default ''`,
+  `alter table desk_users add column if not exists notify_email text not null default ''`,
+  `alter table desk_users add column if not exists notify_mode text not null default 'instant'`,
+  `alter table desk_users add column if not exists pattern jsonb`,
+  `alter table desk_users add column if not exists joined_at timestamptz`,
+  `alter table desk_users add column if not exists extra jsonb not null default '{}'`,
+  // existing desk admins become Owner; everyone else starts as Contributor until the owner picks
+  `update desk_users set roles = case when role = 'admin' then array['Owner'] else array['Contributor'] end where roles = '{}'`,
+  // so the HQ import can add the feed's one activity line without doubling it on a second run
+  `alter table desk_audit add column if not exists source_ref text`,
+  `create unique index if not exists desk_audit_source_ref on desk_audit (source_ref) where source_ref is not null`,
+];
+
+/* ── HQ ──────────────────────────────────────────────────────────────── */
+
+// Ids are the HQ document ids (text), so the import from the claude.ai version can run again
+// without duplicating anything. People are desk_users ids. Fields HQ stored that have no column
+// yet land in `extra`, so nothing from the old app is lost before its area is rebuilt.
+const by = (col: string) => `${col} bigint references desk_users(id) on delete set null`;
+const stamps = `created_at timestamptz not null default now(), ${by("created_by")}, updated_at timestamptz not null default now()`;
+const extra = `extra jsonb not null default '{}'`;
+
+const HQ = [
+  `create table if not exists hq_settings (
+    key text primary key,
+    value jsonb not null default '{}',
+    updated_at timestamptz not null default now(),
+    ${by("updated_by")}
+  )`,
+
+  `create table if not exists hq_tasks (
+    id text primary key,
+    title text not null,
+    ${by("assignee_id")},
+    due date,
+    status text not null default 'todo',
+    priority text not null default '',
+    estimate integer,
+    notes text not null default '',
+    client_id text,
+    tactic_id text,
+    checklist jsonb not null default '[]',
+    repeat text not null default '',
+    done_at timestamptz,
+    ${stamps}, ${extra}
+  )`,
+  `create index if not exists hq_tasks_assignee on hq_tasks (assignee_id, status)`,
+  `create index if not exists hq_tasks_due on hq_tasks (due)`,
+
+  `create table if not exists hq_standups (
+    user_id bigint not null references desk_users(id) on delete cascade,
+    day date not null,
+    data jsonb not null default '{}',
+    primary key (user_id, day)
+  )`,
+
+  `create table if not exists hq_clients (
+    id text primary key,
+    name text not null,
+    status text not null default 'active',
+    health text not null default '',
+    service text not null default '',
+    fee numeric(14,2),
+    currency text not null default 'NGN',
+    billing text not null default '',
+    start_date date,
+    end_date date,
+    contact_name text not null default '',
+    contact_role text not null default '',
+    ${by("lead_id")},
+    next_date date,
+    next_deliverable text not null default '',
+    links jsonb not null default '{}',
+    notes text not null default '',
+    ${stamps}, ${extra}
+  )`,
+
+  `create table if not exists hq_talents (
+    id text primary key,
+    name text not null,
+    category text not null default '',
+    status text not null default '',
+    package text not null default '',
+    ${by("manager_id")},
+    co_manager text not null default '',
+    commission numeric(6,2),
+    pay_flow text not null default '',
+    priorities text not null default '',
+    terms text not null default '',
+    ${stamps}, ${extra}
+  )`,
+
+  `create table if not exists hq_contacts (
+    id text primary key,
+    name text not null default '',
+    company text not null default '',
+    kind text not null default 'sales',
+    stage text not null default 'new',
+    ${by("owner_id")},
+    role text not null default '',
+    rel_type text not null default '',
+    service text not null default '',
+    value numeric(14,2),
+    currency text not null default 'NGN',
+    industry text not null default '',
+    location text not null default '',
+    website text not null default '',
+    instagram text not null default '',
+    source text not null default '',
+    tags text[] not null default '{}',
+    talent_ids text[] not null default '{}',
+    next_action text not null default '',
+    next_date date,
+    notes text not null default '',
+    touches jsonb not null default '[]',
+    application_id text references vs_applications(id) on delete set null,
+    ${stamps}, ${extra}
+  )`,
+  `create index if not exists hq_contacts_stage on hq_contacts (kind, stage)`,
+  `create index if not exists hq_contacts_next on hq_contacts (next_date)`,
+  `create unique index if not exists hq_contacts_application on hq_contacts (application_id) where application_id is not null`,
+
+  `create table if not exists hq_deals (
+    id text primary key,
+    title text not null default '',
+    brand text not null default '',
+    talent_id text references hq_talents(id) on delete set null,
+    contact_id text references hq_contacts(id) on delete set null,
+    ${by("owner_id")},
+    stage text not null default '',
+    fee numeric(14,2),
+    currency text not null default 'NGN',
+    commission_pct numeric(6,2),
+    pay_flow text not null default '',
+    due_date date,
+    deliverables jsonb not null default '[]',
+    notes text not null default '',
+    ${stamps}, ${extra}
+  )`,
+
+  `create table if not exists hq_kpis (
+    id text primary key,
+    title text not null,
+    ${by("owner_id")},
+    direction text not null default 'up',
+    period text not null default 'month',
+    source text not null default '',
+    target numeric(16,2),
+    unit text not null default '',
+    weight numeric(6,2),
+    how text not null default '',
+    ${stamps}, ${extra}
+  )`,
+
+  `create table if not exists hq_sops (
+    id text primary key,
+    title text not null,
+    area text not null default '',
+    ${by("owner_id")},
+    purpose text not null default '',
+    steps jsonb not null default '[]',
+    links jsonb not null default '[]',
+    ${stamps}, ${extra}
+  )`,
+
+  // monthly snapshots: reports/{area}_{month} and fin/main/reports/finance_{month}
+  `create table if not exists hq_reports (
+    id text primary key,
+    area text not null,
+    month text not null,
+    title text not null default '',
+    slides jsonb not null default '[]',
+    auto boolean not null default false,
+    ${by("by_id")},
+    created_at timestamptz not null default now(),
+    ${extra}
+  )`,
+  `create index if not exists hq_reports_area on hq_reports (area, month)`,
+
+  /* finance */
+  `create table if not exists hq_fin_expenses (
+    id text primary key,
+    date date not null,
+    amount numeric(14,2) not null,
+    currency text not null default 'NGN',
+    cat text not null,
+    acct text not null default 'business',
+    description text not null default '',
+    vendor text not null default '',
+    method text not null default '',
+    client_id text,
+    deal text not null default '',
+    asset_id text,
+    receipt text not null default '',
+    recurring boolean not null default false,
+    source text not null default '',
+    ${stamps}, ${extra}
+  )`,
+  `create index if not exists hq_fin_expenses_date on hq_fin_expenses (date)`,
+  `create table if not exists hq_fin_income (
+    id text primary key,
+    date date not null,
+    amount numeric(14,2) not null,
+    currency text not null default 'NGN',
+    type text not null,
+    acct text not null default 'business',
+    description text not null default '',
+    from_name text not null default '',
+    client_id text,
+    deal text not null default '',
+    source text not null default '',
+    ${stamps}, ${extra}
+  )`,
+  `create index if not exists hq_fin_income_date on hq_fin_income (date)`,
+  `create table if not exists hq_fin_booked (
+    month text primary key,
+    locked boolean not null default false,
+    source text not null default '',
+    lines jsonb not null default '[]',
+    seen text[] not null default '{}',
+    updated_at timestamptz not null default now(),
+    ${extra}
+  )`,
+  `create table if not exists hq_fin_budgets (
+    month text primary key,
+    revenue numeric(14,2),
+    cats jsonb not null default '{}',
+    note text not null default '',
+    ${by("by_id")},
+    updated_at timestamptz not null default now(),
+    ${extra}
+  )`,
+  `create table if not exists hq_fin_assets (
+    id text primary key,
+    name text not null,
+    cost numeric(14,2) not null,
+    date date,
+    first_month text not null default '',
+    life_months integer,
+    exp_ids text[] not null default '{}',
+    notes text not null default '',
+    ${extra}
+  )`,
+
+  /* marketing */
+  `create table if not exists hq_mkt_news (
+    id text primary key,
+    date date,
+    title text not null,
+    url text not null default '',
+    source text not null default '',
+    summary text not null default '',
+    so_what text not null default '',
+    tag text not null default '',
+    added_by text not null default '',
+    ${extra}
+  )`,
+
+  /* messages: channels only for now; private DMs were left out on purpose */
+  `create table if not exists hq_chat_channels (
+    id text primary key,
+    name text not null,
+    description text not null default '',
+    emoji text not null default '',
+    color text not null default '',
+    announce boolean not null default false,
+    sort integer not null default 0,
+    pins text[] not null default '{}',
+    last jsonb,
+    ${stamps}, ${extra}
+  )`,
+  `create table if not exists hq_chat_messages (
+    channel_id text not null references hq_chat_channels(id) on delete cascade,
+    id text not null,
+    ${by("by_id")},
+    at timestamptz not null default now(),
+    text text not null default '',
+    files jsonb not null default '[]',
+    mentions bigint[] not null default '{}',
+    reactions jsonb not null default '{}',
+    reply text,
+    edited timestamptz,
+    ${extra},
+    primary key (channel_id, id)
+  )`,
+  `create index if not exists hq_chat_messages_channel on hq_chat_messages (channel_id, at)`,
+];
+
+export const SCHEMA: readonly string[] = [...DESK, ...PEOPLE, ...HQ];
+
+/** A short fingerprint of the schema above, so a cold start can skip it when nothing changed. */
+export const SCHEMA_VERSION = (() => {
+  let h = 0x811c9dc5;
+  for (const ch of SCHEMA.join(";")) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193) >>> 0;
+  return h.toString(16);
+})();
+
+export async function applySchema(sql: Sql) {
+  for (const stmt of SCHEMA) await sql.query(stmt);
+  await sql.query(`create table if not exists app_meta (key text primary key, value text not null)`);
+  await sql.query(`insert into app_meta (key, value) values ('schema', $1) on conflict (key) do update set value = excluded.value`, [
+    SCHEMA_VERSION,
+  ]);
+}
+
+/** Applies the schema unless this database already has this exact version. One query when it does. */
+export async function ensureCurrentSchema(sql: Sql) {
+  try {
+    const rows = await sql.query(`select value from app_meta where key = 'schema'`);
+    if (rows[0]?.value === SCHEMA_VERSION) return false;
+  } catch {
+    // no app_meta table yet: a new database, or one from before the version check
+  }
+  await applySchema(sql);
+  return true;
+}

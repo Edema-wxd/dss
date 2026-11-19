@@ -12,7 +12,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md overflow-hidden rounded-[28px] border-2 border-ink bg-white shadow-hard-lg">
         <div className="bg-ink px-6 py-5 text-white">
           <p className="text-xs font-bold tracking-[0.12em] text-white/60 uppercase">Digital Savvy Studios</p>
-          <h1 className="mt-1 text-3xl font-bold">Session Desk</h1>
+          <h1 className="mt-1 text-3xl font-bold">
+            DSS <i className="text-pink">HQ</i>
+          </h1>
         </div>
         <Spectrum className="h-1.5" />
         <div className="p-6">

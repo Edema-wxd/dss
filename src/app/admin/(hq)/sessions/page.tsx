@@ -2,14 +2,14 @@ import { Suspense } from "react";
 import { Desk } from "@/components/desk/desk";
 import { DeskSetupNotice } from "@/components/desk/setup-notice";
 import { TEAM } from "@/lib/desk/model";
-import { NotConfiguredError, loadAudit, loadDesk } from "@/lib/desk/db";
-import { listUsers, requireUser } from "@/lib/desk/auth";
+import { NotConfiguredError, loadDesk } from "@/lib/desk/db";
+import { listUsers, requireModule } from "@/lib/desk/auth";
 import { lastSync, mirrorConfigured, sheetUrl } from "@/lib/desk/sheets";
 import { mailConfigured } from "@/lib/mail";
 
-export default function AdminPage() {
+export default function SessionsPage() {
   return (
-    <Suspense fallback={<p className="p-10 text-center text-slate">Opening the desk…</p>}>
+    <Suspense fallback={<p className="p-10 text-center text-slate">Opening Visibility Sessions…</p>}>
       <DeskLoader />
     </Suspense>
   );
@@ -18,17 +18,12 @@ export default function AdminPage() {
 async function DeskLoader() {
   let loaded;
   try {
-    const user = await requireUser();
-    const [data, users, synced, audit] = await Promise.all([
-      loadDesk(),
-      listUsers(),
-      lastSync(),
-      user.role === "admin" ? loadAudit() : [],
-    ]);
+    const user = await requireModule("sessions");
+    const [data, users, synced] = await Promise.all([loadDesk(), listUsers(), lastSync()]);
     loaded = {
       user,
-      data: { ...data, audit },
-      users,
+      data,
+      users: users.filter((u) => u.active),
       sheet: { configured: mirrorConfigured(), url: sheetUrl(), last: synced },
       mail: { configured: mailConfigured(), from: process.env.SMTP_USER ?? "" },
     };
@@ -38,5 +33,5 @@ async function DeskLoader() {
   }
   const { user, data, users, sheet, mail } = loaded;
   const team = [...new Set([...TEAM, ...users.map((u) => u.name.split(" ")[0])])];
-  return <Desk data={data} user={user} users={users} team={team} sheet={sheet} mail={mail} />;
+  return <Desk data={data} user={user} team={team} sheet={sheet} mail={mail} />;
 }

@@ -9,7 +9,7 @@ export function LoginForm() {
   const [state, action, pending] = useActionState(login, null);
   return (
     <form action={action} className="grid gap-4">
-      <p className="text-slate">Sign in to manage Visibility Session applications, slots and website settings.</p>
+      <p className="text-slate">Sign in to DSS HQ with your email and password.</p>
       <Field label="Email">
         <input name="email" type="email" required autoComplete="username" className={fieldClass} />
       </Field>
@@ -33,7 +33,7 @@ export function SetupForm() {
   return (
     <form action={action} className="grid gap-4">
       <p className="text-slate">
-        No one has a desk account yet. Create the first one. It becomes the admin account, which can add your EA, VA and developer later.
+        No one has an HQ account yet. Create the first one. It becomes an Owner account, which can add the rest of the team and pick their roles.
       </p>
       <Field label="Your name">
         <input name="name" required autoComplete="name" className={fieldClass} />
@@ -50,7 +50,7 @@ export function SetupForm() {
         </p>
       )}
       <button type="submit" disabled={pending} className={cn(btn.base, btn.primary, "min-h-11")}>
-        {pending ? "Creating…" : "Create the admin account"}
+        {pending ? "Creating…" : "Create the owner account"}
       </button>
     </form>
   );

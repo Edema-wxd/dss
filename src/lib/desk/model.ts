@@ -197,7 +197,12 @@ export const AUDIT_ACTIONS = {
   "settings.update": "Changed settings",
   "team.add": "Added team member",
   "team.remove": "Removed team member",
+  "team.roles": "Changed roles",
+  "team.active": "Changed access",
+  "team.password": "Set a password",
   "sheet.sync": "Synced Google Sheet",
+  "hq.import": "Imported HQ data",
+  "activity.update": "Posted an update",
 } as const;
 
 export type DeskData = {
@@ -205,8 +210,6 @@ export type DeskData = {
   leads: Lead[];
   mails: SentMail[];
   settings: Settings;
-  /** only loaded for admins; empty for everyone else */
-  audit: AuditEntry[];
   loadedAt: number;
 };
 
