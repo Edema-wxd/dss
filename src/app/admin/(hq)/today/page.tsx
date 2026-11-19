@@ -7,6 +7,9 @@ import { getStandups, kpiStates, listClients, listContacts, listKpis, listPeople
 import { loadWork } from "@/lib/hq/load";
 import { addDays, lagosHour } from "@/lib/hq/work";
 
+import { canUse, isOwner } from "@/lib/hq/access";
+import { listClientsFull, listContracts } from "@/lib/hq/sales";
+import { LIVE, contractState } from "@/lib/hq/sales-model";
 export default function TodayPage() {
   return (
     <main className="mx-auto max-w-[1280px] px-4 pt-6 pb-20 lg:px-8 lg:pt-8">
@@ -17,7 +20,6 @@ export default function TodayPage() {
   );
 }
 
-const LIVE = ["active", "onboarding", "paused"];
 
 async function Today() {
   let props;
@@ -33,8 +35,22 @@ async function Today() {
       listPeople(),
     ]);
     const h = lagosHour();
+    const banners: { text: string; href: string; action: string }[] = [];
+    if (isOwner(user.roles))
+      for (const c of (await listClientsFull()).filter((c) => c.onb?.status === "submitted"))
+        banners.push({ text: `${c.name} is ready for your onboarding sign-off.`, href: `/admin/clients/${c.id}`, action: "Review" });
+    if (canUse(user.roles, "contracts")) {
+      const due = (await listContracts()).map((c) => ({ c, s: contractState(c, w.today) })).filter(({ s }) => s.k === "decide" || s.k === "lapsed");
+      if (due.length)
+        banners.push({
+          text: `${due.length} contract${due.length === 1 ? " needs" : "s need"} a decision: ${due.slice(0, 3).map(({ c, s }) => `${c.party || clients.find((x) => x.id === c.clientId)?.name || "Unnamed"} (${s.l.toLowerCase()})`).join(", ")}.`,
+          href: "/admin/contracts",
+          action: "Open contracts",
+        });
+    }
     props = {
       w,
+      banners,
       greeting: h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening",
       tasks,
       standup: standups.get(user.id) ?? null,

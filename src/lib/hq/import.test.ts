@@ -68,7 +68,9 @@ describe("documents", () => {
 
   it("keeps fields without a column in extra", () => {
     const { batches } = plan();
-    expect(JSON.parse(row(batches, "hq_clients", (r) => r.id === "acme").extra as string)).toEqual({ onb: { status: "done" } });
+    const acme = row(batches, "hq_clients", (r) => r.id === "acme");
+    expect(JSON.parse(acme.onb as string)).toEqual({ status: "done" });
+    expect(JSON.parse(acme.extra as string)).toEqual({});
     expect(JSON.parse(row(batches, "hq_fin_assets", (r) => r.id === "a-1").extra as string)).toEqual({ expId: "e-1" });
   });
 
@@ -131,7 +133,16 @@ describe("documents", () => {
 
   it("turns the activity feed into audit lines", () => {
     expect(planActivity(docs)).toEqual([
-      { ref: "activity/act-1", at: "2026-01-12T11:00:00Z", byUid: OWNER_UID, action: "activity.update", target: "client:acme", summary: "Done: Send the report" },
+      {
+        ref: "activity/act-1",
+        at: "2026-01-12T11:00:00Z",
+        byUid: OWNER_UID,
+        action: "activity.update",
+        target: "client:acme",
+        summary: "Done: Send the report",
+        refType: "client",
+        refId: "acme",
+      },
     ]);
   });
 

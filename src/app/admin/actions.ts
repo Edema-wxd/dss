@@ -18,6 +18,7 @@ import {
 import * as store from "@/lib/desk/db";
 import { mirrorConfigured, scheduleMirror, syncSheetNow } from "@/lib/desk/sheets";
 import { deliverChecklist } from "@/lib/mail";
+import { syncApplicationToCrm } from "@/lib/hq/crm-sync";
 import {
   type DeskUser,
   countUsers,
@@ -119,6 +120,7 @@ export async function saveApplication(id: string, version: string, input: Record
     const changes = diff(before, after, EDIT_KEYS);
     const fields = Object.keys(changes);
     if (fields.length) await audit(user, "application.update", appId, `${appLabel(after)}: changed ${fields.join(", ")}`, changes);
+    if (changes.status) await syncApplicationToCrm(appId);
   }
   scheduleMirror();
   refresh();
@@ -154,6 +156,7 @@ export async function addApplication(input: Record<string, unknown>): Promise<Ac
     owner: edit.owner,
     notes: edit.notes,
   });
+  await syncApplicationToCrm(id);
   await audit(user, "application.create", id, `${appLabel({ id, name, company: text(input.company, 160) })} added by hand`);
   scheduleMirror();
   refresh();

@@ -178,7 +178,7 @@ const byId = (m: RegExpMatchArray) => ({ id: m[1] });
 /** In write order: a table comes after any table it points at. */
 export const SPECS: readonly Spec[] = [
   {
-    pattern: /^settings\/(general)$/,
+    pattern: /^settings\/(general|onboarding)$/,
     table: "hq_settings",
     key: ["key"],
     ids: (m) => ({ key: m[1] }),
@@ -216,6 +216,12 @@ export const SPECS: readonly Spec[] = [
       ["next_deliverable", "nextDeliverable"],
       ["links", "links", "json{}"],
       ["notes", "notes"],
+      ["pay_mode", "payMode", "text", "invoice"],
+      ["pay_day", "payDay", "int"],
+      ["point_id", "pointUid", "user"],
+      ["email", "email"],
+      ["phone", "phone"],
+      ["onb", "onb", "jsonOrNull"],
       ...STAMPS,
     ],
   },
@@ -282,6 +288,14 @@ export const SPECS: readonly Spec[] = [
       ["next_date", "nextDate", "date"],
       ["notes", "notes"],
       ["touches", "touches", "json[]"],
+      ["email", "email"],
+      ["phone", "phone"],
+      ["whatsapp", "whatsapp"],
+      ["won_at", "wonAt", "ts"],
+      ["linkedin", "linkedin"],
+      ["last_touch", "lastTouch", "ts"],
+      ["client_id", "clientId", "textOrNull"],
+      ["batch", "batch"],
       ...STAMPS,
     ],
   },
@@ -314,6 +328,32 @@ export const SPECS: readonly Spec[] = [
       ["next_date", "nextDate", "date"],
       ["updates", "updates", "updates"],
       ["usage", "usage"],
+      ...STAMPS,
+    ],
+  },
+  {
+    pattern: /^contracts\/([^/]+)$/,
+    table: "hq_contracts",
+    key: ["id"],
+    ids: byId,
+    fields: [
+      ["kind", "kind", "text", "client"],
+      ["status", "status", "text", "active"],
+      ["client_id", "clientId", "textOrNull"],
+      ["talent_id", "talentId", "textOrNull"],
+      ["party", "party"],
+      ["title", "title"],
+      ["start_date", "start", "date"],
+      ["end_date", "end", "date"],
+      ["renewal", "renewal", "text", "manual"],
+      ["notice_days", "noticeDays", "int", 30],
+      ["value", "value", "num"],
+      ["period", "period", "text", "month"],
+      ["currency", "currency", "text", "NGN"],
+      ["owner_id", "ownerUid", "user"],
+      ["link", "link"],
+      ["notes", "notes"],
+      ["history", "history", "json[]"],
       ...STAMPS,
     ],
   },
@@ -649,7 +689,7 @@ export type Person = {
   extra: string;
 };
 
-export type ActivityLine = { ref: string; at: string; byUid: string; action: string; target: string; summary: string };
+export type ActivityLine = { ref: string; at: string; byUid: string; action: string; target: string; summary: string; refType: string; refId: string };
 
 /** Sorts every document path into a table, the people list, the activity feed, left out on purpose, or unmapped. */
 export function classify(docs: Docs) {
@@ -787,6 +827,8 @@ export function planActivity(docs: Docs): ActivityLine[] {
       action: `activity.${String(a.type || "update")}`,
       target: [a.refType, a.refId].filter(Boolean).join(":"),
       summary: String(a.text ?? ""),
+      refType: String(a.refType ?? ""),
+      refId: String(a.refId ?? ""),
     };
   });
 }
@@ -914,9 +956,10 @@ export async function runImport(sql: Sql, file: ExportFile, opts: ImportOptions 
     const id = a.byUid === "owner" ? ownerId : users.get(a.byUid);
     const who = id ? names.get(id) : undefined;
     await sql.query(
-      `insert into desk_audit (at, actor, actor_email, action, target, summary, source_ref) values ($1::timestamptz, $2, $3, $4, $5, $6, $7)
+      `insert into desk_audit (at, actor, actor_email, action, target, summary, source_ref, ref_type, ref_id, actor_id)
+       values ($1::timestamptz, $2, $3, $4, $5, $6, $7, nullif($8, ''), nullif($9, ''), $10)
        on conflict (source_ref) where source_ref is not null do nothing`,
-      [a.at, who?.name ?? "", who?.email ?? "", a.action, a.target, a.summary.slice(0, 1000), a.ref],
+      [a.at, who?.name ?? "", who?.email ?? "", a.action, a.target, a.summary.slice(0, 1000), a.ref, a.refType, a.refId, id ?? null],
     );
   }
 

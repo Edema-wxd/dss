@@ -404,7 +404,7 @@ export function KpisView({ me, people, kpis, proposals }: Props) {
                       <Bar pct={k.pct} label={k.title} />
                       <span className="text-xs text-slate">
                         {label(KPI_SOURCES, k.source || "manual")}
-                        {k.source === "auto_touches" ? ". Counted once the CRM arrives" : k.source === "auto_revenue" ? ". Counted once Finance arrives" : ""}
+                        {k.source === "auto_revenue" ? ". Counted once Finance arrives" : ""}
                         {k.how ? `. ${k.how}` : ""}
                       </span>
                     </div>

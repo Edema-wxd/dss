@@ -84,8 +84,7 @@ export type ContactLite = {
 export async function listContacts(): Promise<ContactLite[]> {
   const rows = await (await db()).query(
     `select id, name, company, kind, stage, owner_id::int as "ownerId", ${day("next_date")} as "nextDate", next_action as "nextAction",
-       value, currency, coalesce(extra->>'wonAt', '') as "wonAt", coalesce(extra->>'phone', '') as phone,
-       coalesce(extra->>'whatsapp', '') as whatsapp, coalesce(extra->>'email', '') as email from hq_contacts`,
+       value, currency, coalesce(${iso("won_at")}, '') as "wonAt", phone, whatsapp, email from hq_contacts`,
   );
   return rows.map((r) => ({ ...r, value: num(r.value) })) as ContactLite[];
 }
@@ -276,8 +275,8 @@ export async function logKpi(k: Pick<Kpi, "id" | "period">, value: number, userI
 
 /**
  * Each KPI with its number so far this period and its percent of target. Auto sources are
- * counted the way HQ counts them. CRM follow-ups and revenue need Phases 3 and 4, so until
- * then they read 0 and "not counted yet" (null) respectively.
+ * counted the way HQ counts them. Revenue needs Finance, so until then it reads "not counted
+ * yet" (null).
  */
 export async function kpiStates(kpis: readonly Kpi[], today = lagosToday()): Promise<KpiWithState[]> {
   if (!kpis.length) return [];
@@ -287,14 +286,19 @@ export async function kpiStates(kpis: readonly Kpi[], today = lagosToday()): Pro
     `select assignee_id::int as "userId", (done_at at time zone 'Africa/Lagos')::date::text as day from hq_tasks
      where status = 'done' and done_at >= now() - interval '100 days'`,
   );
-  const wonRows = await q.query(`select owner_id::int as "userId", left(coalesce(extra->>'wonAt', ''), 10) as day from hq_contacts where stage = 'won'`);
+  const wonRows = await q.query(`select owner_id::int as "userId", coalesce(${lagosDay("won_at")}, '') as day from hq_contacts where stage = 'won'`);
+  // follow-ups logged on CRM contacts: calls, WhatsApp, email and meetings (notes don't count)
+  const touchRows = await q.query(
+    `select actor_id::int as "userId", ${lagosDay("at")} as day from desk_audit
+     where ref_type = 'contact' and action in ('activity.call', 'activity.whatsapp', 'activity.email', 'activity.meeting') and at >= now() - interval '100 days'`,
+  );
   return kpis.map((k) => {
     const start = periodStart(k.period || "month", today);
     let actual: number | null = 0;
     if (k.source === "auto_tasks") actual = doneRows.filter((r) => r.userId === k.ownerId && r.day >= start).length;
     else if (k.source === "auto_won") actual = wonRows.filter((r) => r.userId === k.ownerId && r.day >= start).length;
     else if (k.source === "auto_revenue") actual = null;
-    else if (k.source === "auto_touches") actual = 0;
+    else if (k.source === "auto_touches") actual = touchRows.filter((r) => r.userId === k.ownerId && r.day >= start).length;
     else {
       const log = logs.find((l) => l.kpiId === k.id && l.periodKey === periodKey(k.period || "month", today));
       actual = log ? Number(log.value) : 0;

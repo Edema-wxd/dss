@@ -65,7 +65,10 @@ test("the first account becomes an Owner and lands in HQ", async ({ page }) => {
     "Command centre",
     "Tasks",
     "Visibility Sessions",
+    "Clients",
+    "CRM",
     "KPIs",
+    "Contracts",
     "Procedures",
     "Team",
     "Activity",
@@ -303,4 +306,72 @@ test("the 7pm check-in job runs with the cron secret", async ({ request }) => {
   expect(res.status()).toBe(200);
   // email isn't set up in the tests, so nothing is sent, but the owner is found and the run completes
   expect(await res.json()).toEqual({ ok: true, sent: 0, owners: 1 });
+});
+
+/* ── Phase 3: clients, CRM and contracts ─────────────────────────────── */
+
+test("a new client gets an onboarding checklist with tasks", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/clients");
+  await page.getByRole("button", { name: "New client" }).click();
+  const form = page.getByRole("dialog", { name: "New client" });
+  await form.getByLabel("Client or company name").fill("Acme Test Co");
+  await form.getByLabel("Fee", { exact: true }).fill("500000");
+  await form.getByRole("button", { name: "Add client" }).click();
+  await expect(page.getByText("Client added.")).toBeVisible();
+  await page.getByRole("link", { name: /Acme Test Co/ }).click();
+  await expect(page.getByRole("heading", { name: "Acme Test Co", level: 1 })).toBeVisible();
+  await expect(page.getByText("0 of 10 done")).toBeVisible();
+  await page.getByRole("tab", { name: "Work" }).click();
+  await expect(page.getByText("Signed agreement and NDA received: Acme Test Co")).toBeVisible();
+});
+
+test("a website application arrives in the CRM as a new lead", async ({ page, request }) => {
+  const res = await request.post("/api/visibility", {
+    data: { name: "Tolu Founder", email: "tolu@bright.test", company: "Bright Co", budget: "1.5m-3m", when: "This month", consent: true },
+  });
+  expect(res.ok()).toBe(true);
+  await signedIn(page, OWNER);
+  await page.goto("/admin/crm");
+  await expect(page.getByRole("region", { name: "New lead" }).getByText("Bright Co")).toBeVisible();
+});
+
+test("CRM: log a call, then turn the lead into a client", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/crm");
+  await page.getByRole("button", { name: "Add lead" }).click();
+  const form = page.getByRole("dialog", { name: "New sales lead" });
+  await form.getByLabel("Company or brand").fill("Bloom Studio");
+  await form.getByLabel("Contact name").fill("Kemi Bloom");
+  await form.getByRole("button", { name: "Add contact" }).click();
+  await expect(page.getByText("Contact added.")).toBeVisible();
+
+  await page.getByRole("region", { name: "New lead" }).getByRole("button", { name: /Bloom Studio/ }).click();
+  const panel = page.getByRole("dialog", { name: "Bloom Studio" });
+  await panel.getByLabel("What happened, in a line or two").fill("Spoke about a 90 day sprint");
+  await panel.getByRole("button", { name: "Log it" }).click();
+  await expect(panel.getByText("Spoke about a 90 day sprint")).toBeVisible();
+  await expect(panel.getByText("Moved to Contacted")).toBeVisible();
+
+  await panel.getByRole("button", { name: "Won: make them a client" }).click();
+  await panel.getByRole("button", { name: "Add client" }).click();
+  await expect(page).toHaveURL(/\/admin\/clients\//);
+  await expect(page.getByRole("heading", { name: "Bloom Studio", level: 1 })).toBeVisible();
+});
+
+test("contracts: add the missing client agreements from client dates", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/contracts");
+  await expect(page.getByText(/clients have no contract on file/)).toBeVisible();
+  await page.getByRole("button", { name: "Add them from client dates" }).click();
+  await expect(page.getByText(/client contracts added/)).toBeVisible();
+  await expect(page.getByText("every client is covered")).toBeVisible();
+});
+
+test("a contributor can't open Clients, CRM or Contracts", async ({ page }) => {
+  await signedIn(page, STAFF);
+  for (const area of ["clients", "crm", "contracts"]) {
+    await page.goto(`/admin/${area}`);
+    await expect(page).toHaveURL(/\/admin\/today$/);
+  }
 });
