@@ -10,6 +10,9 @@ import { canUse, isOwner, seesMoney } from "@/lib/hq/access";
 import { listTasks } from "@/lib/hq/data";
 import { loadWork } from "@/lib/hq/load";
 import { getClient, listContracts, timeline } from "@/lib/hq/sales";
+import { loadBooks } from "@/lib/hq/finance";
+import { finance } from "@/lib/hq/finance-model";
+import { invCalc, invStatus } from "@/lib/hq/invoice-model";
 
 export default function ClientPage(props: PageProps<"/admin/clients/[id]">) {
   return (
@@ -31,6 +34,23 @@ async function OneClient({ params }: { params: Promise<{ id: string }> }) {
     const canContracts = canUse(user.roles, "contracts");
     const [w, tasks, entries, contracts] = await Promise.all([loadWork(user), listTasks(), timeline("client", client.id), canContracts ? listContracts() : []]);
     const contract = contracts.filter((c) => c.clientId === client.id && c.status !== "ended").sort((a, b) => b.end.localeCompare(a.end))[0] ?? null;
+    // The money panel: invoices for anyone with Invoices access; money in and out needs Finance too.
+    let clientMoney = null;
+    if (canUse(user.roles, "invoices")) {
+      const ledger = canUse(user.roles, "finance");
+      const books = await loadBooks({ ledger });
+      const f = finance(books);
+      const line = f.bookedFor(f.thisMonth).find((l) => l.clientId === client.id);
+      const fc = books.clients.find((x) => x.id === client.id);
+      clientMoney = {
+        ledger,
+        ...f.clientMoney(client.id),
+        counting: line ? (line.skip ? "Skipped this month" : `Counting ${f.toNGN(line.fee, line.currency)?.toLocaleString("en-GB") ?? line.fee} a month as revenue`) : fc && Number(fc.fee) > 0 ? `Not counted: ${fc.status === "onboarding" ? "not active yet" : (fc.health || "good") !== "good" ? "not On track" : "not billed monthly"}` : "",
+        invoices: books.invoices
+          .filter((i) => i.clientId === client.id)
+          .map((i) => ({ id: i.id, no: i.no, issueDate: i.issueDate, currency: i.currency, total: invCalc(i).total, balance: invCalc(i).balance, status: invStatus(i, books.today) })),
+      };
+    }
     props = {
       client,
       w,
@@ -40,6 +60,7 @@ async function OneClient({ params }: { params: Promise<{ id: string }> }) {
       money: seesMoney(user.roles),
       owner: isOwner(user.roles),
       canContracts,
+      clientMoney,
     };
   } catch (e) {
     if (e instanceof NotConfiguredError) return <DeskSetupNotice />;

@@ -511,6 +511,70 @@ const HQ = [
     ${extra}
   )`,
 
+  // Phase 4: an income entry can say which retainer month it pays, so it isn't counted twice
+  `alter table hq_fin_income add column if not exists period text not null default ''`,
+  // invoices: draft, sent and void are stored; part paid, paid and overdue are worked out
+  `create table if not exists hq_fin_invoices (
+    id text primary key,
+    no text not null,
+    kind text not null default 'client',
+    status text not null default 'draft',
+    currency text not null default 'NGN',
+    issue_date date,
+    due_date date,
+    items jsonb not null default '[]',
+    vat boolean not null default false,
+    vat_rate numeric(6,3),
+    wht boolean not null default false,
+    disc_type text not null default 'pct',
+    disc_value numeric(14,2),
+    disc_label text not null default '',
+    notes text not null default '',
+    bill_to jsonb not null default '{}',
+    client_id text,
+    period text not null default '',
+    talent_id text,
+    deal_id text,
+    commission_pct numeric(6,3),
+    talent_line text not null default '',
+    pay_bank boolean not null default true,
+    pay_paystack boolean not null default false,
+    bank_id text not null default '',
+    pay_link text not null default '',
+    payments jsonb not null default '[]',
+    sent_at timestamptz,
+    ${stamps}, ${extra}
+  )`,
+  `create unique index if not exists hq_fin_invoices_no on hq_fin_invoices (no)`,
+  `create index if not exists hq_fin_invoices_client on hq_fin_invoices (client_id)`,
+  // a talent's share of a brand payment, made when a talent invoice is paid in full
+  `create table if not exists hq_fin_payouts (
+    id text primary key,
+    invoice_id text,
+    invoice_no text not null default '',
+    talent_id text,
+    deal_id text,
+    currency text not null default 'NGN',
+    gross numeric(14,2) not null default 0,
+    commission_pct numeric(6,3),
+    commission numeric(14,2) not null default 0,
+    net numeric(14,2) not null default 0,
+    status text not null default 'due',
+    paid_at date,
+    ref text not null default '',
+    ${stamps}, ${extra}
+  )`,
+  `create unique index if not exists hq_fin_payouts_invoice on hq_fin_payouts (invoice_id)`,
+  // where each talent is paid: finance only
+  `create table if not exists hq_fin_talentbank (
+    talent_id text primary key,
+    bank text not null default '',
+    name text not null default '',
+    number text not null default '',
+    updated_at timestamptz not null default now(),
+    ${extra}
+  )`,
+
   /* marketing */
   `create table if not exists hq_mkt_news (
     id text primary key,

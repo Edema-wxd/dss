@@ -794,7 +794,7 @@ function PostForm({ p, pillars, w, onDone }: { p: Partial<Post>; pillars: string
 
 /* ── Ads ─────────────────────────────────────────────────────────────── */
 
-export function AdsView({ ads, clients, money }: { ads: Ad[]; clients: { id: string; name: string }[]; money: boolean }) {
+export function AdsView({ ads, clients, money, fin }: { ads: Ad[]; clients: { id: string; name: string }[]; money: boolean; fin: boolean }) {
   const [editing, setEditing] = useState<Partial<Ad> | null>(null);
   const ngn = ads.filter((a) => a.status !== "planned" && a.currency === "NGN");
   const t = ngn.reduce((s, a) => ({ spend: s.spend + (a.spend ?? 0), leads: s.leads + (a.leads ?? 0), clicks: s.clicks + (a.clicks ?? 0), imp: s.imp + (a.impressions ?? 0), rev: s.rev + (a.revenue ?? 0) }), { spend: 0, leads: 0, clicks: 0, imp: 0, rev: 0 });
@@ -853,15 +853,16 @@ export function AdsView({ ads, clients, money }: { ads: Ad[]; clients: { id: str
       ) : (
         <EmptyNote title="No campaigns yet.">Log each Meta, TikTok or LinkedIn campaign with its budget, then update spend and results from Ads Manager.</EmptyNote>
       )}
-      <p className="mt-3 text-xs text-slate">Logging new ad spend in Finance arrives with Finance.</p>
+      <p className="mt-3 text-xs text-slate">{fin ? "New spend you enter here can be logged in Finance under Paid ads, so it shows in the budget and profit and loss." : "Finance logs this spend under Paid ads."}</p>
       <Dialog open={editing !== null} onClose={() => setEditing(null)} title={editing?.id ? "Update campaign" : "New ad campaign"} wide>
-        {editing && <AdForm a={editing} clients={clients} onDone={() => setEditing(null)} />}
+        {editing && <AdForm a={editing} clients={clients} fin={fin} onDone={() => setEditing(null)} />}
       </Dialog>
     </>
   );
 }
 
-function AdForm({ a, clients, onDone }: { a: Partial<Ad>; clients: { id: string; name: string }[]; onDone: () => void }) {
+function AdForm({ a, clients, fin, onDone }: { a: Partial<Ad>; clients: { id: string; name: string }[]; fin: boolean; onDone: () => void }) {
+  const [logFin, setLogFin] = useState(!a.clientId);
   const { run, pending } = useRun();
   const s = (v: unknown) => (v === null || v === undefined ? "" : String(v));
   const [d, setD] = useState({
@@ -889,7 +890,7 @@ function AdForm({ a, clients, onDone }: { a: Partial<Ad>; clients: { id: string;
     </Field>
   );
   return (
-    <form className="grid gap-3 sm:grid-cols-2" onSubmit={(e) => (e.preventDefault(), run(() => saveAdAction(a.id ?? null, d)).then((ok) => ok && onDone()))}>
+    <form className="grid gap-3 sm:grid-cols-2" onSubmit={(e) => (e.preventDefault(), run(() => saveAdAction(a.id ?? null, { ...d, logFin: fin && logFin })).then((ok) => ok && onDone()))}>
       <Field label="Campaign name" full>
         <input required autoFocus className={fieldClass} {...bind("name")} />
       </Field>
@@ -951,6 +952,12 @@ function AdForm({ a, clients, onDone }: { a: Partial<Ad>; clients: { id: string;
       <Field label="Notes" full>
         <textarea rows={2} className={fieldClass} {...bind("notes")} />
       </Field>
+      {fin && (
+        <label className="flex items-center gap-2 text-sm font-semibold sm:col-span-2">
+          <input type="checkbox" className="size-4 accent-ink" checked={logFin} onChange={(e) => setLogFin(e.target.checked)} />
+          Log new spend in Finance as Paid ads (only if DSS paid for it)
+        </label>
+      )}
       <div className="flex gap-2 sm:col-span-2">
         <button type="submit" disabled={pending} className={cn(btn.base, btn.primary)}>
           Save campaign

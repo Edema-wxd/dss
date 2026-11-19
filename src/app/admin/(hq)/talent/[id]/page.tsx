@@ -7,6 +7,7 @@ import { NotConfiguredError } from "@/lib/desk/db";
 import { requireModule } from "@/lib/desk/auth";
 import { TALENT_STATUS } from "@/lib/hq/talent-model";
 import { label } from "@/lib/hq/sales-model";
+import { getTalentBank } from "@/lib/hq/finance";
 import { loadTalent } from "@/lib/hq/talent-load";
 
 export default function TalentProfilePage(props: PageProps<"/admin/talent/[id]">) {
@@ -26,7 +27,7 @@ async function Profile({ params }: { params: Promise<{ id: string }> }) {
     const all = await loadTalent(await requireModule("talent"));
     const t = all.talents.find((x) => x.id === decodeURIComponent(id));
     if (!t) notFound();
-    props = { ...all, t };
+    props = { ...all, t, bank: all.fin ? await getTalentBank(t.id) : null };
   } catch (e) {
     if (e instanceof NotConfiguredError) return <DeskSetupNotice />;
     throw e;

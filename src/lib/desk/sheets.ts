@@ -76,6 +76,28 @@ export async function readSheetRanges(spreadsheetId: string, ranges: string[]): 
   return Object.fromEntries(ranges.map((r, i) => [r.split("!")[0], json.valueRanges?.[i]?.values ?? []]));
 }
 
+async function sheetCall(spreadsheetId: string, path: string, method: string, body?: unknown) {
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}${path}`, {
+    method,
+    headers: { Authorization: `Bearer ${await accessToken()}`, "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) {
+    if (res.status === 403 || res.status === 404) throw new Error(`The service account can't edit that sheet. Share it with ${process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL} as an Editor.`);
+    throw new Error(`Google Sheets refused the update (${res.status}): ${(await res.text()).slice(0, 200)}`);
+  }
+  return res.json() as Promise<Record<string, unknown>>;
+}
+
+/** Writing to any sheet shared with the service account as an Editor. */
+export const sheetWriter = (spreadsheetId: string) => ({
+  clear: (ranges: string[]) => sheetCall(spreadsheetId, "/values:batchClear", "POST", { ranges }),
+  write: (range: string, values: (string | number)[][]) =>
+    values.length ? sheetCall(spreadsheetId, `/values/${encodeURIComponent(range)}?valueInputOption=RAW`, "PUT", { range, values }) : Promise.resolve({}),
+  append: (range: string, values: (string | number)[][]) =>
+    values.length ? sheetCall(spreadsheetId, `/values/${encodeURIComponent(range)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, "POST", { values }) : Promise.resolve({}),
+});
+
 /* ── The copy ────────────────────────────────────────────────────────── */
 
 const APPS = "Applications";

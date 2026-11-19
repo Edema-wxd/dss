@@ -100,7 +100,7 @@ export function EmptyNote({ title, children }: { title: string; children?: React
 }
 
 /** A modal dialog built on <dialog>, so focus and Escape behave natively. `side` opens it as a panel from the right. */
-export function Dialog({ open, onClose, title, children, side, wide }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; side?: boolean; wide?: boolean }) {
+export function Dialog({ open, onClose, title, children, side, wide, xl }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; side?: boolean; wide?: boolean; xl?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const d = ref.current;
@@ -116,7 +116,7 @@ export function Dialog({ open, onClose, title, children, side, wide }: { open: b
       aria-label={title}
       className={cn(
         "m-auto max-h-[92dvh] w-[calc(100%-24px)] overflow-y-auto rounded-[22px] border-2 border-ink bg-white p-0 text-ink backdrop:bg-ink/40",
-        side ? "mr-0 h-dvh max-h-dvh w-full max-w-[520px] rounded-none rounded-l-[22px] border-y-0 border-r-0" : wide ? "max-w-[760px]" : "max-w-[560px]",
+        side ? "mr-0 h-dvh max-h-dvh w-full max-w-[520px] rounded-none rounded-l-[22px] border-y-0 border-r-0" : xl ? "max-w-[1280px]" : wide ? "max-w-[760px]" : "max-w-[560px]",
       )}
     >
       {open && (

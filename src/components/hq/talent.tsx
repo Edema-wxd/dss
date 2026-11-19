@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Copy, ExternalLink, Plus, Settings2, Trash2, X } from "lucide-react";
+import { invoiceFromDeal, saveTalentBankAction } from "@/app/admin/(hq)/invoices/actions";
 import { addDeal, addTalent, dealHistory, postDealUpdate, removeDeal, removeDealUpdate, removeTalent, saveDeal, saveTalent } from "@/app/admin/(hq)/talent/actions";
 import { Button, Field, Panel, btn, fieldClass, useToast } from "@/components/desk/ui";
 import type { Contact, TimelineEntry } from "@/lib/hq/sales";
@@ -33,7 +34,8 @@ import { Timeline, healthTone } from "./clients";
 import { Avatar, Bar, Dialog, DueChip, EmptyNote, Pill, useRun } from "./kit";
 import type { WorkProps } from "./tasks";
 
-type Common = { w: WorkProps; money: boolean; talents: Talent[]; deals: Deal[]; contacts: Contact[] };
+type Common = { w: WorkProps; money: boolean; fin?: boolean; talents: Talent[]; deals: Deal[]; contacts: Contact[] };
+type TalentBank = { bank: string; name: string; number: string };
 const compact = (n: number) => (n >= 1e6 ? `${Math.round(n / 1e5) / 10}M` : n >= 1e3 ? `${Math.round(n / 100) / 10}k` : String(n));
 const cash = (n: number | null, c = "NGN") => (n === null ? "-" : c === "NGN" ? `₦${n.toLocaleString("en-GB")}` : `${c} ${n.toLocaleString("en-GB")}`);
 const STATUS_ORDER = ["signed", "trial", "prospect", "ended"];
@@ -368,8 +370,19 @@ function NewDeal({ talents, contacts, w, money, pre, onDone }: Common & { pre: P
   );
 }
 
-function DealPanel({ d, talents, contacts, w, money, onClose }: Common & { d: Deal; onClose: () => void }) {
+function DealPanel({ d, talents, contacts, w, money, fin, onClose }: Common & { d: Deal; onClose: () => void }) {
   const { run, pending } = useRun();
+  const router = useRouter();
+  const toast = useToast();
+  const [invoicing, setInvoicing] = useState(false);
+  const raiseInvoice = async () => {
+    setInvoicing(true);
+    const r = await invoiceFromDeal(d.id);
+    setInvoicing(false);
+    if (!r.ok) return toast(r.error);
+    toast(r.message ?? "Draft created.");
+    if (r.id) router.push(`/admin/invoices?open=${encodeURIComponent(r.id)}`);
+  };
   const [note, setNote] = useState("");
   const [health, setHealth] = useState("");
   const [history, setHistory] = useState<TimelineEntry[] | null>(null);
@@ -421,6 +434,14 @@ function DealPanel({ d, talents, contacts, w, money, onClose }: Common & { d: De
         <p className="rounded-2xl bg-lime/30 p-3 text-sm">
           DSS commission {cash(Math.round((d.fee * pct) / 100), d.currency)}, talent receives {cash(Math.round(d.fee * (1 - pct / 100)), d.currency)}
         </p>
+      )}
+      {fin && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button disabled={invoicing} onClick={raiseInvoice}>
+            {d.payFlow === "direct" ? "Invoice talent for commission" : "Invoice the brand"}
+          </Button>
+          <span className="text-xs text-slate">Makes a draft in Invoices for you to check and send.</span>
+        </div>
       )}
       <section className="grid gap-2 rounded-2xl bg-paper/70 p-3">
         <h3 className="flex items-center gap-2 font-bold">
@@ -568,7 +589,7 @@ const TABS = [
   ["terms", "Terms and admin"],
 ] as const;
 
-export function TalentProfile(p: Common & { t: Talent }) {
+export function TalentProfile(p: Common & { t: Talent; bank?: TalentBank | null }) {
   const { t, w, money } = p;
   const toast = useToast();
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("tracker");
@@ -657,7 +678,7 @@ export function TalentProfile(p: Common & { t: Talent }) {
       {tab === "tracker" && <Tracker {...p} deals={deals} onOpen={setOpenDeal} onAdd={setNewDeal} />}
       {tab === "profile" && <ProfileTab t={t} />}
       {tab === "rates" && <RatesTab t={t} onCopy={copyRates} />}
-      {tab === "terms" && <TermsTab t={t} w={w} money={money} />}
+      {tab === "terms" && <TermsTab t={t} w={w} money={money} fin={!!p.fin} bank={p.bank ?? null} />}
       <DealDialogs {...p} newDeal={newDeal} setNewDeal={setNewDeal} openDeal={openDeal} setOpenDeal={setOpenDeal} />
     </>
   );
@@ -1094,7 +1115,7 @@ function RatesTab({ t, onCopy }: { t: Talent; onCopy: () => void }) {
   );
 }
 
-function TermsTab({ t, w, money }: { t: Talent; w: WorkProps; money: boolean }) {
+function TermsTab({ t, w, money, fin, bank }: { t: Talent; w: WorkProps; money: boolean; fin: boolean; bank: TalentBank | null }) {
   const { run, pending } = useRun();
   const router = useRouter();
   const [d, setD] = useState({
@@ -1184,7 +1205,31 @@ function TermsTab({ t, w, money }: { t: Talent; w: WorkProps; money: boolean }) 
           </Button>
         </div>
       </form>
-      <p className="mt-3 text-xs text-slate">The payout account moves here with Finance.</p>
+      {fin && <PayoutAccount talentId={t.id} bank={bank} />}
     </Panel>
+  );
+}
+
+/** Where the talent's share of a brand payment goes. Invoices access only. */
+function PayoutAccount({ talentId, bank }: { talentId: string; bank: TalentBank | null }) {
+  const { run, pending } = useRun();
+  const [b, setB] = useState({ bank: bank?.bank ?? "", name: bank?.name ?? "", number: bank?.number ?? "" });
+  const bind = (k: keyof typeof b) => ({ value: b[k], onChange: (e: React.ChangeEvent<HTMLInputElement>) => setB((x) => ({ ...x, [k]: e.target.value })) });
+  return (
+    <form className="mt-6 grid gap-3 border-t border-ink/10 pt-4 sm:grid-cols-3" onSubmit={(e) => (e.preventDefault(), run(() => saveTalentBankAction(talentId, b)))}>
+      <h3 className="font-bold sm:col-span-3">Payout account (finance only)</h3>
+      <Field label="Bank">
+        <input className={fieldClass} {...bind("bank")} />
+      </Field>
+      <Field label="Account name">
+        <input className={fieldClass} {...bind("name")} />
+      </Field>
+      <Field label="Account number">
+        <input inputMode="numeric" className={fieldClass} {...bind("number")} />
+      </Field>
+      <button type="submit" disabled={pending} className={cn(btn.base, btn.sm, "justify-self-start")}>
+        Save payout account
+      </button>
+    </form>
   );
 }

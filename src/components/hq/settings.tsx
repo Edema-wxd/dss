@@ -6,6 +6,8 @@ import { saveGoals, saveProfile } from "@/app/admin/(hq)/settings/actions";
 import { Field, Panel, btn, fieldClass } from "@/components/desk/ui";
 import type { GeneralSettings, Person, Workday } from "@/lib/hq/data";
 import { cn } from "@/lib/utils";
+import type { InvoiceSettings } from "@/lib/hq/invoice-model";
+import { InvoiceDetails } from "./invoice-settings";
 import { Pill, useRun } from "./kit";
 
 type Props = {
@@ -15,6 +17,7 @@ type Props = {
   general: GeneralSettings;
   workday: Workday;
   backupDays: number | null;
+  invoice: InvoiceSettings | null;
 };
 
 function useForm<T extends Record<string, string>>(initial: T) {
@@ -23,7 +26,7 @@ function useForm<T extends Record<string, string>>(initial: T) {
   return { d, bind };
 }
 
-export function SettingsView({ me, canEditGoals, owner, general, workday, backupDays }: Props) {
+export function SettingsView({ me, canEditGoals, owner, general, workday, backupDays, invoice }: Props) {
   const { run, pending } = useRun();
   const profile = useForm({
     name: me.name,
@@ -153,7 +156,7 @@ export function SettingsView({ me, canEditGoals, owner, general, workday, backup
           </form>
         </Panel>
       )}
-      <p className="text-sm text-slate">Invoice details, bank accounts and Paystack move here with Finance and Invoices.</p>
+      {invoice && <InvoiceDetails s={invoice} />}
     </div>
   );
 }
