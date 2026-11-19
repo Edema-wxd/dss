@@ -1,5 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { type Cover, MODULES, ROLES, canUse, cleanRoles, effectiveRoles, isOwner, marketingTabsFor, modulesFor, navFor, seesMoney } from "./access";
+import {
+  type Cover,
+  MODULES,
+  ROLES,
+  canEditGoals,
+  canEditProcedures,
+  canManageKpis,
+  canUse,
+  cleanRoles,
+  effectiveRoles,
+  isOwner,
+  marketingTabsFor,
+  modulesFor,
+  navFor,
+  ownTasksOnly,
+  seesMoney,
+} from "./access";
 
 describe("role access", () => {
   it("covers all 13 HQ roles", () => {
@@ -36,9 +52,9 @@ describe("role access", () => {
   });
 
   it("lists only built areas in the nav, in HQ's order", () => {
-    expect(navFor(["Owner"]).map((m) => m.key)).toEqual(["sessions", "team", "activity"]);
-    expect(navFor(["Contractor"])).toEqual([]);
-    expect(navFor(["Contributor"]).map((m) => m.key)).toEqual(["sessions", "team"]);
+    expect(navFor(["Owner"]).map((m) => m.key)).toEqual(["today", "overview", "tasks", "sessions", "kpis", "procedures", "team", "activity", "settings"]);
+    expect(navFor(["Contractor"]).map((m) => m.key)).toEqual(["today", "tasks", "kpis", "procedures", "settings"]);
+    expect(navFor(["Contributor"]).map((m) => m.key)).toEqual(["today", "tasks", "sessions", "kpis", "procedures", "team", "settings"]);
   });
 
   it("has a module entry for every area any role can open", () => {
@@ -96,5 +112,28 @@ describe("relief cover", () => {
     // 4 is away and 1 covers for 4; 1 is also away and 2 covers for 1
     const covers = [leave({ reliefId: 1, absentId: 4 }), leave({ reliefId: 2, absentId: 1 })];
     expect(effectiveRoles(2, roles[2], "2026-12-02", covers, rolesOf)).toEqual(["Finance", "Contributor"]);
+  });
+});
+
+describe("Phase 2 permissions", () => {
+  it("lets the managers HQ named edit procedures and KPIs", () => {
+    expect(ROLES.filter((r) => canEditProcedures([r]))).toEqual(["Owner", "Admin", "Operations (EA)", "Operations", "Project Manager"]);
+    expect(ROLES.filter((r) => canManageKpis([r]))).toEqual(["Owner", "Admin", "Operations (EA)", "Operations", "Project Manager"]);
+  });
+
+  it("keeps goals and working hours to Owner and operations, as HQ did", () => {
+    expect(ROLES.filter((r) => canEditGoals([r]))).toEqual(["Owner", "Operations (EA)", "Operations"]);
+  });
+
+  it("limits Contractors to their own tasks, unless they hold another role too", () => {
+    expect(ownTasksOnly(["Contractor"])).toBe(true);
+    expect(ownTasksOnly(["Contractor", "Sales"])).toBe(false);
+    expect(ownTasksOnly(["Contributor"])).toBe(false);
+  });
+
+  it("keeps the Command centre away from Contributors and Contractors", () => {
+    expect(canUse(["Contributor"], "overview")).toBe(false);
+    expect(canUse(["Contractor"], "overview")).toBe(false);
+    expect(canUse(["Project Manager"], "overview")).toBe(true);
   });
 });

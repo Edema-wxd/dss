@@ -102,3 +102,29 @@ export async function deliverChecklist(lead: ChecklistLead) {
 export function scheduleChecklistEmail(lead: ChecklistLead) {
   after(() => deliverChecklist(lead).then(() => undefined));
 }
+
+/* ── HQ emails (check-ins, reminders) ────────────────────────────────── */
+
+const HQ_FROM = "DSS HQ <hello@digitalsavvystudios.com>";
+
+/**
+ * Sends one HQ email from the studio mailbox and records it in the sent-mail log under `kind`.
+ * Never throws: returns whether it went.
+ */
+export async function sendHqMail(m: { kind: string; to: string; subject: string; text: string; html?: string }) {
+  const entry = { kind: m.kind, to: m.to, subject: m.subject, leadId: null };
+  if (!mailConfigured()) {
+    await logMail({ ...entry, status: "skipped", detail: "Email isn't set up on this server (the SMTP settings are missing)." });
+    return false;
+  }
+  try {
+    const info = await transport().sendMail({ from: process.env.HQ_MAIL_FROM || HQ_FROM, to: m.to, subject: m.subject, text: m.text, html: m.html });
+    await logMail({ ...entry, status: "sent", detail: info.messageId ?? "" });
+    return true;
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error(`HQ email (${m.kind}) failed:`, detail);
+    await logMail({ ...entry, status: "failed", detail }).catch(() => undefined);
+    return false;
+  }
+}
