@@ -406,6 +406,7 @@ export type GeneralSettings = {
   fx?: Partial<Record<"USD" | "GBP" | "EUR" | "CAD", number>>;
   workday?: Partial<Workday>;
   lastBackup?: string;
+  mktPillars?: string[];
 };
 
 /** HQ version 24's working day: 9 to 5, a full day is 9 hours worked, a half day 4 hours 15. */

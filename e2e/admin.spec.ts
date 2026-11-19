@@ -406,8 +406,7 @@ test("talent: add someone to the roster, track a brand and post an update", asyn
 
 test("publicity: a pitch warms the outlet up", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/marketing");
-  await expect(page).toHaveURL(/\/admin\/marketing\/publicity$/);
+  await page.goto("/admin/marketing/publicity");
   await page.getByRole("button", { name: "Media contact" }).click();
   const m = page.getByRole("dialog", { name: "Add a media contact" });
   await m.getByLabel("Outlet or agency name").fill("Test FM");
@@ -434,4 +433,66 @@ test("a Talent Manager sees Publicity, not the rest of Marketing", async ({ page
   await page.goto("/admin/marketing/publicity");
   await expect(page.getByRole("heading", { name: "Publicity", level: 1 })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Marketing" })).toHaveCount(0);
+  for (const tab of ["", "/accounts", "/planner", "/ads"]) {
+    await page.goto(`/admin/marketing${tab}`);
+    await expect(page).toHaveURL(/\/admin\/marketing\/publicity$/);
+  }
+});
+
+/* ── Phase 3c: the Marketing dashboard ───────────────────────────────── */
+
+test("marketing: add an account, log a month, and see it on the overview", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/marketing");
+  await expect(page.getByText("Add DSS's social accounts to start.")).toBeVisible();
+
+  await page.goto("/admin/marketing/accounts");
+  await page.getByRole("button", { name: "Add account" }).click();
+  const acc = page.getByRole("dialog", { name: "Add an account" });
+  await acc.getByLabel("Handle or name").fill("@dss");
+  await acc.getByRole("button", { name: "Save account" }).click();
+  await expect(page.getByText("Account saved.")).toBeVisible();
+
+  const lastMonth = await page.evaluate(() => {
+    const d = new Date();
+    d.setUTCDate(15);
+    d.setUTCMonth(d.getUTCMonth() - 1);
+    return d.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" });
+  });
+  await page.getByRole("button", { name: lastMonth, exact: true }).click();
+  const stats = page.getByRole("dialog", { name: /Instagram @dss/ });
+  await stats.getByLabel("Followers at month end").fill("1500");
+  await stats.getByLabel("Accounts reached").fill("4000");
+  await stats.getByLabel("Engagements").fill("200");
+  await stats.getByRole("button", { name: "Save numbers" }).click();
+  await expect(page.getByText("Numbers saved.")).toBeVisible();
+
+  await page.goto("/admin/marketing");
+  await page.getByRole("button", { name: "90 days" }).click();
+  await expect(page.getByText("Total followers")).toBeVisible();
+  await expect(page.getByRole("row", { name: /Instagram @dss/ })).toContainText("1,500");
+});
+
+test("marketing: plan a post and add a news story", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/marketing/planner");
+  await page.getByRole("button", { name: "Post", exact: true }).click();
+  const post = page.getByRole("dialog", { name: "Plan a post" });
+  await post.getByLabel("Post idea or hook").fill("Three launch mistakes");
+  await post.getByRole("button", { name: "Add post" }).click();
+  await expect(page.getByText("Post added to the planner.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Three launch mistakes" })).toBeVisible();
+
+  await page.goto("/admin/marketing/news");
+  await page.getByRole("button", { name: "Add a story" }).click();
+  const story = page.getByRole("dialog", { name: "Add a story" });
+  await story.getByLabel("Headline").fill("A platform changed its algorithm");
+  await story.getByRole("button", { name: "Add story" }).click();
+  await expect(page.getByRole("heading", { name: "A platform changed its algorithm" })).toBeVisible();
+});
+
+test("the data feed job refuses without the secret, and explains a missing service account", async ({ request }) => {
+  expect((await request.get("/api/cron/data-feed")).status()).toBe(401);
+  const res = await request.get("/api/cron/data-feed", { headers: { authorization: `Bearer ${E2E_CRON_SECRET}` } });
+  expect(await res.json()).toEqual({ ok: false, reason: "The Google service account isn't set up." });
 });

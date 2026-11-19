@@ -13,8 +13,8 @@ export const MARKETING_TABS = [
   ["news", "Marketing news", "/admin/marketing/news"],
 ] as const;
 
-/** Tabs that exist in this build. The rest of the Marketing dashboard follows. */
-export const BUILT_TABS: readonly string[] = ["publicity"];
+/** Tabs that exist in this build. */
+export const BUILT_TABS: readonly string[] = ["overview", "accounts", "website", "planner", "ads", "publicity", "news"];
 
 /** The Marketing heading and tabs. Someone limited to Publicity (a Talent Manager) sees just "Publicity". */
 export function MarketingTabs({ roles, current }: { roles: readonly string[]; current: string }) {
