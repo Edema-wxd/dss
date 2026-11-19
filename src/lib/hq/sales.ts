@@ -9,10 +9,10 @@ const day = (col: string) => `coalesce(to_char(${col}, 'YYYY-MM-DD'), '')`;
 const iso = (col: string) => `coalesce(to_char(${col} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), '')`;
 const num = (v: unknown) => (v === null || v === undefined || v === "" ? null : Number(v));
 
-type FieldMap = Record<string, readonly [column: string, cast: string]>;
+export type FieldMap = Record<string, readonly [column: string, cast: string]>;
 
 /** Updates only the fields given. Blank dates and numbers become null. */
-async function patchRow(table: string, id: string, patch: Record<string, unknown>, fields: FieldMap) {
+export async function patchRow(table: string, id: string, patch: Record<string, unknown>, fields: FieldMap) {
   const sets: string[] = [];
   const params: unknown[] = [id];
   for (const [k, v] of Object.entries(patch)) {

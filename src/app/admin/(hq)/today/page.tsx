@@ -10,6 +10,9 @@ import { addDays, lagosHour } from "@/lib/hq/work";
 import { canUse, isOwner } from "@/lib/hq/access";
 import { listClientsFull, listContracts } from "@/lib/hq/sales";
 import { LIVE, contractState } from "@/lib/hq/sales-model";
+import { listDeals, listMedia, listPitches, listTalents } from "@/lib/hq/talent";
+import { OPEN_STAGES, PITCH_OPEN } from "@/lib/hq/talent-model";
+import { relDay } from "@/lib/hq/work";
 export default function TodayPage() {
   return (
     <main className="mx-auto max-w-[1280px] px-4 pt-6 pb-20 lg:px-8 lg:pt-8">
@@ -48,9 +51,40 @@ async function Today() {
           action: "Open contracts",
         });
     }
+    const cards: { title: string; href: string; items: { title: string; sub: string }[] }[] = [];
+    const ownerFirst = (id: number | null) => id === user.id || (id === null && isOwner(user.roles));
+    const rel = (d: string) => relDay(d, w.today).toLowerCase();
+    if (canUse(user.roles, "talent")) {
+      const [deals, talents] = await Promise.all([listDeals(), listTalents()]);
+      const tname = (id: string | null) => talents.find((t) => t.id === id)?.name ?? "Talent";
+      const mine = deals.filter((d) => ownerFirst(d.ownerId));
+      const soon = addDays(w.today, 2);
+      const items = [
+        ...mine.filter((d) => OPEN_STAGES.includes(d.stage) && d.nextDate && d.nextDate <= soon).sort((a, b) => a.nextDate.localeCompare(b.nextDate)).map((d) => ({ title: `${tname(d.talentId)} x ${d.brand}`, sub: `${d.nextStep || "Next step"}, ${rel(d.nextDate)}` })),
+        ...mine.flatMap((d) => d.deliverables.filter((x) => !x.done && x.due && x.due <= soon).map((x) => ({ title: `${tname(d.talentId)} x ${d.brand}`, sub: `Deliverable: ${x.t}, ${rel(x.due!)}` }))),
+        ...mine
+          .filter((d) => ["pitching", "negotiating"].includes(d.stage) && !d.nextDate && (!d.updates.length || d.updates[d.updates.length - 1].at.slice(0, 10) < addDays(w.today, -10)))
+          .map((d) => ({ title: `${tname(d.talentId)} x ${d.brand}`, sub: "Quiet for 10+ days. Post an update or set a next step." })),
+        ...talents
+          .filter((t) => ownerFirst(t.managerId) && t.trialEnds && t.trialEnds >= addDays(w.today, -7) && t.trialEnds <= addDays(w.today, 21))
+          .map((t) => ({ title: `${t.name}: contract review`, sub: `${t.status === "trial" ? "Trial ends" : "Review due"} ${rel(t.trialEnds)}. Check their goals before the meeting.` })),
+      ];
+      if (items.length) cards.push({ title: "Talent follow-ups", href: "/admin/talent", items });
+    }
+    if (canUse(user.roles, "marketing")) {
+      const [pitches, media] = await Promise.all([listPitches(), listMedia()]);
+      const out = (id: string | null) => media.find((m) => m.id === id)?.name ?? "an outlet";
+      const items = [
+        ...pitches.filter((p) => ownerFirst(p.ownerId) && p.status === "booked" && p.runDate >= w.today && p.runDate <= addDays(w.today, 3)).map((p) => ({ title: `On ${out(p.outletId)}`, sub: `Runs ${rel(p.runDate)}. Brief them and share it when it's live.` })),
+        ...pitches.filter((p) => ownerFirst(p.ownerId) && PITCH_OPEN.includes(p.status) && p.nextDate && p.nextDate <= w.today).map((p) => ({ title: `Pitch to ${out(p.outletId)}`, sub: `Follow up, ${rel(p.nextDate)}` })),
+        ...media.filter((m) => ownerFirst(m.ownerId) && m.status !== "nofit" && m.nextDate && m.nextDate <= w.today).map((m) => ({ title: m.name, sub: `Check in with ${m.contactName || "them"}, ${rel(m.nextDate)}` })),
+      ];
+      if (items.length) cards.push({ title: "Publicity follow-ups", href: "/admin/marketing/publicity", items });
+    }
     props = {
       w,
       banners,
+      cards,
       greeting: h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening",
       tasks,
       standup: standups.get(user.id) ?? null,

@@ -52,7 +52,7 @@ describe("role access", () => {
   });
 
   it("lists only built areas in the nav, in HQ's order", () => {
-    expect(navFor(["Owner"]).map((m) => m.key)).toEqual(["today", "overview", "tasks", "sessions", "clients", "crm", "kpis", "contracts", "procedures", "team", "activity", "settings"]);
+    expect(navFor(["Owner"]).map((m) => m.key)).toEqual(["today", "overview", "tasks", "sessions", "clients", "crm", "talent", "marketing", "kpis", "contracts", "procedures", "team", "activity", "settings"]);
     expect(navFor(["Contractor"]).map((m) => m.key)).toEqual(["today", "tasks", "kpis", "procedures", "settings"]);
     expect(navFor(["Contributor"]).map((m) => m.key)).toEqual(["today", "tasks", "sessions", "kpis", "procedures", "team", "settings"]);
   });
