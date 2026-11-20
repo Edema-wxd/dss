@@ -29,7 +29,7 @@ export const MODULES = [
 export type ModuleKey = (typeof MODULES)[number]["key"];
 
 /** Areas that exist in this build. The rest are listed above so access rules are settled once. */
-export const BUILT: readonly ModuleKey[] = ["today", "overview", "tasks", "sessions", "clients", "crm", "talent", "marketing", "finance", "invoices", "kpis", "contracts", "procedures", "team", "activity", "settings"];
+export const BUILT: readonly ModuleKey[] = ["today", "overview", "tasks", "sessions", "clients", "crm", "talent", "marketing", "finance", "invoices", "kpis", "contracts", "reports", "procedures", "team", "activity", "settings"];
 
 export const ROLES = [
   "Owner",

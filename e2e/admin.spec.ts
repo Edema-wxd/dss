@@ -73,6 +73,7 @@ test("the first account becomes an Owner and lands in HQ", async ({ page }) => {
     "Invoices",
     "KPIs",
     "Contracts",
+    "Reports",
     "Procedures",
     "Team",
     "Activity",
@@ -580,4 +581,42 @@ test("the nightly records job refuses without the secret, and still files retain
   expect((await request.get("/api/cron/records-sheet")).status()).toBe(401);
   const res = await request.get("/api/cron/records-sheet", { headers: { authorization: `Bearer ${E2E_CRON_SECRET}` } });
   expect(await res.json()).toMatchObject({ ok: false, booked: expect.any(Array), reason: "The Records sheet or the Google service account isn't set up." });
+});
+
+/* ── Phase 4b: Reports ───────────────────────────────────────────────── */
+
+test("reports: last month is filed on its own, and any report downloads as slides", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/reports");
+  await expect(page.getByRole("heading", { name: "Report archive" })).toBeVisible();
+  // opening the archive files last month's seven reports
+  await expect(page.getByText("filed automatically")).toHaveCount(7);
+  const href = await page.getByRole("link", { name: "Slides PDF" }).first().getAttribute("href");
+  const pdf = await page.request.get(href!);
+  expect(pdf.headers()["content-type"]).toBe("application/pdf");
+  expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
+
+  await page.goto("/admin/crm");
+  await page.getByRole("button", { name: "Monthly report" }).click();
+  const form = page.getByRole("dialog", { name: "Monthly report" });
+  await expect(form.getByLabel("Report")).toHaveValue("sales");
+  const download = page.waitForEvent("download");
+  await form.getByRole("button", { name: "Save and download slides" }).click();
+  expect((await download).suggestedFilename()).toMatch(/^DSS-sales-report-\d{4}-\d{2}\.pdf$/);
+  await page.goto("/admin/reports");
+  await expect(page.getByText(/by Ada/)).toBeVisible();
+});
+
+test("a contributor can't open Reports or a Finance report", async ({ page }) => {
+  await signedIn(page, STAFF);
+  await page.goto("/admin/reports");
+  await expect(page).toHaveURL(/\/admin\/today$/);
+  const month = await page.evaluate(() => new Date().toISOString().slice(0, 7));
+  expect((await page.request.get(`/admin/reports/finance_${month}/pdf`)).status()).toBe(403);
+});
+
+test("the monthly reports job refuses without the secret", async ({ request }) => {
+  expect((await request.get("/api/cron/monthly-reports")).status()).toBe(401);
+  const res = await request.get("/api/cron/monthly-reports", { headers: { authorization: `Bearer ${E2E_CRON_SECRET}` } });
+  expect(await res.json()).toMatchObject({ ok: true, filed: [] });
 });

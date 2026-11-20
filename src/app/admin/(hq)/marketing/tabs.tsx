@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ReportSlot } from "@/components/hq/report-slot";
 import { PageHeader } from "@/components/hq/shell";
 import { marketingTabsFor } from "@/lib/hq/access";
 import { cn } from "@/lib/utils";
@@ -24,7 +25,9 @@ export function MarketingTabs({ roles, current }: { roles: readonly string[]; cu
     return <PageHeader title="Publicity" lead="Press, radio, TV, podcasts and blogs for our clients, our talent, DSS and Jane." />;
   return (
     <>
-      <PageHeader title="Marketing, measured." lead="Our own channels, publicity for clients and talent, and what the market is doing." />
+      <PageHeader title="Marketing, measured." lead="Our own channels, publicity for clients and talent, and what the market is doing.">
+        <ReportSlot type="marketing" />
+      </PageHeader>
       <nav aria-label="Marketing" className="-mx-1 mb-5 flex gap-1 overflow-x-auto px-1 pb-1">
         {tabs.map(([k, l, href]) => (
           <Link

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { DeskSetupNotice } from "@/components/desk/setup-notice";
+import { ReportSlot } from "@/components/hq/report-slot";
 import { PageHeader } from "@/components/hq/shell";
 import { TalentRoster } from "@/components/hq/talent";
 import { NotConfiguredError } from "@/lib/desk/db";
@@ -9,7 +10,9 @@ import { loadTalent } from "@/lib/hq/talent-load";
 export default function TalentPage() {
   return (
     <main className="mx-auto max-w-[1400px] px-4 pt-6 pb-20 lg:px-8 lg:pt-8">
-      <PageHeader title="Talent" lead="Pick a talent to see their profile, goals, rate card and brand tracker." />
+      <PageHeader title="Talent" lead="Pick a talent to see their profile, goals, rate card and brand tracker.">
+        <ReportSlot type="talent" />
+      </PageHeader>
       <Suspense fallback={<p className="p-10 text-center text-slate">Loading the roster…</p>}>
         <Roster />
       </Suspense>

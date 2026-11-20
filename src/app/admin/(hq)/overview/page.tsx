@@ -5,6 +5,7 @@ import { DeskSetupNotice } from "@/components/desk/setup-notice";
 import { Panel } from "@/components/desk/ui";
 import { Bar, Pill } from "@/components/hq/kit";
 import { ClearBlocker } from "@/components/hq/overview-bits";
+import { ReportSlot } from "@/components/hq/report-slot";
 import { PageHeader } from "@/components/hq/shell";
 import { NotConfiguredError } from "@/lib/desk/db";
 import { requireModule } from "@/lib/desk/auth";
@@ -120,7 +121,9 @@ async function Overview() {
 
   return (
     <>
-      <PageHeader title="Command centre" lead={`${longDate(today)}. What needs you, and who's moving.`} />
+      <PageHeader title="Command centre" lead={`${longDate(today)}. What needs you, and who's moving.`}>
+        <ReportSlot type="overview" />
+      </PageHeader>
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Tasks done this week" value={doneWeek.length} sub="across the team" />
         <Stat label="Overdue tasks" value={overdue.length} sub={overdue.length ? "across the team" : "nothing late"} />

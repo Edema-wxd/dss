@@ -16,6 +16,10 @@
     {
       "path": "/api/cron/records-sheet",
       "schedule": "17 22 * * *"
+    },
+    {
+      "path": "/api/cron/monthly-reports",
+      "schedule": "11 6 1 * *"
     }
   ]
 }
