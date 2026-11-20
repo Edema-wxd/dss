@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { DeskSetupNotice } from "@/components/desk/setup-notice";
 import { FinanceView } from "@/components/hq/finance";
+import { ReportSlot } from "@/components/hq/report-slot";
 import { PageHeader } from "@/components/hq/shell";
 import { NotConfiguredError, db } from "@/lib/desk/db";
 import { requireModule } from "@/lib/desk/auth";
@@ -12,7 +13,9 @@ import { loadBooks, syncBooked } from "@/lib/hq/finance";
 export default function FinancePage() {
   return (
     <main className="mx-auto max-w-[1400px] px-4 pt-6 pb-20 lg:px-8 lg:pt-8">
-      <PageHeader title="Money, clearly." lead="Budget, spend, profit, projections and tax for Digital Savvy Studios." />
+      <PageHeader title="Money, clearly." lead="Budget, spend, profit, projections and tax for Digital Savvy Studios.">
+        <ReportSlot type="finance" />
+      </PageHeader>
       <Suspense fallback={<p className="p-10 text-center text-slate">Loading Finance…</p>}>
         <Finance />
       </Suspense>

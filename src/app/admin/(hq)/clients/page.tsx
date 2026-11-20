@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { DeskSetupNotice } from "@/components/desk/setup-notice";
 import { ClientsView } from "@/components/hq/clients";
+import { ReportSlot } from "@/components/hq/report-slot";
 import { PageHeader } from "@/components/hq/shell";
 import { NotConfiguredError } from "@/lib/desk/db";
 import { requireModule } from "@/lib/desk/auth";
@@ -13,7 +14,9 @@ import { ONB_DEFAULT } from "@/lib/hq/sales-model";
 export default function ClientsPage() {
   return (
     <main className="mx-auto max-w-[1280px] px-4 pt-6 pb-20 lg:px-8 lg:pt-8">
-      <PageHeader title="Clients" lead="Every engagement, its health, what's next, and who's on it." />
+      <PageHeader title="Clients" lead="Every engagement, its health, what's next, and who's on it.">
+        <ReportSlot type="clients" />
+      </PageHeader>
       <Suspense fallback={<p className="p-10 text-center text-slate">Loading clients…</p>}>
         <Clients />
       </Suspense>

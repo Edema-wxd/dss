@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { DeskSetupNotice } from "@/components/desk/setup-notice";
 import { KpisView } from "@/components/hq/kpis";
+import { ReportSlot } from "@/components/hq/report-slot";
 import { PageHeader } from "@/components/hq/shell";
 import { NotConfiguredError } from "@/lib/desk/db";
 import { requireModule } from "@/lib/desk/auth";
@@ -11,7 +12,9 @@ import { KPI_TEMPLATES } from "@/lib/hq/work";
 export default function KpisPage() {
   return (
     <main className="mx-auto max-w-[1280px] px-4 pt-6 pb-20 lg:px-8 lg:pt-8">
-      <PageHeader title="KPIs" lead="Each person's targets for this period. Scores update as the work is logged." />
+      <PageHeader title="KPIs" lead="Each person's targets for this period. Scores update as the work is logged.">
+        <ReportSlot type="team" />
+      </PageHeader>
       <Suspense fallback={<p className="p-10 text-center text-slate">Loading KPIs…</p>}>
         <Kpis />
       </Suspense>
