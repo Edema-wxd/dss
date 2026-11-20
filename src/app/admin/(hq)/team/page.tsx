@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { DeskSetupNotice } from "@/components/desk/setup-notice";
 import { PageHeader } from "@/components/hq/shell";
+import { SubTabs, TEAM_TABS } from "@/components/hq/subtabs";
 import { TeamView } from "@/components/hq/team";
 import { NotConfiguredError } from "@/lib/desk/db";
 import { listUsers, requireModule } from "@/lib/desk/auth";
@@ -11,6 +12,7 @@ export default function TeamPage() {
   return (
     <main className="mx-auto max-w-[1280px] px-4 pt-6 pb-20 lg:px-8 lg:pt-8">
       <PageHeader title="Team" lead="Who can open HQ, what each person's roles let them see, and how the website connects." />
+      <SubTabs label="Team" tabs={TEAM_TABS} current="people" />
       <Suspense fallback={<p className="p-10 text-center text-slate">Loading the team…</p>}>
         <Team />
       </Suspense>

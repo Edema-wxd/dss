@@ -7,7 +7,9 @@ import { getStandups, kpiStates, listClients, listContacts, listKpis, listPeople
 import { loadWork } from "@/lib/hq/load";
 import { addDays, lagosHour } from "@/lib/hq/work";
 
-import { canUse, isOwner } from "@/lib/hq/access";
+import { BUILT, MODULES, canUse, isOwner, modulesFor, withBorrowed } from "@/lib/hq/access";
+import { listLeave, listTeamPatterns } from "@/lib/hq/leave";
+import { coveringFor, dayMode, isShift, lvLabel, onLeave, readyForOwner, reliefState, usualMode } from "@/lib/hq/leave-model";
 import { listClientsFull, listContracts } from "@/lib/hq/sales";
 import { LIVE, contractState } from "@/lib/hq/sales-model";
 import { listDeals, listMedia, listPitches, listTalents } from "@/lib/hq/talent";
@@ -24,6 +26,55 @@ export default function TodayPage() {
 }
 
 
+const first = (n: string) => n.split(" ")[0] || n;
+const fmtD = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+
+/** HQ's leave banners on Today: your own day, who you're covering for, answers waiting on you, and who's out. */
+function leaveBanners(
+  out: { text: string; href: string; action: string }[],
+  user: { id: number; roles: string[]; ownRoles?: string[] },
+  today: string,
+  items: Awaited<ReturnType<typeof listLeave>>,
+  team: Awaited<ReturnType<typeof listTeamPatterns>>,
+) {
+  const me = team.find((p) => p.id === user.id);
+  const cal = "/admin/team/leave";
+  const mode = me ? dayMode(items, user.id, me.pattern, today) : "full";
+  if (mode === "leave") out.push({ text: `You're marked ${lvLabel(onLeave(items, user.id, today)?.type ?? "").toLowerCase()} today. Rest properly; your relief officer has it.`, href: cal, action: "See the calendar" });
+  else if (mode === "off") out.push({ text: "Today is an off day for you. Nothing here needs you.", href: cal, action: "See the calendar" });
+  else if (mode === "half") out.push({ text: "Half day today. Pick one thing that matters and stop there.", href: cal, action: "See the calendar" });
+  const mine = modulesFor(user.ownRoles ?? user.roles);
+  for (const l of coveringFor(items, user.id, today)) {
+    const absent = team.find((p) => p.id === l.userId);
+    if (!absent) continue;
+    const extra = [...modulesFor(withBorrowed([], absent.roles))].filter((m) => !mine.has(m) && BUILT.includes(m)).map((m) => MODULES.find((x) => x.key === m)?.label);
+    out.push({
+      text: `You're covering for ${first(absent.name)} until ${fmtD(l.end || l.start)}.${l.todoText ? ` Pending: ${l.todoText.slice(0, 200)}` : ""}${extra.length ? ` Their pages are in your menu while they're away: ${extra.join(", ")}. Access goes back to normal when they return.` : ""}`,
+      href: "/admin/tasks",
+      action: "Open tasks",
+    });
+  }
+  const asks = items.filter((s) => isShift(s) && s.userId === user.id && s.status === "requested").length + items.filter((l) => !isShift(l) && l.reliefId === user.id && l.status === "pending" && reliefState(l) === "waiting").length;
+  if (asks) out.push({ text: `${asks} request${asks > 1 ? "s need" : " needs"} your answer: a day change or covering for a teammate.`, href: cal, action: "Answer" });
+  const away = team.filter((p) => {
+    if (p.id === user.id || p.roles.includes("Contractor")) return false;
+    const m = dayMode(items, p.id, p.pattern, today);
+    return m === "leave" || m === "half" || (m === "off" && usualMode(p.pattern, today) !== "off");
+  });
+  if (away.length)
+    out.push({
+      text: `Not in for a full day: ${away.map((p) => { const m = dayMode(items, p.id, p.pattern, today); return `${first(p.name)} (${m === "leave" ? lvLabel(onLeave(items, p.id, today)?.type ?? "").toLowerCase() : m === "half" ? "half day" : "off"})`; }).join(", ")}.`,
+      href: cal,
+      action: "See the calendar",
+    });
+  if (isOwner(user.roles)) {
+    const pr = team.filter((p) => p.patternReq?.status === "pending").length;
+    if (pr) out.push({ text: `${pr} work-day change${pr > 1 ? "s" : ""} waiting for your approval.`, href: cal, action: "Review" });
+    const lv = items.filter(readyForOwner).length;
+    if (lv) out.push({ text: `${lv} time-off request${lv > 1 ? "s" : ""} ready for your decision. The relief officer has agreed.`, href: cal, action: "Review" });
+  }
+}
+
 async function Today() {
   let props;
   try {
@@ -39,6 +90,7 @@ async function Today() {
     ]);
     const h = lagosHour();
     const banners: { text: string; href: string; action: string }[] = [];
+    leaveBanners(banners, user, w.today, ...(await Promise.all([listLeave(), listTeamPatterns()])));
     if (isOwner(user.roles))
       for (const c of (await listClientsFull()).filter((c) => c.onb?.status === "submitted"))
         banners.push({ text: `${c.name} is ready for your onboarding sign-off.`, href: `/admin/clients/${c.id}`, action: "Review" });

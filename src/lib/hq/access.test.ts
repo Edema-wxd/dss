@@ -52,14 +52,14 @@ describe("role access", () => {
   });
 
   it("lists only built areas in the nav, in HQ's order", () => {
-    expect(navFor(["Owner"]).map((m) => m.key)).toEqual(["today", "overview", "tasks", "sessions", "clients", "crm", "talent", "marketing", "finance", "invoices", "kpis", "contracts", "reports", "procedures", "team", "activity", "settings"]);
+    expect(navFor(["Owner"]).map((m) => m.key)).toEqual(["today", "time", "overview", "tasks", "sessions", "clients", "crm", "talent", "marketing", "finance", "invoices", "kpis", "contracts", "reports", "procedures", "team", "activity", "settings"]);
     // Finance is Owner and Finance only; Admin and Operations (EA) get Invoices without it
     expect(navFor(["Admin"]).map((m) => m.key)).toContain("invoices");
     expect(navFor(["Admin"]).map((m) => m.key)).not.toContain("finance");
     expect(navFor(["Finance"]).map((m) => m.key)).toEqual(expect.arrayContaining(["finance", "invoices"]));
     expect(navFor(["Sales"]).map((m) => m.key)).not.toContain("invoices");
     expect(navFor(["Contractor"]).map((m) => m.key)).toEqual(["today", "tasks", "kpis", "procedures", "settings"]);
-    expect(navFor(["Contributor"]).map((m) => m.key)).toEqual(["today", "tasks", "sessions", "kpis", "procedures", "team", "settings"]);
+    expect(navFor(["Contributor"]).map((m) => m.key)).toEqual(["today", "time", "tasks", "sessions", "kpis", "procedures", "team", "settings"]);
   });
 
   it("has a module entry for every area any role can open", () => {
@@ -111,6 +111,11 @@ describe("relief cover", () => {
   it("treats a one-day leave with no end date as that day", () => {
     expect(effectiveRoles(2, roles[2], "2026-12-01", [leave({ end: "" })], rolesOf)).toEqual(["Finance", "Contributor"]);
     expect(effectiveRoles(2, roles[2], "2026-12-02", [leave({ end: "" })], rolesOf)).toEqual(["Contributor"]);
+  });
+
+  it("never lends the Owner role", () => {
+    const withOwner = (id: number) => (id === 1 ? ["Owner"] : (roles[id] ?? []));
+    expect(effectiveRoles(2, roles[2], "2026-12-02", [leave({})], withOwner)).toEqual(["Contributor"]);
   });
 
   it("doesn't chain: covering someone who is covering only passes on their own roles", () => {

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { ToastProvider } from "@/components/desk/ui";
+import { ClockSlot } from "@/components/hq/clock-slot";
 import { ShellNav } from "@/components/hq/shell";
 import { CaptureBar } from "@/components/hq/tasks";
 import { currentUser } from "@/lib/desk/auth";
@@ -17,8 +18,9 @@ export default function HqLayout({ children }: LayoutProps<"/admin">) {
         </Suspense>
         <div className="min-w-0 pb-28 lg:col-start-2 lg:pb-0">
           <header className="sticky top-0 z-30 bg-cream/90 px-4 pt-3 pb-2 backdrop-blur lg:px-8">
-            <div className="mx-auto flex max-w-[1280px]">
+            <div className="mx-auto flex max-w-[1280px] items-center gap-2">
               <CaptureBar />
+              <ClockSlot />
             </div>
           </header>
           {children}
@@ -34,5 +36,5 @@ async function Nav() {
   // someone whose Marketing is only Publicity (a Talent Manager) sees it named that way
   const pubOnly = marketingTabsFor(user.roles)?.length === 1;
   const items = navFor(user.roles).map(({ key, label }) => ({ key, label: key === "marketing" && pubOnly ? "Publicity" : label }));
-  return <ShellNav items={items} me={{ name: user.name, email: user.email, role: user.roles.join(", ") }} />;
+  return <ShellNav items={items} me={{ name: user.name, email: user.email, role: (user.ownRoles ?? user.roles).join(", ") }} />;
 }
