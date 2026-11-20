@@ -4,7 +4,7 @@ import { promisify } from "node:util";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "./db";
-import { type ModuleKey, type Role, canUse, cleanRoles, isOwner } from "../hq/access";
+import { type ModuleKey, type Role, canUse, cleanRoles, isOwner, withBorrowed } from "../hq/access";
 
 // Team logins for the desk. Accounts live in desk_users; a session is a random token in an
 // httpOnly cookie, stored hashed in desk_sessions so a database leak can't be replayed.
@@ -32,7 +32,7 @@ async function checkPassword(password: string, stored: string) {
 const sha256 = (v: string) => createHash("sha256").update(v).digest("hex");
 
 /** A signed-in person. `roles` are HQ roles (see src/lib/hq/access.ts). */
-export type DeskUser = { id: number; name: string; email: string; roles: Role[] };
+export type DeskUser = { id: number; name: string; email: string; roles: Role[]; ownRoles?: Role[] };
 
 /** A person as the Team page lists them. */
 export type TeamMember = DeskUser & { active: boolean; hasPassword: boolean; title: string };
@@ -122,17 +122,27 @@ export async function signOut() {
   jar.delete(SESSION_COOKIE);
 }
 
-/** The signed-in team member, or null. */
+/**
+ * The signed-in team member, or null. `roles` are what they can use today: their own, plus the
+ * roles of anyone they are the relief for on approved leave (HQ's effRoles), checked on every
+ * request so cover ends the day the leave does. `ownRoles` are their own.
+ */
 export async function currentUser(): Promise<DeskUser | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const rows = (await (await db()).query(
-    `select u.id::int, u.name, u.email, u.roles from desk_sessions s join desk_users u on u.id = s.user_id
+    `select u.id::int, u.name, u.email, u.roles,
+       coalesce((select array_agg(distinct r) from hq_leave l join desk_users a on a.id = l.user_id cross join unnest(a.roles) r
+         where l.relief_id = u.id and l.user_id <> u.id and l.status = 'approved' and l.type <> 'shift'
+           and (now() at time zone 'Africa/Lagos')::date between l.start_date and coalesce(l.end_date, l.start_date)), '{}') as borrowed
+     from desk_sessions s join desk_users u on u.id = s.user_id
      where s.token_hash = $1 and s.expires > now() and u.active`,
     [sha256(token)],
-  )) as DeskUser[];
+  )) as (DeskUser & { borrowed: string[] })[];
   const user = rows[0];
-  return user ? { ...user, roles: cleanRoles(user.roles) } : null;
+  if (!user) return null;
+  const own = cleanRoles(user.roles);
+  return { id: user.id, name: user.name, email: user.email, roles: withBorrowed(own, user.borrowed ?? []), ownRoles: own };
 }
 
 /** For pages and actions: the signed-in team member, or a redirect to the login page. */

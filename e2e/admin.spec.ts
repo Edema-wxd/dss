@@ -62,6 +62,7 @@ test("the first account becomes an Owner and lands in HQ", async ({ page }) => {
   await expect(sidebar(page).getByRole("link")).toHaveText([
     "DSS HQDigital Savvy Studios",
     "Today",
+    "Attendance",
     "Command centre",
     "Tasks",
     "Visibility Sessions",
@@ -619,4 +620,85 @@ test("the monthly reports job refuses without the secret", async ({ request }) =
   expect((await request.get("/api/cron/monthly-reports")).status()).toBe(401);
   const res = await request.get("/api/cron/monthly-reports", { headers: { authorization: `Bearer ${E2E_CRON_SECRET}` } });
   expect(await res.json()).toMatchObject({ ok: true, filed: [] });
+});
+
+/* ── Phase 5a: Attendance and Leave ──────────────────────────────────── */
+
+const TIA = { email: "tia@example.test", password: "tia-pass-1234" };
+
+test("attendance: clock in, take a break, and clock out with a report", async ({ page }) => {
+  await signedIn(page, STAFF);
+  const header = page.getByRole("banner");
+  await header.getByRole("button", { name: "Clock in" }).click();
+  await header.getByRole("button", { name: /^Working/ }).click();
+  await page.getByRole("menuitem", { name: "Take a break" }).click();
+  await header.getByRole("button", { name: /^Break/ }).click();
+  await page.getByRole("menuitem", { name: "I'm back, start the clock" }).click();
+  await header.getByRole("button", { name: /^Working/ }).click();
+  await page.getByRole("menuitem", { name: "Clock out and send my report" }).click();
+  const eod = page.getByRole("dialog", { name: "End my day" });
+  await eod.getByLabel("What did you get done today?").fill("Drafted the launch post");
+  await eod.getByLabel("Anything blocking you, or help you need?").fill("Waiting on photos");
+  await eod.getByRole("button", { name: "Clock out" }).click();
+  await expect(page.getByText(/Clocked out after/)).toBeVisible();
+  await expect(header.getByRole("button", { name: /^✓ Done/ })).toBeVisible();
+  await page.goto("/admin/time");
+  await expect(page.getByText(/report sent/)).toBeVisible();
+  await signOut(page);
+
+  await signedIn(page, OWNER);
+  await page.goto("/admin/time");
+  await page.getByRole("button", { name: "End-of-day reports" }).click();
+  await expect(page.getByText("Drafted the launch post")).toBeVisible();
+  await expect(page.getByText("Waiting on photos")).toBeVisible();
+  const csv = await page.request.get("/admin/time/sheet");
+  expect(csv.headers()["content-type"]).toContain("text/csv");
+  expect(await csv.text()).toContain('"Bo Staff","Contributor"');
+});
+
+test("a contractor has no Attendance or timesheet", async ({ page }) => {
+  await signedIn(page, CONTRACTOR);
+  await expect(page.getByRole("banner").getByRole("button", { name: "Clock in" })).toHaveCount(0);
+  await page.goto("/admin/time");
+  await expect(page).toHaveURL(/\/admin\/today$/);
+  expect((await page.request.get("/admin/time/sheet")).status()).toBe(403);
+});
+
+test("leave: the relief agrees, the owner approves, and the relief covers the pages while they're away", async ({ page }) => {
+  const today = await page.evaluate(() => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos" }).format(new Date()));
+  await signedIn(page, TIA);
+  await page.goto("/admin/team/leave");
+  await page.getByRole("button", { name: "Request time off" }).click();
+  const form = page.getByRole("dialog", { name: "Request time off" });
+  await form.getByLabel("Relief officer").selectOption({ label: STAFF.name });
+  await form.getByLabel("From").fill(today);
+  await form.getByLabel("Tasks done").fill("Sent the rate cards");
+  await form.getByLabel("Pending to-do").fill("Chase the brand reply");
+  await form.getByRole("button", { name: "Send request" }).click();
+  await expect(page.getByText(/Sent to Bo to agree to cover/)).toBeVisible();
+  await expect(page.getByText("Waiting for Bo")).toBeVisible();
+  await signOut(page);
+
+  // a contributor has no Talent area of their own
+  await signedIn(page, STAFF);
+  await expect(sidebar(page).getByRole("link", { name: "Talent" })).toHaveCount(0);
+  await expect(page.getByText(/1 request needs your answer/)).toBeVisible();
+  await page.goto("/admin/team/leave");
+  await page.getByRole("button", { name: "I'll cover" }).click();
+  await expect(page.getByText(/request now goes to the owner/)).toBeVisible();
+  await signOut(page);
+
+  await signedIn(page, OWNER);
+  await expect(page.getByText(/1 time-off request ready for your decision/)).toBeVisible();
+  await page.goto("/admin/team/leave");
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(page.getByText("Approved.")).toBeVisible();
+  await signOut(page);
+
+  // while Tia is away, Bo borrows a Talent Manager's pages, checked on the server too
+  await signedIn(page, STAFF);
+  await expect(page.getByText(/You're covering for Tia/)).toBeVisible();
+  await expect(sidebar(page).getByRole("link", { name: "Talent" })).toBeVisible();
+  await page.goto("/admin/talent");
+  await expect(page).toHaveURL(/\/admin\/talent$/);
 });

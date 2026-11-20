@@ -32,7 +32,7 @@ describe("sorting the export", () => {
   });
 
   it("flags documents that have no table yet", () => {
-    expect(classify({ ...docs, "time/u_x/days/2026-01-02": {}, "plan/c1": {} }).unmapped).toEqual(["plan/c1", "time/u_x/days/2026-01-02"]);
+    expect(classify({ ...docs, "time/u_x/days/2026-01-02": {}, "plan/c1": {} }).unmapped).toEqual(["plan/c1"]);
   });
 });
 
@@ -172,5 +172,26 @@ describe("documents", () => {
     expect(warnings.join()).toContain("media/out-gone");
     const order = batches.map((b) => b.table);
     expect(order.indexOf("hq_media")).toBeLessThan(order.indexOf("hq_pitches"));
+  });
+});
+
+describe("leave and attendance", () => {
+  it("maps leave, the relief's answer, day changes, holidays and clock days", () => {
+    const { batches, errors } = plan({
+      [`leave/${STAFF_UID}/items/lv1`]: { type: "leave", start: "2026-12-07", end: "2026-12-09", relief: OWNER_UID, handover: ["t1"], status: "pending", doneText: "d", todoText: "t" },
+      [`leave/${OWNER_UID}/acks/${STAFF_UID}__lv1`]: { reqUid: STAFF_UID, itemId: "lv1", accepted: true, at: "2026-12-01T10:00:00Z" },
+      [`leave/${STAFF_UID}/items/sh1`]: { type: "shift", day: "2026-12-12", from: "off", to: "half", reason: "Shoot", status: "requested" },
+      "leave/team/items/h1": { type: "holiday", start: "2026-12-25", end: "2026-12-26", note: "Christmas", status: "approved" },
+      [`time/${STAFF_UID}/days/2026-12-07`]: { segs: [{ in: "2026-12-07T08:00:00Z", out: null }], status: "in", late: 5 },
+    });
+    expect(errors.filter((e) => /^(leave|time)\//.test(e))).toEqual([]);
+    expect(row(batches, "hq_leave", (r) => r.id === "lv1" && "type" in r)).toMatchObject({ user_id: 2, relief_id: 1, start_date: "2026-12-07", handover: ["t1"] });
+    // the answer is its own batch, written after the requests, updating only the relief columns
+    const acks = batches.filter((b) => b.table === "hq_leave").at(-1)!;
+    expect(acks.columns).toEqual(["id", "relief_answer", "relief_note", "relief_at"]);
+    expect(acks.rows).toEqual([["lv1", "accepted", "", "2026-12-01T10:00:00Z"]]);
+    expect(row(batches, "hq_leave", (r) => r.id === "sh1")).toMatchObject({ start_date: "2026-12-12", end_date: "2026-12-12", shift_from: "off", shift_to: "half", note: "Shoot" });
+    expect(row(batches, "hq_leave", (r) => r.id === "h1")).toMatchObject({ user_id: null, note: "Christmas" });
+    expect(row(batches, "hq_time", () => true)).toMatchObject({ user_id: 2, day: "2026-12-07", status: "in", late: 5 });
   });
 });

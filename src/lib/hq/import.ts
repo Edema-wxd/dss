@@ -36,6 +36,7 @@ type Conv =
   | "reactions" // {emoji: [uid]} to {emoji: [id]}
   | "last" // a channel's {at, by, text}, with by as a person id
   | "updates" // a status log [{at, by, text}], with each by as a person id
+  | "answer" // a relief officer's yes or no: true to "accepted", false to "declined"
   | `ref:${string}`; // another document's id, or null when that document isn't in the export
 
 /** [column, source field, conversion, default when missing] */
@@ -117,6 +118,8 @@ function convert(v: unknown, conv: Conv, ctx: Context, where: string): unknown {
       return v === null || v === undefined ? null : JSON.stringify(v);
     case "texts":
       return Array.isArray(v) ? v.filter((x) => x !== null && x !== undefined).map(String) : [];
+    case "answer":
+      return v === true ? "accepted" : v === false ? "declined" : "";
     case "user":
       return toUser(v, ctx, where);
     case "users":
@@ -850,6 +853,79 @@ export const SPECS: readonly Spec[] = [
       ["edited", "edited", "ts"],
     ],
   },
+  {
+    pattern: /^leave\/([^/]+)\/items\/([^/]+)$/,
+    table: "hq_leave",
+    key: ["id"],
+    // leave/team/items are public holidays: no person
+    ids: (m, ctx) => ({ id: m[2], user_id: m[1] === "team" ? null : toUser(m[1], ctx, `leave/${m[1]}`) }),
+    fields: [
+      ["type", "type", "text", "leave"],
+      ["start_date", "start|day", "date"],
+      ["end_date", "end|day", "date"],
+      ["relief_id", "relief", "user"],
+      ["done_text", "doneText"],
+      ["todo_text", "todoText"],
+      ["handover", "handover", "texts"],
+      ["note", "note|reason"],
+      ["shift_from", "from"],
+      ["shift_to", "to"],
+      ["status", "status", "text", "pending"],
+      ["reply", "reply"],
+      ["reviewed_by", "reviewedBy", "user"],
+      ["reviewed_at", "reviewedAt", "ts"],
+      ...STAMPS,
+    ],
+  },
+  {
+    // a relief officer's answer, kept by HQ in their own space: leave/<relief>/acks/<requester>__<item>
+    pattern: /^leave\/([^/]+)\/acks\/[^/]+__([^/]+)$/,
+    table: "hq_leave",
+    key: ["id"],
+    ids: (m) => ({ id: m[2] }),
+    fields: [
+      ["relief_answer", "accepted", "answer"],
+      ["relief_note", "note"],
+      ["relief_at", "at", "ts"],
+    ],
+    extra: false,
+  },
+  {
+    pattern: /^time\/([^/]+)\/days\/(\d{4}-\d{2}-\d{2})$/,
+    table: "hq_time",
+    key: ["user_id", "day"],
+    ids: (m, ctx) => ({ user_id: toUser(m[1], ctx, `time/${m[1]}`), day: m[2] }),
+    required: ["user_id"],
+    fields: [
+      ["segs", "segs", "json[]"],
+      ["breaks", "breaks", "json[]"],
+      ["status", "status", "text", "out"],
+      ["late", "late", "int", 0],
+      ["mode", "mode"],
+      ["expected_min", "expectedMin", "int"],
+      ["worked_min", "workedMin", "int"],
+      ["eod", "eod", "jsonOrNull"],
+      ["closed_at", "closedAt", "ts"],
+      ["created_at", "createdAt", "stamp"],
+    ],
+  },
+  {
+    pattern: /^notify\/([^/]+)$/,
+    table: "hq_notify",
+    key: ["id"],
+    ids: byId,
+    fields: [
+      ["to_id", "to", "user"],
+      ["from_id", "from", "user"],
+      ["title", "title"],
+      ["body", "body"],
+      ["link", "link"],
+      ["at", "at", "stamp"],
+      ["sent", "sent", "bool"],
+      ["sent_at", "sentAt", "ts"],
+      ["skipped", "skipped", "bool"],
+    ],
+  },
 ];
 
 /* ── Planning ────────────────────────────────────────────────────────── */
@@ -868,6 +944,8 @@ export type Person = {
   notifyEmail: string;
   notifyMode: string;
   pattern: string | null;
+  patternReq: string | null;
+  leaveDays: number | null;
   kpiSelf: boolean;
   joinedAt: string | null;
   extra: string;
@@ -891,8 +969,8 @@ export function classify(docs: Docs) {
   return out;
 }
 
-const PEOPLE_KNOWN = new Set(["name", "email", "notifyEmail", "notifyMode", "title", "hours", "whatsapp", "joinedAt", "updatedAt"]);
-const ROLES_KNOWN = new Set(["role", "roles", "active", "pattern", "kpiSelf"]);
+const PEOPLE_KNOWN = new Set(["name", "email", "notifyEmail", "notifyMode", "title", "hours", "whatsapp", "joinedAt", "updatedAt", "patternReq"]);
+const ROLES_KNOWN = new Set(["role", "roles", "active", "pattern", "kpiSelf", "leaveDays"]);
 
 /** HQ's people and roles documents, one person each. People without an email can't sign in, so they're reported. */
 export function planPeople(docs: Docs, warn: (m: string) => void): { people: Person[]; ownerUid: string | null } {
@@ -927,6 +1005,8 @@ export function planPeople(docs: Docs, warn: (m: string) => void): { people: Per
       notifyEmail: String(p.notifyEmail ?? ""),
       notifyMode: ["instant", "digest", "off"].includes(String(p.notifyMode)) ? String(p.notifyMode) : "instant",
       pattern: r.pattern && typeof r.pattern === "object" ? JSON.stringify(r.pattern) : null,
+      patternReq: p.patternReq && typeof p.patternReq === "object" ? JSON.stringify(p.patternReq) : null,
+      leaveDays: toNum(r.leaveDays),
       kpiSelf: r.kpiSelf === true,
       joinedAt: isStamp(p.joinedAt) ? String(p.joinedAt) : null,
       extra: JSON.stringify(extra),
@@ -958,13 +1038,15 @@ export function planDocs(docs: Docs, ctx: Omit<Context, "docs">) {
       let raw: unknown;
       if (src === "*") raw = doc;
       else {
-        used.add(src);
-        raw = doc[src];
+        // "start|day": the first of these fields the document has
+        const keys = src.split("|");
+        for (const k of keys) used.add(k);
+        raw = keys.map((k) => doc[k]).find((v) => v !== undefined && v !== null && v !== "");
       }
       if ((raw === undefined || raw === null || raw === "") && dflt !== undefined) raw = dflt;
       values[col] = convert(raw, conv, full, path);
       // a person field holding something that isn't a person ("books"): keep the original in extra
-      if (conv === "user" && values[col] === null && raw !== null && raw !== undefined && raw !== "" && src !== "*") used.delete(src);
+      if (conv === "user" && values[col] === null && raw !== null && raw !== undefined && raw !== "" && src !== "*") for (const k of src.split("|")) used.delete(k);
     }
     const missing = (spec.required ?? []).filter((c) => values[c] === null || values[c] === undefined || values[c] === "");
     if (missing.length) {
@@ -1097,16 +1179,16 @@ export async function runImport(sql: Sql, file: ExportFile, opts: ImportOptions 
       continue;
     }
     const rows = await sql.query(
-      `insert into desk_users (email, name, role, roles, password_hash, active, hq_uid, title, hours, whatsapp, notify_email, notify_mode, pattern, joined_at, extra, kpi_self)
-       values ($1, $2, $3, $4::text[], 'none', $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13::timestamptz, $14::jsonb, $15)
+      `insert into desk_users (email, name, role, roles, password_hash, active, hq_uid, title, hours, whatsapp, notify_email, notify_mode, pattern, joined_at, extra, kpi_self, pattern_req, leave_days)
+       values ($1, $2, $3, $4::text[], 'none', $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13::timestamptz, $14::jsonb, $15, $16::jsonb, $17::numeric)
        on conflict (email) do update set roles = excluded.roles, role = excluded.role, active = excluded.active, hq_uid = excluded.hq_uid,
          title = excluded.title, hours = excluded.hours, whatsapp = excluded.whatsapp, notify_email = excluded.notify_email,
          notify_mode = excluded.notify_mode, pattern = excluded.pattern, joined_at = excluded.joined_at, kpi_self = excluded.kpi_self,
-         extra = desk_users.extra || excluded.extra
+         pattern_req = excluded.pattern_req, leave_days = excluded.leave_days, extra = desk_users.extra || excluded.extra
        returning id::int`,
       [
         p.email, p.name, isOwner(p.roles) ? "admin" : "team", p.roles, p.active, p.uid, p.title, p.hours, p.whatsapp,
-        p.notifyEmail, p.notifyMode, p.pattern, p.joinedAt, p.extra, p.kpiSelf,
+        p.notifyEmail, p.notifyMode, p.pattern, p.joinedAt, p.extra, p.kpiSelf, p.patternReq, p.leaveDays,
       ],
     );
     users.set(p.uid, Number(rows[0].id));

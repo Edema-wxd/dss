@@ -694,6 +694,67 @@ const HQ = [
     primary key (channel_id, id)
   )`,
   `create index if not exists hq_chat_messages_channel on hq_chat_messages (channel_id, at)`,
+
+  /* leave and availability: requests, relief cover, public holidays (no person) and day changes (type shift) */
+  `alter table desk_users add column if not exists pattern_req jsonb`,
+  `alter table desk_users add column if not exists leave_days numeric`,
+  `create table if not exists hq_leave (
+    id text primary key,
+    ${by("user_id")},
+    type text not null default 'leave',
+    start_date date,
+    end_date date,
+    ${by("relief_id")},
+    relief_answer text not null default '',
+    relief_note text not null default '',
+    relief_at timestamptz,
+    done_text text not null default '',
+    todo_text text not null default '',
+    handover text[] not null default '{}',
+    note text not null default '',
+    shift_from text not null default '',
+    shift_to text not null default '',
+    status text not null default 'pending',
+    reply text not null default '',
+    ${by("reviewed_by")},
+    reviewed_at timestamptz,
+    ${stamps}, ${extra}
+  )`,
+  `create index if not exists hq_leave_dates on hq_leave (start_date, end_date)`,
+
+  /* attendance: one row per person per day, stamped with server time */
+  `create table if not exists hq_time (
+    user_id bigint not null references desk_users(id) on delete cascade,
+    day date not null,
+    segs jsonb not null default '[]',
+    breaks jsonb not null default '[]',
+    status text not null default 'out',
+    late integer not null default 0,
+    mode text not null default '',
+    expected_min integer,
+    worked_min integer,
+    eod jsonb,
+    closed_at timestamptz,
+    created_at timestamptz not null default now(),
+    ${extra},
+    primary key (user_id, day)
+  )`,
+
+  /* outgoing email queue, sent by the notifications job */
+  `create table if not exists hq_notify (
+    id text primary key,
+    ${by("to_id")},
+    ${by("from_id")},
+    title text not null default '',
+    body text not null default '',
+    link text not null default '',
+    at timestamptz not null default now(),
+    sent boolean not null default false,
+    sent_at timestamptz,
+    skipped boolean not null default false,
+    ${extra}
+  )`,
+  `create index if not exists hq_notify_unsent on hq_notify (sent, at)`,
 ];
 
 export const SCHEMA: readonly string[] = [...DESK, ...PEOPLE, ...HQ];

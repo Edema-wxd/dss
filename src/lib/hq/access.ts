@@ -29,7 +29,7 @@ export const MODULES = [
 export type ModuleKey = (typeof MODULES)[number]["key"];
 
 /** Areas that exist in this build. The rest are listed above so access rules are settled once. */
-export const BUILT: readonly ModuleKey[] = ["today", "overview", "tasks", "sessions", "clients", "crm", "talent", "marketing", "finance", "invoices", "kpis", "contracts", "reports", "procedures", "team", "activity", "settings"];
+export const BUILT: readonly ModuleKey[] = ["today", "time", "overview", "tasks", "sessions", "clients", "crm", "talent", "marketing", "finance", "invoices", "kpis", "contracts", "reports", "procedures", "team", "activity", "settings"];
 
 export const ROLES = [
   "Owner",
@@ -133,8 +133,14 @@ export function effectiveRoles(userId: number, own: readonly string[], day: stri
   const borrowed = covers
     .filter((c) => c.status === "approved" && c.reliefId === userId && c.absentId !== userId && day >= c.start && day <= (c.end || c.start))
     .flatMap((c) => rolesOf(c.absentId));
-  return cleanRoles([...own, ...borrowed]);
+  return withBorrowed(own, borrowed);
 }
+
+/**
+ * Someone's own roles plus roles lent by relief cover. Owner is never lent: here it carries
+ * powers HQ kept to the owner herself (people, approvals, the Activity log), not just pages.
+ */
+export const withBorrowed = (own: readonly string[], borrowed: readonly string[]): Role[] => cleanRoles([...own, ...borrowed.filter((r) => r !== "Owner")]);
 
 /** The built areas someone can open, in nav order. */
 export function navFor(roles: readonly string[]) {
