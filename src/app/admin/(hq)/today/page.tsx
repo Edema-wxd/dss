@@ -10,6 +10,8 @@ import { addDays, lagosHour } from "@/lib/hq/work";
 import { BUILT, MODULES, canUse, isOwner, modulesFor, withBorrowed } from "@/lib/hq/access";
 import { listLeave, listTeamPatterns } from "@/lib/hq/leave";
 import { coveringFor, dayMode, isShift, lvLabel, onLeave, readyForOwner, reliefState, usualMode } from "@/lib/hq/leave-model";
+import { listCycles, listTactics } from "@/lib/hq/plan";
+import { currentCycle, weekNo } from "@/lib/hq/plan-model";
 import { listClientsFull, listContracts } from "@/lib/hq/sales";
 import { LIVE, contractState } from "@/lib/hq/sales-model";
 import { listDeals, listMedia, listPitches, listTalents } from "@/lib/hq/talent";
@@ -133,8 +135,22 @@ async function Today() {
       ];
       if (items.length) cards.push({ title: "Publicity follow-ups", href: "/admin/marketing/publicity", items });
     }
+    let plan = null;
+    const cycle = canUse(user.roles, "plan") ? currentCycle(await listCycles()) : null;
+    if (cycle) {
+      const week = weekNo(cycle.start, w.today);
+      const mine = await listTactics(cycle.id, user.id);
+      plan = {
+        cycle: { id: cycle.id, name: cycle.name, start: cycle.start, target: cycle.target, goals: cycle.goals },
+        week,
+        mine: mine.filter((t) => t.weeks.includes(week)),
+        all: mine.length,
+        tasked: tasks.filter((t) => t.tacticId && t.status !== "done").map((t) => `${t.tacticId}:${t.tacticWeek}`),
+      };
+    }
     props = {
       w,
+      plan,
       banners,
       cards,
       greeting: h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening",

@@ -30,9 +30,9 @@ describe.skipIf(!usable)("import into Postgres", () => {
   });
 
   it("refuses to write when some documents have no table yet", async () => {
-    const r = await runImport(sql, { ...SAMPLE_EXPORT, docs: { ...SAMPLE_EXPORT.docs, "plan/cycle-1": { name: "Q1" } } });
+    const r = await runImport(sql, { ...SAMPLE_EXPORT, docs: { ...SAMPLE_EXPORT.docs, "mystery/x1": { name: "Q1" } } });
     expect(r.wrote).toBe(false);
-    expect(r.unmapped).toEqual(["plan/cycle-1"]);
+    expect(r.unmapped).toEqual(["mystery/x1"]);
     expect((await sql.query(`select count(*)::int as n from hq_tasks`))[0].n).toBe(0);
   });
 

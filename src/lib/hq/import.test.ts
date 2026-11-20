@@ -32,7 +32,7 @@ describe("sorting the export", () => {
   });
 
   it("flags documents that have no table yet", () => {
-    expect(classify({ ...docs, "time/u_x/days/2026-01-02": {}, "plan/c1": {} }).unmapped).toEqual(["plan/c1"]);
+    expect(classify({ ...docs, "time/u_x/days/2026-01-02": {}, "plan/c1": {}, "mystery/x1": {} }).unmapped).toEqual(["mystery/x1"]);
   });
 });
 
@@ -193,5 +193,23 @@ describe("leave and attendance", () => {
     expect(row(batches, "hq_leave", (r) => r.id === "sh1")).toMatchObject({ start_date: "2026-12-12", end_date: "2026-12-12", shift_from: "off", shift_to: "half", note: "Shoot" });
     expect(row(batches, "hq_leave", (r) => r.id === "h1")).toMatchObject({ user_id: null, note: "Christmas" });
     expect(row(batches, "hq_time", () => true)).toMatchObject({ user_id: 2, day: "2026-12-07", status: "in", late: 5 });
+  });
+});
+
+describe("the 12-week plan", () => {
+  it("maps cycles with goal owners, tactics, reviews and a task's tactic link", () => {
+    const { batches, errors } = plan({
+      "plan/cycle-1": { name: "Cycle 1", start: "2026-12-07", status: "active", vision: "v", target: 80, goals: [{ id: "g1", title: "More leads", owner: STAFF_UID, base: 0, target: 10 }] },
+      [`ptac/${STAFF_UID}/items/tc1`]: { cycleId: "cycle-1", goalId: "g1", title: "Send 5 pitches", weeks: [1, 2, "3"], done: { 1: "2026-12-08T09:00:00Z" }, by: OWNER_UID },
+      [`ptac/${STAFF_UID}/reviews/cycle-1_w1`]: { score: 100, wins: "w", lessons: "l", change: "c", at: "2026-12-11T16:00:00Z" },
+      "tasks/tk-tac": { title: "Send 5 pitches", assignee: STAFF_UID, status: "todo", tactic: { id: "tc1", week: 2 } },
+    });
+    expect(errors.filter((e) => /^(plan|ptac|tasks\/tk-tac)/.test(e))).toEqual([]);
+    const c = row(batches, "hq_plan", (r) => r.id === "cycle-1");
+    expect(c).toMatchObject({ name: "Cycle 1", start: "2026-12-07", status: "active", target: 80 });
+    expect(JSON.parse(String(c.goals))[0].owner).toBe(2);
+    expect(row(batches, "hq_tactics", (r) => r.id === "tc1")).toMatchObject({ user_id: 2, cycle_id: "cycle-1", goal_id: "g1", weeks: [1, 2, 3], by_id: 1, archived: false });
+    expect(row(batches, "hq_plan_reviews", () => true)).toMatchObject({ user_id: 2, cycle_id: "cycle-1", week: 1, score: 100, wins: "w" });
+    expect(row(batches, "hq_tasks", (r) => r.id === "tk-tac")).toMatchObject({ tactic_id: "tc1", tactic_week: 2 });
   });
 });

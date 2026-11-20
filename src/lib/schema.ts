@@ -755,6 +755,46 @@ const HQ = [
     ${extra}
   )`,
   `create index if not exists hq_notify_unsent on hq_notify (sent, at)`,
+
+  /* the 12-week plan: cycles with goals, each person's weekly tactics, and weekly reviews */
+  `create table if not exists hq_plan (
+    id text primary key,
+    name text not null default '',
+    start date,
+    status text not null default 'draft',
+    vision text not null default '',
+    target integer not null default 85,
+    goals jsonb not null default '[]',
+    review jsonb not null default '{}',
+    ${stamps}, ${extra}
+  )`,
+  `create table if not exists hq_tactics (
+    id text primary key,
+    user_id bigint not null references desk_users(id) on delete cascade,
+    cycle_id text,
+    goal_id text,
+    title text not null,
+    weeks integer[] not null default '{}',
+    done jsonb not null default '{}',
+    ${by("by_id")},
+    archived boolean not null default false,
+    ${stamps}, ${extra}
+  )`,
+  `create index if not exists hq_tactics_cycle on hq_tactics (cycle_id, user_id)`,
+  `create table if not exists hq_plan_reviews (
+    user_id bigint not null references desk_users(id) on delete cascade,
+    cycle_id text not null,
+    week integer not null,
+    score integer,
+    wins text not null default '',
+    lessons text not null default '',
+    change text not null default '',
+    at timestamptz not null default now(),
+    ${extra},
+    primary key (user_id, cycle_id, week)
+  )`,
+  /* a task made from a tactic ticks that tactic's week when it's done */
+  `alter table hq_tasks add column if not exists tactic_week integer`,
 ];
 
 export const SCHEMA: readonly string[] = [...DESK, ...PEOPLE, ...HQ];

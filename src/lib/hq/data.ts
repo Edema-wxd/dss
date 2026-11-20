@@ -114,10 +114,14 @@ export type Task = {
   sopId: string | null;
   carried: number;
   createdBy: number | null;
+  /** a 12-week plan tactic and the week this task does it for */
+  tacticId: string | null;
+  tacticWeek: number | null;
 };
 
 const TASK_COLS = `id, title, assignee_id::int as "assigneeId", ${day("due")} as due, status, priority, estimate, notes, client_id as "clientId",
-  checklist, repeat, ${iso("done_at")} as "doneAt", ${lagosDay("done_at")} as "doneDay", sop_id as "sopId", carried, created_by::int as "createdBy"`;
+  checklist, repeat, ${iso("done_at")} as "doneAt", ${lagosDay("done_at")} as "doneDay", sop_id as "sopId", carried, created_by::int as "createdBy",
+  tactic_id as "tacticId", tactic_week as "tacticWeek"`;
 
 /**
  * Tasks to show. `assigneeId` limits them to one person. Finished tasks older than
@@ -140,14 +144,14 @@ export async function getTask(id: string) {
 
 export type TaskInput = Partial<Pick<Task, "title" | "assigneeId" | "due" | "status" | "priority" | "estimate" | "notes" | "clientId" | "checklist" | "repeat" | "sopId">>;
 
-export async function createTask(t: TaskInput & { title: string }, by: number) {
+export async function createTask(t: TaskInput & { title: string; tacticId?: string | null; tacticWeek?: number | null }, by: number) {
   const id = newId();
   await (await db()).query(
-    `insert into hq_tasks (id, title, assignee_id, due, status, priority, estimate, notes, client_id, checklist, repeat, sop_id, created_by)
-     values ($1, $2, $3, $4::date, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13)`,
+    `insert into hq_tasks (id, title, assignee_id, due, status, priority, estimate, notes, client_id, checklist, repeat, sop_id, created_by, tactic_id, tactic_week)
+     values ($1, $2, $3, $4::date, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13, $14, $15)`,
     [
       id, t.title, t.assigneeId ?? null, t.due || null, t.status || "todo", t.priority || "normal", t.estimate ?? null, t.notes ?? "",
-      t.clientId || null, JSON.stringify(t.checklist ?? []), t.repeat ?? "", t.sopId ?? null, by,
+      t.clientId || null, JSON.stringify(t.checklist ?? []), t.repeat ?? "", t.sopId ?? null, by, t.tacticId ?? null, t.tacticWeek ?? null,
     ],
   );
   return id;
@@ -184,7 +188,15 @@ export async function updateTask(id: string, patch: TaskInput & { carried?: numb
   }
   if ("status" in patch) sets.push(`done_at = case when status <> 'done' and $${params.push(patch.status)}::text = 'done' then now() when $${params.length}::text <> 'done' then null else done_at end`);
   if (!sets.length) return;
-  await (await db()).query(`update hq_tasks set ${sets.join(", ")}, updated_at = now() where id = $1`, params);
+  const q = await db();
+  await q.query(`update hq_tasks set ${sets.join(", ")}, updated_at = now() where id = $1`, params);
+  // finishing a task made from a 12-week tactic ticks that tactic's week, however it was finished
+  if (patch.status === "done")
+    await q.query(
+      `update hq_tactics t set done = t.done || jsonb_build_object(k.tactic_week::text, to_char(now() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')), updated_at = now()
+       from hq_tasks k where k.id = $1 and k.status = 'done' and k.tactic_id = t.id and k.tactic_week is not null and not (t.done ? k.tactic_week::text)`,
+      [id],
+    );
 }
 
 export async function deleteTask(id: string) {
