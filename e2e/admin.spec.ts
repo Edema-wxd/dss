@@ -62,6 +62,7 @@ test("the first account becomes an Owner and lands in HQ", async ({ page }) => {
   await expect(sidebar(page).getByRole("link")).toHaveText([
     "DSS HQDigital Savvy Studios",
     "Today",
+    "12-week plan",
     "Attendance",
     "Command centre",
     "Tasks",
@@ -99,7 +100,7 @@ test("a contractor keeps to their own areas, even by address", async ({ page }) 
     await page.goto(`/admin/${area}`);
     await expect(page).toHaveURL(/\/admin\/today$/);
   }
-  await expect(sidebar(page).getByRole("link")).toHaveText(["DSS HQDigital Savvy Studios", "Today", "Tasks", "KPIs", "Procedures", "Settings"]);
+  await expect(sidebar(page).getByRole("link")).toHaveText(["DSS HQDigital Savvy Studios", "Today", "12-week plan", "Tasks", "KPIs", "Procedures", "Settings"]);
 });
 
 test("a contributor gets Visibility Sessions and Team, but not Activity or team management", async ({ page }) => {
@@ -701,4 +702,77 @@ test("leave: the relief agrees, the owner approves, and the relief covers the pa
   await expect(sidebar(page).getByRole("link", { name: "Talent" })).toBeVisible();
   await page.goto("/admin/talent");
   await expect(page).toHaveURL(/\/admin\/talent$/);
+});
+
+/* ── Phase 5b: the 12-week plan ──────────────────────────────────────── */
+
+test("plan: the owner sets a goal and a tactic, and finishing its task ticks the week", async ({ page }) => {
+  // week 1 starts this Monday, so today is in week 1
+  const monday = await page.evaluate(() => {
+    const t = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos" }).format(new Date());
+    const d = new Date(`${t}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+    return d.toISOString().slice(0, 10);
+  });
+  await signedIn(page, OWNER);
+  await page.goto("/admin/plan");
+  await page.getByRole("button", { name: "Start the first 12 weeks" }).click();
+  await expect(page.getByText(/Add your goals/)).toBeVisible();
+  await page.goto("/admin/plan?tab=setup");
+  await page.getByLabel("Week 1 starts (a Monday)").fill(monday);
+  await page.getByLabel("Why these 12 weeks matter").fill("Fill the pipeline before the new year");
+  await page.getByRole("button", { name: "Save the cycle" }).click();
+  await expect(page.getByText("Cycle saved.")).toBeVisible();
+  await page.getByRole("button", { name: "Goal", exact: true }).click();
+  const goal = page.getByRole("dialog", { name: "New goal" });
+  await goal.getByLabel("Goal", { exact: true }).fill("Book 10 discovery calls");
+  await goal.getByLabel("Owner").selectOption({ label: STAFF.name });
+  await goal.getByLabel("Where you're starting").fill("0");
+  await goal.getByLabel("Target by week 12").fill("10");
+  await goal.getByRole("button", { name: "Add goal" }).click();
+  await expect(page.getByText("Goal added.")).toBeVisible();
+  await page.getByRole("button", { name: "Make it active" }).click();
+  await expect(page.getByText("The cycle is live. The team has been told.")).toBeVisible();
+
+  await page.getByRole("button", { name: "Tactic", exact: true }).click();
+  const tac = page.getByRole("dialog", { name: "New tactic" });
+  await tac.getByLabel("The weekly action").fill("Send 5 pitches");
+  await tac.getByLabel("Moves which goal?").selectOption({ label: "Book 10 discovery calls" });
+  await tac.getByLabel("Whose tactic").selectOption({ label: STAFF.name });
+  await tac.getByRole("button", { name: "Add tactic" }).click();
+  await expect(page.getByText("Tactic added.")).toBeVisible();
+  await signOut(page);
+
+  await signedIn(page, STAFF);
+  await expect(page.getByText("12-week plan · week 1", { exact: true })).toBeVisible();
+  await page.goto("/admin/plan");
+  await expect(page.getByText("Fill the pipeline before the new year")).toBeVisible();
+  const mine = page.locator("section").filter({ has: page.getByRole("heading", { name: "My tactics · week 1" }) });
+  await expect(mine.getByText("set by Ada")).toBeVisible();
+  await mine.getByRole("button", { name: "Task" }).click();
+  await expect(page.getByText(/On your task list for this week/)).toBeVisible();
+  await page.goto("/admin/tasks");
+  await page.getByRole("button", { name: "List", exact: true }).click();
+  await page.getByRole("checkbox", { name: "Mark Send 5 pitches done" }).click();
+  await expect(page.getByRole("checkbox", { name: "Mark Send 5 pitches done" })).toHaveCount(0);
+  await page.goto("/admin/plan");
+  await expect(mine.getByRole("button", { name: "Mark not done: Send 5 pitches, week 1" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Weekly review" }).click();
+  const review = page.getByRole("dialog", { name: "Week 1 review" });
+  await expect(review.getByText("A winning week. What made it work?")).toBeVisible();
+  await review.getByLabel("A win from this week").fill("Two calls booked from the pitches");
+  await review.getByRole("button", { name: "Save review" }).click();
+  await expect(page.getByText("✓ Week 1 reviewed.")).toBeVisible();
+  await signOut(page);
+
+  // the owner reads everyone's reviews; a contractor sees only their own row on the scoreboard
+  await signedIn(page, OWNER);
+  await page.goto("/admin/plan?tab=reviews");
+  await expect(page.getByText("Two calls booked from the pitches")).toBeVisible();
+  await signOut(page);
+  await signedIn(page, CONTRACTOR);
+  await page.goto("/admin/plan?tab=board");
+  await expect(page.getByRole("table")).toBeVisible();
+  await expect(page.getByRole("table").getByText("Bo", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Plan setup" })).toHaveCount(0);
 });

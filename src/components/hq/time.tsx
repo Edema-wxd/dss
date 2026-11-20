@@ -134,7 +134,7 @@ export function EodDialog({ day, onClose }: { day: string | null; onClose: () =>
           onSubmit={async (e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
-            const input = { ...Object.fromEntries(f), close: f.getAll("close"), addTomorrow: f.get("addTomorrow") === "on" };
+            const input = { ...Object.fromEntries(f), close: f.getAll("close"), tac: f.getAll("tac"), addTomorrow: f.get("addTomorrow") === "on" };
             if (await run(() => clockOutAction(p.day, input))) onClose();
           }}
         >
@@ -181,6 +181,24 @@ export function EodDialog({ day, onClose }: { day: string | null; onClose: () =>
                   <span className="text-xs text-slate">tick if done</span>
                 </label>
               ))}
+            </fieldset>
+          )}
+          {p.tactics.length > 0 && (
+            <fieldset className="grid gap-1.5">
+              <legend className="mb-1.5 text-sm font-bold">12-week plan · week {p.tacticWeek} tactics</legend>
+              {p.tactics.map((t) =>
+                t.done ? (
+                  <p key={t.id} className="flex items-center gap-2 text-sm text-slate">
+                    <span aria-hidden>✓</span> <span className="flex-1">{t.title}</span> <span className="text-xs">done this week</span>
+                  </p>
+                ) : (
+                  <label key={t.id} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="tac" value={t.id} className="accent-pink" />
+                    <span className="flex-1">{t.title}</span>
+                    <span className="text-xs text-slate">tick if done</span>
+                  </label>
+                ),
+              )}
             </fieldset>
           )}
           <Field label="What did you get done today?">
@@ -496,6 +514,11 @@ function ReportBody({ d, name, now }: { d: TimeDay; name: string; now: Date }) {
             </Pill>
           ))}
         </div>
+      )}
+      {e.tactics > 0 && (
+        <p className="text-xs text-slate">
+          🎯 {e.tactics} 12-week tactic{e.tactics > 1 ? "s" : ""} ticked off
+        </p>
       )}
       <p className="text-sm whitespace-pre-line">{e.doneText}</p>
       {e.blockers && (

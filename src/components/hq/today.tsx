@@ -11,6 +11,7 @@ import { Button, Panel, btn, fieldClass, useToast } from "@/components/desk/ui";
 import type { ClientLite, ContactLite, KpiWithState, Standup, Task } from "@/lib/hq/data";
 import { formatKpi, minutes, relDay, sortTasks } from "@/lib/hq/work";
 import { cn } from "@/lib/utils";
+import { type PlanCard, PlanTodayCard } from "./plan";
 import { Bar, CardHead, Dialog, DueChip, EmptyNote, Pill, useRun } from "./kit";
 import { TaskEditor, TaskRow, type WorkProps } from "./tasks";
 
@@ -25,6 +26,7 @@ export type TodayProps = {
   clients: ClientLite[];
   kpis: KpiWithState[];
   hours: number;
+  plan: PlanCard;
 };
 
 /** The moving strip. HQ keeps it to Today and the sign-in screen; working pages stay calm. */
@@ -173,6 +175,7 @@ export function TodayView(p: TodayProps) {
         </div>
 
         <div className="grid content-start gap-4">
+          <PlanTodayCard p={p.plan} />
           <Calls calls={p.calls} today={w.today} />
           {p.cards.map((c) => (
             <Panel key={c.title}>

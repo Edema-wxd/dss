@@ -37,6 +37,10 @@ type Conv =
   | "last" // a channel's {at, by, text}, with by as a person id
   | "updates" // a status log [{at, by, text}], with each by as a person id
   | "answer" // a relief officer's yes or no: true to "accepted", false to "declined"
+  | "ints" // integer[] (a tactic's weeks)
+  | "goals" // a cycle's goals, with each owner as a person id
+  | "tacticRef" // a task's tactic: {id, week} or an id, to the id
+  | "tacticWeek" // a task's tactic: {id, week}, to the week
   | `ref:${string}`; // another document's id, or null when that document isn't in the export
 
 /** [column, source field, conversion, default when missing] */
@@ -58,6 +62,9 @@ const CAST: Partial<Record<string, string>> = {
   reactions: "jsonb",
   last: "jsonb",
   updates: "jsonb",
+  ints: "integer[]",
+  goals: "jsonb",
+  tacticWeek: "integer",
 };
 const castOf = (conv: Conv = "text") => CAST[conv] ?? "text";
 
@@ -120,6 +127,18 @@ function convert(v: unknown, conv: Conv, ctx: Context, where: string): unknown {
       return Array.isArray(v) ? v.filter((x) => x !== null && x !== undefined).map(String) : [];
     case "answer":
       return v === true ? "accepted" : v === false ? "declined" : "";
+    case "ints":
+      return Array.isArray(v) ? v.map(toNum).filter((n): n is number => n !== null).map(Math.round) : [];
+    case "goals":
+      return JSON.stringify(
+        (Array.isArray(v) ? v : []).map((g) => (g && typeof g === "object" ? { ...(g as Record<string, unknown>), owner: toUser((g as Record<string, unknown>).owner, ctx, where) } : g)),
+      );
+    case "tacticRef":
+      return v && typeof v === "object" ? (((v as Record<string, unknown>).id as string) ?? null) : v === null || v === undefined || v === "" ? null : String(v);
+    case "tacticWeek": {
+      const n = v && typeof v === "object" ? toNum((v as Record<string, unknown>).week) : null;
+      return n === null ? null : Math.round(n);
+    }
     case "user":
       return toUser(v, ctx, where);
     case "users":
@@ -425,7 +444,8 @@ export const SPECS: readonly Spec[] = [
       ["estimate", "estimate", "int"],
       ["notes", "notes"],
       ["client_id", "clientId", "textOrNull"],
-      ["tactic_id", "tacticId", "textOrNull"],
+      ["tactic_id", "tactic|tacticId", "tacticRef"],
+      ["tactic_week", "tactic", "tacticWeek"],
       ["checklist", "checklist", "json[]"],
       ["repeat", "repeat"],
       ["done_at", "doneAt", "ts"],
@@ -910,6 +930,54 @@ export const SPECS: readonly Spec[] = [
     ],
   },
   {
+    pattern: /^plan\/([^/]+)$/,
+    table: "hq_plan",
+    key: ["id"],
+    ids: byId,
+    fields: [
+      ["name", "name"],
+      ["start", "start", "date"],
+      ["status", "status", "text", "draft"],
+      ["vision", "vision"],
+      ["target", "target", "int", 85],
+      ["goals", "goals", "goals"],
+      ["review", "review", "json{}"],
+      ...STAMPS,
+    ],
+  },
+  {
+    pattern: /^ptac\/([^/]+)\/items\/([^/]+)$/,
+    table: "hq_tactics",
+    key: ["id"],
+    ids: (m, ctx) => ({ id: m[2], user_id: toUser(m[1], ctx, `ptac/${m[1]}`) }),
+    required: ["user_id", "title"],
+    fields: [
+      ["cycle_id", "cycleId", "textOrNull"],
+      ["goal_id", "goalId", "textOrNull"],
+      ["title", "title"],
+      ["weeks", "weeks", "ints"],
+      ["done", "done", "json{}"],
+      ["by_id", "by", "user"],
+      ["archived", "archived", "bool"],
+      ...STAMPS,
+    ],
+  },
+  {
+    // ptac/<uid>/reviews/<cycleId>_w<n>
+    pattern: /^ptac\/([^/]+)\/reviews\/(.+)_w(\d+)$/,
+    table: "hq_plan_reviews",
+    key: ["user_id", "cycle_id", "week"],
+    ids: (m, ctx) => ({ user_id: toUser(m[1], ctx, `ptac/${m[1]}`), cycle_id: m[2], week: Number(m[3]) }),
+    required: ["user_id"],
+    fields: [
+      ["score", "score", "int"],
+      ["wins", "wins"],
+      ["lessons", "lessons"],
+      ["change", "change"],
+      ["at", "at", "stamp"],
+    ],
+  },
+  {
     pattern: /^notify\/([^/]+)$/,
     table: "hq_notify",
     key: ["id"],
@@ -1072,6 +1140,7 @@ export function planDocs(docs: Docs, ctx: Omit<Context, "docs">) {
       if (c === "extra") return "jsonb";
       if (c === "user_id") return "bigint";
       if (c === "day") return "date";
+      if (c === "week") return "integer";
       return castOf(spec.fields.find((f) => f[0] === c)?.[2]);
     });
     // two specs can share a table (settings, reports): merge them

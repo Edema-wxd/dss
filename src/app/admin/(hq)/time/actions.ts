@@ -6,6 +6,7 @@ import { requireModule } from "@/lib/desk/auth";
 import { isOwner } from "@/lib/hq/access";
 import * as data from "@/lib/hq/data";
 import { notify, ownerId } from "@/lib/hq/notify";
+import * as plan from "@/lib/hq/plan";
 import { completeTask } from "@/lib/hq/task-ops";
 import * as time from "@/lib/hq/time";
 import { MOODS, fmtHM, hhmm, lagosStamp, workedMin } from "@/lib/hq/time-model";
@@ -47,6 +48,9 @@ export type EodPrep = {
   late: number;
   done: string[];
   open: { id: string; title: string }[];
+  /** this week's 12-week plan tactics */
+  tactics: { id: string; title: string; done: boolean }[];
+  tacticWeek: number;
 };
 
 /** What the end-of-day report shows: the day so far, what got done, and today's three still open. */
@@ -56,7 +60,13 @@ export async function eodPrep(d?: string): Promise<EodPrep | null> {
   const missed = await time.openPastDays(user.id, today);
   const target = d && d !== today ? missed.find((x) => x.day === d)?.day : today;
   if (!target) return null;
-  const [row, tasks, standups, w] = await Promise.all([time.getDay(user.id, target), data.listTasks({ assigneeId: user.id, doneSince: target }), data.getStandups(target), time.workday()]);
+  const [row, tasks, standups, w, tac] = await Promise.all([
+    time.getDay(user.id, target),
+    data.listTasks({ assigneeId: user.id, doneSince: target }),
+    data.getStandups(target),
+    time.workday(),
+    plan.tacticsDueOn(user.id, target),
+  ]);
   const top = target === today ? (standups.get(user.id)?.top ?? []) : [];
   const mode = row?.mode || (await time.modeFor(user.id, target));
   return {
@@ -70,6 +80,8 @@ export async function eodPrep(d?: string): Promise<EodPrep | null> {
     late: row?.late ?? 0,
     done: tasks.filter((t) => t.status === "done" && t.doneDay === target).map((t) => t.title),
     open: top.map((id) => tasks.find((t) => t.id === id)).filter((t): t is data.Task => !!t && t.status !== "done").map((t) => ({ id: t.id, title: t.title })),
+    tactics: tac.tactics.map((t) => ({ id: t.id, title: t.title, done: !!t.done[String(tac.week)] })),
+    tacticWeek: tac.week,
   };
 }
 
@@ -92,6 +104,17 @@ export async function clockOutAction(d: string, input: Record<string, unknown>):
       closed.push(t.title);
     }
   }
+  // this week's tactics ticked off in the report: only the person's own, due this week
+  const tacIds = Array.isArray(input.tac) ? input.tac.map(String) : [];
+  let tactics = 0;
+  if (tacIds.length) {
+    const due = await plan.tacticsDueOn(user.id, d);
+    for (const t of due.tactics)
+      if (tacIds.includes(t.id) && !t.done[String(due.week)]) {
+        await plan.setTacticWeek(t.id, due.week, true);
+        tactics++;
+      }
+  }
   const already = (await data.listTasks({ assigneeId: user.id, doneSince: d })).filter((t) => t.status === "done" && t.doneDay === d && !closed.includes(t.title)).map((t) => t.title);
   const eod = {
     doneText,
@@ -99,7 +122,7 @@ export async function clockOutAction(d: string, input: Record<string, unknown>):
     tomorrow: text(input.tomorrow, 300),
     mood: (MOODS as readonly string[]).includes(String(input.mood)) ? String(input.mood) : "",
     tasksDone: [...already, ...closed].slice(0, 40),
-    tactics: 0,
+    tactics,
   };
   const r = await time.closeDay(user.id, d, eod, end);
   // the day's check-in closes too, so the Team page and Command centre show it
