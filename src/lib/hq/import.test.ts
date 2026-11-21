@@ -213,3 +213,18 @@ describe("the 12-week plan", () => {
     expect(row(batches, "hq_tasks", (r) => r.id === "tk-tac")).toMatchObject({ tactic_id: "tc1", tactic_week: 2 });
   });
 });
+
+describe("messages", () => {
+  it("maps @everyone, Got it, deletes, edits and each person's chat look", () => {
+    const { batches, errors } = plan({
+      [`chat_ch/announcements`]: { name: "Announcements", announce: true, order: 2, archived: false },
+      [`chat_ch/announcements/msgs/a1`]: { by: OWNER_UID, at: "2026-12-01T09:00:00Z", text: "Hi all", mentions: ["everyone"], acks: [STAFF_UID], editedAt: "2026-12-01T09:05:00Z" },
+      [`chat_ch/announcements/msgs/a2`]: { by: STAFF_UID, at: "2026-12-01T09:10:00Z", text: "", deleted: true },
+    });
+    expect(errors.filter((e) => e.startsWith("chat_ch/announcements"))).toEqual([]);
+    expect(row(batches, "hq_chat_messages", (r) => r.id === "a1")).toMatchObject({ everyone: true, acks: [2], mentions: [], edited: "2026-12-01T09:05:00Z", deleted: false });
+    expect(row(batches, "hq_chat_messages", (r) => r.id === "a2")).toMatchObject({ deleted: true });
+    const people = planPeople({ ...docs, [`people/${STAFF_UID}`]: { ...docs[`people/${STAFF_UID}`], chat: { color: "plum", wall: "dots" }, chatStatus: "On a shoot" } }, () => {}).people;
+    expect(JSON.parse(people.find((p) => p.uid === STAFF_UID)!.chat)).toEqual({ color: "plum", wall: "dots", status: "On a shoot" });
+  });
+});

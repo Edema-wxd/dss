@@ -694,6 +694,24 @@ const HQ = [
     primary key (channel_id, id)
   )`,
   `create index if not exists hq_chat_messages_channel on hq_chat_messages (channel_id, at)`,
+  // Messages (Phase 5c): archived channels, deleted messages, "Got it" on announcements, @everyone,
+  // when a message last changed (so the page can poll for edits and reactions), and each person's read state
+  `alter table hq_chat_channels add column if not exists archived boolean not null default false`,
+  `alter table hq_chat_messages add column if not exists everyone boolean not null default false`,
+  `alter table hq_chat_messages add column if not exists acks bigint[] not null default '{}'`,
+  `alter table hq_chat_messages add column if not exists deleted boolean not null default false`,
+  `alter table hq_chat_messages add column if not exists sys boolean not null default false`,
+  `alter table hq_chat_messages add column if not exists updated_at timestamptz not null default now()`,
+  `create index if not exists hq_chat_messages_changed on hq_chat_messages (channel_id, updated_at)`,
+  `create table if not exists hq_chat_reads (
+    user_id bigint not null references desk_users(id) on delete cascade,
+    channel_id text not null references hq_chat_channels(id) on delete cascade,
+    read_at timestamptz,
+    muted boolean not null default false,
+    primary key (user_id, channel_id)
+  )`,
+  /* each person's chat look: bubble colour, wallpaper, text size, what Enter does, and a status line */
+  `alter table desk_users add column if not exists chat jsonb not null default '{}'`,
 
   /* leave and availability: requests, relief cover, public holidays (no person) and day changes (type shift) */
   `alter table desk_users add column if not exists pattern_req jsonb`,

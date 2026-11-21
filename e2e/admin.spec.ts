@@ -62,6 +62,7 @@ test("the first account becomes an Owner and lands in HQ", async ({ page }) => {
   await expect(sidebar(page).getByRole("link")).toHaveText([
     "DSS HQDigital Savvy Studios",
     "Today",
+    "Messages",
     "12-week plan",
     "Attendance",
     "Command centre",
@@ -100,7 +101,7 @@ test("a contractor keeps to their own areas, even by address", async ({ page }) 
     await page.goto(`/admin/${area}`);
     await expect(page).toHaveURL(/\/admin\/today$/);
   }
-  await expect(sidebar(page).getByRole("link")).toHaveText(["DSS HQDigital Savvy Studios", "Today", "12-week plan", "Tasks", "KPIs", "Procedures", "Settings"]);
+  await expect(sidebar(page).getByRole("link")).toHaveText(["DSS HQDigital Savvy Studios", "Today", "Messages", "12-week plan", "Tasks", "KPIs", "Procedures", "Settings"]);
 });
 
 test("a contributor gets Visibility Sessions and Team, but not Activity or team management", async ({ page }) => {
@@ -775,4 +776,57 @@ test("plan: the owner sets a goal and a tactic, and finishing its task ticks the
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByRole("table").getByText("Bo", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Plan setup" })).toHaveCount(0);
+});
+
+/* ── Phase 5c: Messages ──────────────────────────────────────────────── */
+
+test("messages: mention someone, react, reply, make a task, and Got it on an announcement", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/chat");
+  const channels = page.getByRole("complementary", { name: "Channels" });
+  await expect(channels.getByRole("button", { name: /General/ })).toHaveAttribute("aria-current", "true");
+  const log = page.getByRole("log", { name: "Messages in General" });
+  await expect(log.getByText(/Welcome to Messages in DSS HQ/)).toBeVisible();
+  const box = page.getByRole("textbox", { name: "Write a message" });
+  await box.fill("Morning team. @Bo");
+  await page.getByRole("option", { name: /Bo Staff/ }).click();
+  await box.pressSequentially("can you send the deck?");
+  await box.press("Enter");
+  await expect(log.getByText("can you send the deck?")).toBeVisible();
+  await channels.getByRole("button", { name: /Announcements/ }).click();
+  await expect(page.getByRole("heading", { name: "Announcements" })).toBeVisible();
+  await page.getByRole("textbox", { name: "Write a message" }).fill("Office closed on Friday");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.getByRole("log", { name: "Messages in Announcements" }).getByText("Office closed on Friday")).toBeVisible();
+  await signOut(page);
+
+  await signedIn(page, STAFF);
+  await expect(sidebar(page).getByRole("link", { name: /Messages.*unread/ })).toBeVisible();
+  await page.goto("/admin/chat");
+  await expect(channels.getByRole("button", { name: /General/ }).getByLabel("You were mentioned")).toBeVisible();
+  const msg = log.locator("[id^=m-]").filter({ hasText: "can you send the deck?" });
+  await expect(msg.getByText("@Bo Staff")).toBeVisible();
+  await msg.hover();
+  await msg.getByRole("button", { name: "React 👍" }).click();
+  await expect(msg.getByRole("button", { name: /👍 1/ })).toHaveAttribute("aria-pressed", "true");
+  await msg.hover();
+  await msg.getByRole("button", { name: "Make it a task" }).click();
+  await expect(page.getByText("Added to your tasks for today.")).toBeVisible();
+  await msg.hover();
+  await msg.getByRole("button", { name: "Reply" }).click();
+  await expect(page.getByText(/Replying to Ada/)).toBeVisible();
+  await box.fill("Sending it now");
+  await box.press("Enter");
+  const answer = log.locator("[id^=m-]").filter({ hasText: "Sending it now" });
+  await expect(answer.getByRole("button", { name: /Ada.*can you send the deck/ })).toBeVisible();
+  // announcements: no composer for a Contributor, just Got it
+  await channels.getByRole("button", { name: /Announcements/ }).click();
+  await expect(page.getByText(/Only the owner and admins post in Announcements/)).toBeVisible();
+  await page.getByRole("button", { name: "✓ Got it" }).click();
+  await expect(page.getByText("✓ Got it")).toBeVisible();
+  await signOut(page);
+
+  await signedIn(page, OWNER);
+  await page.goto("/admin/chat?c=announcements");
+  await expect(page.getByText(/Seen by 1 of/)).toBeVisible();
 });

@@ -57,7 +57,16 @@ const ICONS: Record<ModuleKey, LucideIcon> = {
   settings: Settings,
 };
 
-export type NavItem = { key: ModuleKey; label: string };
+export type NavItem = { key: ModuleKey; label: string; badge?: number };
+
+function Badge({ n, label }: { n?: number; label: string }) {
+  if (!n) return null;
+  return (
+    <span className="ml-auto rounded-full bg-pink px-1.5 py-px text-[11px] leading-4 font-bold text-white" aria-label={`${n} ${label}`}>
+      {n > 99 ? "99+" : n}
+    </span>
+  );
+}
 type Me = { name: string; email: string; role: string };
 
 const hrefOf = (key: ModuleKey) => `/admin/${key}`;
@@ -115,7 +124,7 @@ export function ShellNav({ items, me }: { items: NavItem[]; me: Me }) {
       >
         <Brand />
         <nav className="grid gap-1">
-          {items.map(({ key, label }) => {
+          {items.map(({ key, label, badge }) => {
             const Icon = ICONS[key];
             const here = isHere(path, key);
             return (
@@ -130,6 +139,7 @@ export function ShellNav({ items, me }: { items: NavItem[]; me: Me }) {
               >
                 <Icon className={cn("size-[18px] flex-none", here && "text-pink")} aria-hidden />
                 {label}
+                <Badge n={badge} label="unread" />
               </Link>
             );
           })}
@@ -152,18 +162,19 @@ export function ShellNav({ items, me }: { items: NavItem[]; me: Me }) {
         className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center bg-gradient-to-t from-cream from-60% to-transparent px-3.5 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] lg:hidden"
       >
         <div className="pointer-events-auto flex gap-1 rounded-full bg-hq-side p-1.5 shadow-[0_30px_70px_-30px_rgba(32,28,43,.5)]">
-          {items.slice(0, 4).map(({ key, label }) => {
+          {items.slice(0, 4).map(({ key, label, badge }) => {
             const Icon = ICONS[key];
             const here = isHere(path, key);
             return (
               <Link
                 key={key}
                 href={hrefOf(key)}
-                aria-label={label}
+                aria-label={badge ? `${label}, ${badge} unread` : label}
                 aria-current={here ? "page" : undefined}
-                className={cn("grid h-[46px] w-[52px] place-items-center rounded-full text-hq-muted", here && "bg-cream text-pink")}
+                className={cn("relative grid h-[46px] w-[52px] place-items-center rounded-full text-hq-muted", here && "bg-cream text-pink")}
               >
                 <Icon className="size-5" aria-hidden />
+                {!!badge && <i className="absolute top-2 right-3 size-2.5 rounded-full border-2 border-hq-side bg-pink" aria-hidden />}
               </Link>
             );
           })}
@@ -188,7 +199,7 @@ export function ShellNav({ items, me }: { items: NavItem[]; me: Me }) {
             </button>
           </div>
           <nav className="grid gap-1 overflow-y-auto">
-            {items.map(({ key, label }) => {
+            {items.map(({ key, label, badge }) => {
               const Icon = ICONS[key];
               const here = isHere(path, key);
               return (
@@ -201,6 +212,7 @@ export function ShellNav({ items, me }: { items: NavItem[]; me: Me }) {
                 >
                   <Icon className={cn("size-5", here && "text-pink")} aria-hidden />
                   {label}
+                  <Badge n={badge} label="unread" />
                 </Link>
               );
             })}

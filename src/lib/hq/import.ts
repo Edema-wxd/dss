@@ -38,6 +38,7 @@ type Conv =
   | "updates" // a status log [{at, by, text}], with each by as a person id
   | "answer" // a relief officer's yes or no: true to "accepted", false to "declined"
   | "ints" // integer[] (a tactic's weeks)
+  | "everyone" // a message's mentions include "everyone"
   | "goals" // a cycle's goals, with each owner as a person id
   | "tacticRef" // a task's tactic: {id, week} or an id, to the id
   | "tacticWeek" // a task's tactic: {id, week}, to the week
@@ -63,6 +64,7 @@ const CAST: Partial<Record<string, string>> = {
   last: "jsonb",
   updates: "jsonb",
   ints: "integer[]",
+  everyone: "boolean",
   goals: "jsonb",
   tacticWeek: "integer",
 };
@@ -127,6 +129,8 @@ function convert(v: unknown, conv: Conv, ctx: Context, where: string): unknown {
       return Array.isArray(v) ? v.filter((x) => x !== null && x !== undefined).map(String) : [];
     case "answer":
       return v === true ? "accepted" : v === false ? "declined" : "";
+    case "everyone":
+      return Array.isArray(v) && v.includes("everyone");
     case "ints":
       return Array.isArray(v) ? v.map(toNum).filter((n): n is number => n !== null).map(Math.round) : [];
     case "goals":
@@ -854,6 +858,7 @@ export const SPECS: readonly Spec[] = [
       ["sort", "order", "int", 0],
       ["pins", "pins", "texts"],
       ["last", "last", "last"],
+      ["archived", "archived", "bool"],
       ...STAMPS,
     ],
   },
@@ -868,9 +873,13 @@ export const SPECS: readonly Spec[] = [
       ["text", "text"],
       ["files", "files", "json[]"],
       ["mentions", "mentions", "users"],
+      ["everyone", "mentions", "everyone"],
       ["reactions", "reactions", "reactions"],
       ["reply", "reply", "textOrNull"],
-      ["edited", "edited", "ts"],
+      ["edited", "editedAt|edited", "ts"],
+      ["acks", "acks", "users"],
+      ["deleted", "deleted", "bool"],
+      ["sys", "sys", "bool"],
     ],
   },
   {
@@ -1014,6 +1023,8 @@ export type Person = {
   pattern: string | null;
   patternReq: string | null;
   leaveDays: number | null;
+  /** chat look and status, as JSON */
+  chat: string;
   kpiSelf: boolean;
   joinedAt: string | null;
   extra: string;
@@ -1037,7 +1048,7 @@ export function classify(docs: Docs) {
   return out;
 }
 
-const PEOPLE_KNOWN = new Set(["name", "email", "notifyEmail", "notifyMode", "title", "hours", "whatsapp", "joinedAt", "updatedAt", "patternReq"]);
+const PEOPLE_KNOWN = new Set(["name", "email", "notifyEmail", "notifyMode", "title", "hours", "whatsapp", "joinedAt", "updatedAt", "patternReq", "chat", "chatStatus"]);
 const ROLES_KNOWN = new Set(["role", "roles", "active", "pattern", "kpiSelf", "leaveDays"]);
 
 /** HQ's people and roles documents, one person each. People without an email can't sign in, so they're reported. */
@@ -1077,6 +1088,7 @@ export function planPeople(docs: Docs, warn: (m: string) => void): { people: Per
       leaveDays: toNum(r.leaveDays),
       kpiSelf: r.kpiSelf === true,
       joinedAt: isStamp(p.joinedAt) ? String(p.joinedAt) : null,
+      chat: JSON.stringify({ ...(p.chat && typeof p.chat === "object" ? p.chat : {}), ...(p.chatStatus ? { status: String(p.chatStatus) } : {}) }),
       extra: JSON.stringify(extra),
     });
   }
@@ -1248,16 +1260,16 @@ export async function runImport(sql: Sql, file: ExportFile, opts: ImportOptions 
       continue;
     }
     const rows = await sql.query(
-      `insert into desk_users (email, name, role, roles, password_hash, active, hq_uid, title, hours, whatsapp, notify_email, notify_mode, pattern, joined_at, extra, kpi_self, pattern_req, leave_days)
-       values ($1, $2, $3, $4::text[], 'none', $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13::timestamptz, $14::jsonb, $15, $16::jsonb, $17::numeric)
+      `insert into desk_users (email, name, role, roles, password_hash, active, hq_uid, title, hours, whatsapp, notify_email, notify_mode, pattern, joined_at, extra, kpi_self, pattern_req, leave_days, chat)
+       values ($1, $2, $3, $4::text[], 'none', $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13::timestamptz, $14::jsonb, $15, $16::jsonb, $17::numeric, $18::jsonb)
        on conflict (email) do update set roles = excluded.roles, role = excluded.role, active = excluded.active, hq_uid = excluded.hq_uid,
          title = excluded.title, hours = excluded.hours, whatsapp = excluded.whatsapp, notify_email = excluded.notify_email,
          notify_mode = excluded.notify_mode, pattern = excluded.pattern, joined_at = excluded.joined_at, kpi_self = excluded.kpi_self,
-         pattern_req = excluded.pattern_req, leave_days = excluded.leave_days, extra = desk_users.extra || excluded.extra
+         pattern_req = excluded.pattern_req, leave_days = excluded.leave_days, chat = excluded.chat, extra = desk_users.extra || excluded.extra
        returning id::int`,
       [
         p.email, p.name, isOwner(p.roles) ? "admin" : "team", p.roles, p.active, p.uid, p.title, p.hours, p.whatsapp,
-        p.notifyEmail, p.notifyMode, p.pattern, p.joinedAt, p.extra, p.kpiSelf, p.patternReq, p.leaveDays,
+        p.notifyEmail, p.notifyMode, p.pattern, p.joinedAt, p.extra, p.kpiSelf, p.patternReq, p.leaveDays, p.chat,
       ],
     );
     users.set(p.uid, Number(rows[0].id));

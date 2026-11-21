@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/components/hq/chat.tsx"
+        ],
+        "createdAt": "2026-11-20T14:39:44.752Z",
+        "reason": "agent decision: the coloured left bar marks a quoted reply inside a chat bubble, the standard chat convention and the same quote style HQ's own Messages used (w-chat.js .quote with --qc)"
+      }
+    ]
+  }
+}
