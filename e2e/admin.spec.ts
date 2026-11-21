@@ -856,3 +856,27 @@ test("messages: mention someone, react, reply, make a task, and Got it on an ann
   await page.goto("/admin/chat?c=announcements");
   await expect(page.getByText(/Seen by 1 of/)).toBeVisible();
 });
+
+test("focus mode: time a task, ignore Escape, and finish it with Done with it", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.getByLabel("Capture a task").fill("Outline the focus test today");
+  await page.getByLabel("Capture a task").press("Enter");
+  await expect(page.getByText("Captured, due today.")).toBeVisible();
+  await page.goto("/admin/tasks");
+  await page.getByRole("button", { name: "List" }).click();
+  await page.getByText("Outline the focus test").click();
+  await page.getByRole("dialog", { name: "Task" }).getByRole("button", { name: "Focus on this" }).click();
+  const focus = page.getByRole("dialog", { name: "Focus mode" });
+  await expect(focus.getByRole("heading", { name: "Outline the focus test" })).toBeVisible();
+  await expect(focus.getByRole("timer")).toHaveText("25:00");
+  await focus.getByRole("button", { name: "15 min" }).click();
+  await expect(focus.getByRole("timer")).toHaveText("15:00");
+  await focus.getByRole("button", { name: "Start" }).click();
+  await expect(focus.getByRole("button", { name: "Pause" })).toBeVisible();
+  await expect(focus.getByRole("timer")).not.toHaveText("15:00");
+  await page.keyboard.press("Escape");
+  await expect(focus).toBeVisible();
+  await focus.getByRole("button", { name: "Done with it" }).click();
+  await expect(focus).toBeHidden();
+  await expect(page.getByText("Done. Nice.")).toBeVisible();
+});

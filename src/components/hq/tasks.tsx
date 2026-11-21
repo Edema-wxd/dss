@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Clock, Plus, Search, Trash2, Zap } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Clock, Play, Plus, Search, Trash2, Zap } from "lucide-react";
 import { addTask, captureTask, carryTask, removeTask, saveTask, toggleTask } from "@/app/admin/(hq)/tasks/actions";
 import { Button, Field, btn, fieldClass } from "@/components/desk/ui";
 import type { ChecklistItem, Task } from "@/lib/hq/data";
 import { ESTIMATES, PRIORITIES, REPEATS, TASK_STATUS, addDays, minutes, relDay, sortTasks, weekStart } from "@/lib/hq/work";
 import { cn } from "@/lib/utils";
+import { useFocus } from "./focus";
 import { Avatar, Dialog, DueChip, EmptyNote, Pill, useRun } from "./kit";
 
 export type Named = { id: number; name: string };
@@ -105,6 +106,8 @@ function TaskForm({ task, w, onClose }: { task: Partial<Task>; w: WorkProps; onC
   const [step, setStep] = useState("");
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((x) => ({ ...x, [k]: v }));
   const isNew = !task.id;
+  const focus = useFocus();
+  const canFocus = !isNew && task.status !== "done" && focus;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,6 +118,23 @@ function TaskForm({ task, w, onClose }: { task: Partial<Task>; w: WorkProps; onC
 
   return (
     <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
+      {(canFocus || Boolean(task.focusMins)) && (
+        <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+          {canFocus && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                focus({ id: task.id!, title: task.title ?? "" });
+              }}
+              className={cn(btn.base, btn.primary, btn.sm)}
+            >
+              <Play className="size-4" aria-hidden /> Focus on this
+            </button>
+          )}
+          {Boolean(task.focusMins) && <span className="text-sm text-slate">{minutes(task.focusMins)} focused so far</span>}
+        </div>
+      )}
       <Field label="What needs doing?" full>
         <input autoFocus={isNew} required value={d.title} onChange={(e) => set("title", e.target.value)} placeholder="Start with a verb: Draft, Send, Call, Review" className={fieldClass} />
       </Field>

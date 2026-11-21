@@ -117,11 +117,13 @@ export type Task = {
   /** a 12-week plan tactic and the week this task does it for */
   tacticId: string | null;
   tacticWeek: number | null;
+  /** minutes spent in the focus timer on this task, all sessions together */
+  focusMins: number;
 };
 
 const TASK_COLS = `id, title, assignee_id::int as "assigneeId", ${day("due")} as due, status, priority, estimate, notes, client_id as "clientId",
   checklist, repeat, ${iso("done_at")} as "doneAt", ${lagosDay("done_at")} as "doneDay", sop_id as "sopId", carried, created_by::int as "createdBy",
-  tactic_id as "tacticId", tactic_week as "tacticWeek"`;
+  tactic_id as "tacticId", tactic_week as "tacticWeek", coalesce(focus_mins, 0)::int as "focusMins"`;
 
 /**
  * Tasks to show. `assigneeId` limits them to one person. Finished tasks older than
@@ -140,6 +142,11 @@ export async function listTasks(opts: { assigneeId?: number | null; doneSince?: 
 export async function getTask(id: string) {
   const rows = (await (await db()).query(`select ${TASK_COLS} from hq_tasks where id = $1`, [id])) as Task[];
   return rows[0] ?? null;
+}
+
+/** Adds a focus session's minutes to the task. */
+export async function addFocusMins(id: string, mins: number) {
+  await (await db()).query(`update hq_tasks set focus_mins = coalesce(focus_mins, 0) + $2, updated_at = now() where id = $1`, [id, mins]);
 }
 
 export type TaskInput = Partial<Pick<Task, "title" | "assigneeId" | "due" | "status" | "priority" | "estimate" | "notes" | "clientId" | "checklist" | "repeat" | "sopId">>;

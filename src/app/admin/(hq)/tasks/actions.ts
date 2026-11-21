@@ -138,3 +138,20 @@ export async function removeTask(id: string): Promise<ActionResult> {
   refresh();
   return { ok: true, message: "Task deleted." };
 }
+
+/**
+ * The end of a focus session: its minutes go on the task, and "Done with it" ticks the task off.
+ * A session is at most an hour, so anything longer than that is cut to it.
+ */
+export async function endFocus(id: string, mins: number, done: boolean): Promise<ActionResult> {
+  const user = await requireModule("tasks");
+  const task = await reachable(user, id);
+  if (!task) return fail("That task isn't there any more.");
+  const spent = Math.max(0, Math.min(60, Math.round(Number(mins) || 0)));
+  if (spent) await data.addFocusMins(task.id, spent);
+  if (done && task.status !== "done") await completeTask(task, user);
+  refresh();
+  const time = spent ? `${spent} minute${spent === 1 ? "" : "s"} of focus` : "";
+  if (done) return { ok: true, message: time ? `Done, after ${time}. Nice.` : "Done. Nice." };
+  return { ok: true, message: time ? `${time[0].toUpperCase()}${time.slice(1)} added to the task.` : "Stopped. Nothing was timed." };
+}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, Copy, MessageCircle, Plus } from "lucide-react";
+import { ArrowRight, Check, Copy, MessageCircle, Play, Plus } from "lucide-react";
 import { addTodayTask, startDay, swapThree } from "@/app/admin/(hq)/today/actions";
 import { toggleTask } from "@/app/admin/(hq)/tasks/actions";
 import { quickTouch } from "@/app/admin/(hq)/crm/actions";
@@ -11,6 +11,7 @@ import { Button, Panel, btn, fieldClass, useToast } from "@/components/desk/ui";
 import type { ClientLite, ContactLite, KpiWithState, Standup, Task } from "@/lib/hq/data";
 import { formatKpi, minutes, relDay, sortTasks } from "@/lib/hq/work";
 import { cn } from "@/lib/utils";
+import { useFocus } from "./focus";
 import { type PlanCard, PlanTodayCard } from "./plan";
 import { Bar, CardHead, Dialog, DueChip, EmptyNote, Pill, useRun } from "./kit";
 import { TaskEditor, TaskRow, type WorkProps } from "./tasks";
@@ -253,11 +254,17 @@ export function TodayView(p: TodayProps) {
 
 function DoneOrDetails({ task, onOpen }: { task: Task; onOpen: (t: Task) => void }) {
   const { run, pending } = useRun();
+  const focus = useFocus();
   return (
     <div className="mt-3 flex flex-wrap gap-2">
-      <button type="button" disabled={pending} onClick={() => run(() => toggleTask(task.id))} className={cn(btn.base, btn.primary)}>
+      {focus && (
+        <button type="button" onClick={() => focus(task)} className={cn(btn.base, btn.primary)}>
+          <Play className="size-4" aria-hidden /> Start focus
+        </button>
+      )}
+      <Button disabled={pending} onClick={() => run(() => toggleTask(task.id))}>
         <Check className="size-4" aria-hidden /> Done
-      </button>
+      </Button>
       <Button onClick={() => onOpen(task)}>Details</Button>
     </div>
   );
