@@ -4,7 +4,9 @@ import { refresh } from "next/cache";
 import type { ActionResult } from "@/app/admin/actions";
 import { requireModule, type DeskUser } from "@/lib/desk/auth";
 import { isOwner, seesMoney } from "@/lib/hq/access";
+import * as A from "@/lib/hq/alerts-model";
 import * as data from "@/lib/hq/data";
+import { alert, ownerId } from "@/lib/hq/notify";
 import * as sales from "@/lib/hq/sales";
 import { CLIENT_STATUS, CURRENCIES, HEALTH, ONB_DEFAULT, SERVICES, type Onboarding, type OnbStep, parseOnbTemplate } from "@/lib/hq/sales-model";
 import { addDays, lagosToday } from "@/lib/hq/work";
@@ -58,6 +60,7 @@ async function readClient(user: DeskUser, input: Record<string, unknown>) {
 async function buildOnboarding(user: DeskUser, c: sales.Client, start: string, withTasks: boolean): Promise<Onboarding> {
   const template = (await sales.getOnbTemplate()) ?? ONB_DEFAULT;
   const steps: OnbStep[] = [];
+  const given = new Map<number, number>();
   for (const s of template) {
     let taskId: string | null = null;
     if (withTasks) {
@@ -66,9 +69,11 @@ async function buildOnboarding(user: DeskUser, c: sales.Client, start: string, w
         { title: `${s.t}: ${c.name}`, clientId: c.id, assigneeId: who ?? user.id, due: addDays(start || lagosToday(), s.day), estimate: 30 },
         user.id,
       );
+      if (who) given.set(who, (given.get(who) ?? 0) + 1);
     }
     steps.push({ t: s.t, day: s.day, who: s.who === "point" ? "point" : "lead", taskId, done: false });
   }
+  for (const [to, n] of given) await alert(to, A.tasksGiven(user.name, n, `${c.name} onboarding`), user.id);
   return { steps, status: "in_progress", startedAt: new Date().toISOString() };
 }
 
@@ -160,6 +165,7 @@ export async function submitOnboarding(id: string): Promise<ActionResult> {
   if (open.length) return fail(`${open.length} step${open.length === 1 ? " is" : "s are"} still open.`);
   await sales.updateClient(c.id, { onb: { ...c.onb, status: "submitted", submittedAt: new Date().toISOString(), submittedBy: user.id } });
   await log(user, c.id, "update", "Onboarding sent to Jane for sign-off");
+  await alert(await ownerId(), A.onboardingSubmitted(c.name, c.id), user.id);
   refresh();
   return { ok: true, message: "Sent to Jane for sign-off." };
 }
@@ -171,6 +177,7 @@ export async function approveOnboarding(id: string): Promise<ActionResult> {
   if (!c?.onb) return fail("There's no onboarding checklist to sign off.");
   await sales.updateClient(c.id, { status: "active", onb: { ...c.onb, status: "approved", approvedAt: new Date().toISOString(), approvedBy: user.id, note: "" } });
   await log(user, c.id, "update", "Onboarding signed off. Client is now active.");
+  await alert(c.leadId, A.onboardingApproved(c.name, c.id), user.id);
   refresh();
   return { ok: true, message: `${c.name} is signed off and active.` };
 }
@@ -184,6 +191,7 @@ export async function sendBackOnboarding(id: string, note: string): Promise<Acti
   if (!why) return fail("Say what still needs doing.");
   await sales.updateClient(c.id, { onb: { ...c.onb, status: "changes", note: why } });
   await log(user, c.id, "update", `Onboarding sent back: ${why}`);
+  await alert(c.leadId, A.onboardingSentBack(c.name, c.id, why), user.id);
   refresh();
   return { ok: true, message: "Sent back." };
 }

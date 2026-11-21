@@ -19,6 +19,8 @@ import * as store from "@/lib/desk/db";
 import { mirrorConfigured, scheduleMirror, syncSheetNow } from "@/lib/desk/sheets";
 import { deliverChecklist } from "@/lib/mail";
 import { syncApplicationToCrm } from "@/lib/hq/crm-sync";
+import { accessGiven } from "@/lib/hq/alerts-model";
+import { alert } from "@/lib/hq/notify";
 import {
   type DeskUser,
   countUsers,
@@ -283,11 +285,13 @@ export async function addTeamMember(_: ActionResult | null, form: FormData): Pro
   if (!name || !emailOk(email)) return fail("Add a name and a valid email.");
   if (password.length < 10) return fail("Use a temporary password of at least 10 characters.");
   if (!roles.length) return fail("Pick at least one role.");
+  let id: number;
   try {
-    await createUser({ name, email, password, roles });
+    id = await createUser({ name, email, password, roles });
   } catch {
     return fail("That email already has an account.");
   }
+  await alert(id, accessGiven(roles), user.id);
   await audit(user, "team.add", email, `Added ${name} (${email}) as ${roles.join(", ")}`);
   refresh();
   return { ok: true, message: `${name} can now sign in` };
