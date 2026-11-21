@@ -4,7 +4,9 @@ import { refresh } from "next/cache";
 import type { ActionResult } from "@/app/admin/actions";
 import { requireModule, type DeskUser } from "@/lib/desk/auth";
 import { seesMoney } from "@/lib/hq/access";
+import * as A from "@/lib/hq/alerts-model";
 import * as data from "@/lib/hq/data";
+import { alert } from "@/lib/hq/notify";
 import * as sales from "@/lib/hq/sales";
 import { CT_KINDS, CT_RENEW, CT_STATUS, CURRENCIES, renewalTaskDue, renewedEnd } from "@/lib/hq/sales-model";
 import { addDays, lagosToday } from "@/lib/hq/work";
@@ -89,12 +91,13 @@ export async function renewalTask(id: string): Promise<ActionResult> {
   const c = await sales.getContract(String(id));
   if (!c) return fail("That contract isn't there any more.");
   const who = party(c, await sales.listClientsFull());
+  const due = c.end ? renewalTaskDue(c.end, c.noticeDays, lagosToday()) : lagosToday();
   await data.createTask(
     {
       title: `Renewal decision: ${who}`,
       assigneeId: c.ownerId ?? user.id,
       clientId: c.clientId,
-      due: c.end ? renewalTaskDue(c.end, c.noticeDays, lagosToday()) : lagosToday(),
+      due,
       priority: "top",
       estimate: 30,
       notes: `Contract ends ${c.end || "with no end date"}. Notice period: ${c.noticeDays} days.`,
@@ -102,6 +105,7 @@ export async function renewalTask(id: string): Promise<ActionResult> {
     },
     user.id,
   );
+  await alert(c.ownerId, A.taskGiven(user.name, { title: `Renewal decision: ${who}`, due }), user.id);
   refresh();
   return { ok: true, message: "Renewal task added." };
 }

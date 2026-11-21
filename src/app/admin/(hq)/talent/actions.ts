@@ -4,7 +4,9 @@ import { refresh } from "next/cache";
 import type { ActionResult } from "@/app/admin/actions";
 import { requireModule, type DeskUser } from "@/lib/desk/auth";
 import { seesMoney } from "@/lib/hq/access";
+import * as A from "@/lib/hq/alerts-model";
 import * as data from "@/lib/hq/data";
+import { alert } from "@/lib/hq/notify";
 import * as sales from "@/lib/hq/sales";
 import { CURRENCIES, HEALTH, label } from "@/lib/hq/sales-model";
 import * as talent from "@/lib/hq/talent";
@@ -204,6 +206,11 @@ export async function saveDeal(id: string, input: Record<string, unknown>): Prom
   const d = await readDeal(user, input);
   if ("brand" in d && !d.brand) return fail("The deal needs a brand.");
   await talent.updateDeal(before.id, d);
+  if (d.ownerId && d.ownerId !== before.ownerId) {
+    const tid = d.talentId ?? before.talentId;
+    const who = (tid ? await talent.getTalent(tid) : null)?.name ?? "A talent";
+    await alert(d.ownerId, A.dealHandedOver(user.name, who, d.brand || before.brand || before.title || "a brand", tid), user.id);
+  }
   if (d.stage && d.stage !== before.stage) await sales.logActivity(user, "deal", before.id, "stage", `Moved to ${label(DEAL_STAGES, d.stage)}`);
   refresh();
   return { ok: true, message: "Saved" };

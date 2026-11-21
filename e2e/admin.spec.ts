@@ -185,6 +185,19 @@ test("the owner gives a task to a team member", async ({ page }) => {
   await expect(page.getByText("Task added. Bo will see it on their Today.")).toBeVisible();
 });
 
+test("giving someone access or a task queues an email alert for them", async () => {
+  const sql = connect(E2E_DATABASE_URL);
+  const rows = (await sql.query(
+    `select u.email, n.title from hq_notify n join desk_users u on u.id = n.to_id where n.title in ('You have access to DSS HQ', 'New task: Review the deck') order by u.email, n.title`,
+  )) as { email: string; title: string }[];
+  await disconnect();
+  expect(rows).toEqual([
+    { email: STAFF.email, title: "New task: Review the deck" },
+    { email: STAFF.email, title: "You have access to DSS HQ" },
+    { email: CONTRACTOR.email, title: "You have access to DSS HQ" },
+  ]);
+});
+
 test("a day: choose three, tick one off, close it with a blocker", async ({ page }) => {
   await signedIn(page, STAFF);
   await expect(page.getByRole("heading", { name: /Choose three/ })).toBeVisible();

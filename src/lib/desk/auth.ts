@@ -56,13 +56,14 @@ export async function listUsers() {
 
 export async function createUser(u: { name: string; email: string; password: string; roles: Role[] }) {
   const roles = cleanRoles(u.roles);
-  await (await db()).query(`insert into desk_users (name, email, role, roles, password_hash) values ($1, lower($2), $3, $4, $5)`, [
+  const rows = await (await db()).query(`insert into desk_users (name, email, role, roles, password_hash) values ($1, lower($2), $3, $4, $5) returning id::int`, [
     u.name.trim(),
     u.email.trim(),
     legacyRole(roles),
     roles,
     await hashPassword(u.password),
   ]);
+  return Number(rows[0].id);
 }
 
 export async function setUserRoles(id: number, roles: Role[]) {

@@ -31,3 +31,7 @@ export async function ownerId() {
   const rows = await (await db()).query(`select id::int from desk_users where 'Owner' = any(roles) and active order by id limit 1`);
   return rows[0] ? Number(rows[0].id) : null;
 }
+
+/** Queues one of the change alerts from alerts-model.ts. */
+export const alert = (toId: number | null | undefined, a: { title: string; body: string; path: string }, fromId: number | null) =>
+  notify(toId, a.title, a.body, a.path, fromId);

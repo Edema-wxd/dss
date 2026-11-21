@@ -5,7 +5,9 @@ import type { ActionResult } from "@/app/admin/actions";
 import { requireModule, type DeskUser } from "@/lib/desk/auth";
 import * as store from "@/lib/desk/db";
 import { canManageKpis, isOwner } from "@/lib/hq/access";
+import * as A from "@/lib/hq/alerts-model";
 import * as data from "@/lib/hq/data";
+import { alert, ownerId } from "@/lib/hq/notify";
 import { KPI_PERIODS, KPI_SOURCES, KPI_TEMPLATES, KPI_UNITS, formatKpi } from "@/lib/hq/work";
 
 const fail = (error: string): ActionResult => ({ ok: false, error });
@@ -125,6 +127,7 @@ export async function proposeKpi(input: KpiForm): Promise<ActionResult> {
   if (!why) return fail("Say why this KPI matters.");
   await data.createProposal(user.id, { ...k, why });
   await audit(user, "kpi.propose", user.email, `${user.name} proposed the KPI "${k.title}"`);
+  await alert(await ownerId(), A.kpiProposed(user.name, k, A.kpiTarget(k, periodLabel(k.period), formatKpi), why), user.id);
   refresh();
   return { ok: true, message: "Sent to the owner for approval." };
 }
@@ -148,6 +151,7 @@ export async function approveProposal(id: string): Promise<ActionResult> {
   const kid = await data.saveKpi(null, { ...p, ownerId: p.userId, weight: 1, proposedBy: p.userId }, user.id);
   await data.reviewProposal(p.id, { status: "approved", kpiId: kid }, user.id);
   await audit(user, "kpi.approve", p.title, `Approved the KPI "${p.title}"`);
+  await alert(p.userId, A.kpiApproved(p.title), user.id);
   refresh();
   return { ok: true, message: "Approved. It's now on their KPIs." };
 }
@@ -161,6 +165,7 @@ export async function declineProposal(id: string, note: string): Promise<ActionR
   if (!why) return fail("Tell them why.");
   await data.reviewProposal(p.id, { status: "declined", note: why }, user.id);
   await audit(user, "kpi.decline", p.title, `Declined the KPI "${p.title}"`);
+  await alert(p.userId, A.kpiDeclined(p.title, why), user.id);
   refresh();
   return { ok: true, message: "Declined." };
 }
@@ -179,6 +184,7 @@ export async function reviseProposal(id: string, input: KpiForm): Promise<Action
   const final = `${formatKpi(k.unit, k.target)} ${periodLabel(k.period)}${k.title !== p.title ? ` for "${k.title}"` : ""}`;
   await data.reviewProposal(p.id, { status: "revised", kpiId: kid, note, final }, user.id);
   await audit(user, "kpi.revise", p.title, `Set a different version of the KPI "${p.title}": ${final}`);
+  await alert(p.userId, A.kpiRevised(k.title, A.kpiTarget(k, periodLabel(k.period), formatKpi), note), user.id);
   refresh();
   return { ok: true, message: "Your version is set on their KPIs." };
 }

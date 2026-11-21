@@ -5,7 +5,9 @@ import type { ActionResult } from "@/app/admin/actions";
 import { requireModule, type DeskUser } from "@/lib/desk/auth";
 import * as store from "@/lib/desk/db";
 import { ownTasksOnly } from "@/lib/hq/access";
+import * as A from "@/lib/hq/alerts-model";
 import * as data from "@/lib/hq/data";
+import { alert } from "@/lib/hq/notify";
 import { completeTask } from "@/lib/hq/task-ops";
 import { ESTIMATES, PRIORITIES, REPEATS, TASK_STATUS, lagosToday, nextWorkingDay, parseCapture, relDay } from "@/lib/hq/work";
 
@@ -72,6 +74,7 @@ export async function addTask(input: Record<string, unknown>): Promise<ActionRes
   if (typeof t === "string") return fail(t);
   if (!t.title) return fail("Give the task a title.");
   await data.createTask({ ...t, title: t.title }, user.id);
+  await alert(t.assigneeId, A.taskGiven(user.name, { title: t.title, due: t.due, notes: t.notes }), user.id);
   const people = await data.listPeople();
   const who = people.find((p) => p.id === t.assigneeId);
   await audit(user, "task.create", t.title, `Added "${t.title}"${who && who.id !== user.id ? ` for ${who.name}` : ""}`);
@@ -86,6 +89,7 @@ export async function saveTask(id: string, input: Record<string, unknown>): Prom
   const t = await readTask(user, input);
   if (typeof t === "string") return fail(t);
   await data.updateTask(task.id, t);
+  if (t.assigneeId && t.assigneeId !== task.assigneeId) await alert(t.assigneeId, A.taskPassed(user.name, { title: t.title ?? task.title, due: t.due ?? task.due }), user.id);
   if (t.status === "done" && task.status !== "done") await completeTask({ ...task, ...t } as data.Task, user);
   else if (t.status && t.status !== task.status) await audit(user, "task.update", task.title, `"${task.title}" moved to ${TASK_STATUS.find(([k]) => k === t.status)?.[1]}`);
   refresh();
