@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,7 +31,7 @@ import {
   X,
 } from "lucide-react";
 import { logout } from "@/app/admin/actions";
-import type { ModuleKey } from "@/lib/hq/access";
+import { NAV_GROUPS, type ModuleKey, type NavGroup } from "@/lib/hq/access";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<ModuleKey, LucideIcon> = {
@@ -57,7 +57,22 @@ const ICONS: Record<ModuleKey, LucideIcon> = {
   settings: Settings,
 };
 
-export type NavItem = { key: ModuleKey; label: string; badge?: number };
+export type NavItem = { key: ModuleKey; label: string; group: NavGroup; badge?: number };
+
+/** The items under each group heading, in sidebar order, leaving out empty groups. */
+const grouped = (items: NavItem[]) =>
+  NAV_GROUPS.map((g) => ({ ...g, items: items.filter((i) => i.group === g.key) })).filter((g) => g.items.length);
+
+function GroupedLinks({ items, idPrefix, render }: { items: NavItem[]; idPrefix: string; render: (item: NavItem) => React.ReactNode }) {
+  return grouped(items).map((g) => (
+    <div key={g.key} role="group" aria-labelledby={`${idPrefix}-${g.key}`} className="grid gap-0.5">
+      <p id={`${idPrefix}-${g.key}`} className="px-3 pt-3 pb-1 text-[10px] font-semibold tracking-[0.14em] text-hq-muted/80 uppercase first:pt-0">
+        {g.label}
+      </p>
+      {g.items.map(render)}
+    </div>
+  ));
+}
 
 function Badge({ n, label }: { n?: number; label: string }) {
   if (!n) return null;
@@ -115,36 +130,45 @@ function SignOut({ className }: { className?: string }) {
 export function ShellNav({ items, me }: { items: NavItem[]; me: Me }) {
   const path = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const sideNav = useRef<HTMLElement>(null);
+  // keep the current page's link in sight when the list is taller than the screen
+  useEffect(() => {
+    sideNav.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: "nearest" });
+  }, [path]);
 
   return (
     <>
       <aside
         aria-label="DSS HQ navigation"
-        className="sticky top-0 hidden h-dvh flex-col gap-1 overflow-y-auto bg-hq-side px-3.5 pt-5 pb-4 text-cream lg:flex"
+        className="sticky top-0 hidden h-dvh flex-col gap-1 bg-hq-side px-3.5 pt-5 pb-4 text-cream lg:flex"
       >
         <Brand />
-        <nav className="grid gap-1">
-          {items.map(({ key, label, badge }) => {
-            const Icon = ICONS[key];
-            const here = isHere(path, key);
-            return (
-              <Link
-                key={key}
-                href={hrefOf(key)}
-                aria-current={here ? "page" : undefined}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] font-medium text-hq-muted hover:bg-hq-side-2 hover:text-cream",
-                  here && "bg-cream text-hq-side hover:bg-cream hover:text-hq-side",
-                )}
-              >
-                <Icon className={cn("size-[18px] flex-none", here && "text-pink")} aria-hidden />
-                {label}
-                <Badge n={badge} label="unread" />
-              </Link>
-            );
-          })}
+        <nav ref={sideNav} className="-mx-1 grid min-h-0 flex-1 content-start gap-2 overflow-y-auto px-1 pb-3">
+          <GroupedLinks
+            items={items}
+            idPrefix="nav"
+            render={({ key, label, badge }) => {
+              const Icon = ICONS[key];
+              const here = isHere(path, key);
+              return (
+                <Link
+                  key={key}
+                  href={hrefOf(key)}
+                  aria-current={here ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl px-3 py-[7px] text-[15px] font-medium text-hq-muted hover:bg-hq-side-2 hover:text-cream",
+                    here && "bg-cream text-hq-side hover:bg-cream hover:text-hq-side",
+                  )}
+                >
+                  <Icon className={cn("size-[18px] flex-none", here && "text-pink")} aria-hidden />
+                  {label}
+                  <Badge n={badge} label="unread" />
+                </Link>
+              );
+            }}
+          />
         </nav>
-        <div className="mt-auto grid gap-2 rounded-2xl bg-hq-side-2 p-2.5">
+        <div className="grid flex-none gap-2 rounded-2xl bg-hq-side-2 p-2.5">
           <div className="flex items-center gap-2.5">
             <Avatar name={me.name} />
             <span className="min-w-0">
@@ -198,26 +222,30 @@ export function ShellNav({ items, me }: { items: NavItem[]; me: Me }) {
               <X className="size-5" aria-hidden />
             </button>
           </div>
-          <nav className="grid gap-1 overflow-y-auto">
-            {items.map(({ key, label, badge }) => {
-              const Icon = ICONS[key];
-              const here = isHere(path, key);
-              return (
-                <Link
-                  key={key}
-                  href={hrefOf(key)}
-                  aria-current={here ? "page" : undefined}
-                  onClick={() => setMenuOpen(false)}
-                  className={cn("flex min-h-12 items-center gap-3 rounded-xl px-3 text-base font-medium text-hq-muted", here && "bg-cream text-hq-side")}
-                >
-                  <Icon className={cn("size-5", here && "text-pink")} aria-hidden />
-                  {label}
-                  <Badge n={badge} label="unread" />
-                </Link>
-              );
-            })}
+          <nav className="grid min-h-0 flex-1 content-start gap-2 overflow-y-auto pb-3">
+            <GroupedLinks
+              items={items}
+              idPrefix="menu"
+              render={({ key, label, badge }) => {
+                const Icon = ICONS[key];
+                const here = isHere(path, key);
+                return (
+                  <Link
+                    key={key}
+                    href={hrefOf(key)}
+                    aria-current={here ? "page" : undefined}
+                    onClick={() => setMenuOpen(false)}
+                    className={cn("flex min-h-12 items-center gap-3 rounded-xl px-3 text-base font-medium text-hq-muted", here && "bg-cream text-hq-side")}
+                  >
+                    <Icon className={cn("size-5", here && "text-pink")} aria-hidden />
+                    {label}
+                    <Badge n={badge} label="unread" />
+                  </Link>
+                );
+              }}
+            />
           </nav>
-          <div className="mt-auto flex items-center gap-3 rounded-2xl bg-hq-side-2 p-3">
+          <div className="flex flex-none items-center gap-3 rounded-2xl bg-hq-side-2 p-3">
             <Avatar name={me.name} />
             <span className="min-w-0 flex-1">
               <b className="block truncate text-sm font-medium">{me.name}</b>

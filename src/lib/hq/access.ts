@@ -3,28 +3,41 @@
 // and MKT_ONLY tables in c-core.js (HQ version 24), plus the two areas the merge added:
 // Visibility Sessions and the Activity log.
 
-export const MODULES = [
-  { key: "today", label: "Today", phase: 2 },
-  { key: "chat", label: "Messages", phase: 5 },
-  { key: "plan", label: "12-week plan", phase: 5 },
-  { key: "time", label: "Attendance", phase: 5 },
-  { key: "overview", label: "Command centre", phase: 2 },
-  { key: "tasks", label: "Tasks", phase: 2 },
-  { key: "sessions", label: "Visibility Sessions", phase: 1 },
-  { key: "clients", label: "Clients", phase: 3 },
-  { key: "crm", label: "CRM", phase: 3 },
-  { key: "talent", label: "Talent", phase: 3 },
-  { key: "marketing", label: "Marketing", phase: 3 },
-  { key: "finance", label: "Finance", phase: 4 },
-  { key: "invoices", label: "Invoices", phase: 4 },
-  { key: "kpis", label: "KPIs", phase: 2 },
-  { key: "contracts", label: "Contracts", phase: 3 },
-  { key: "reports", label: "Reports", phase: 4 },
-  { key: "procedures", label: "Procedures", phase: 2 },
-  { key: "team", label: "Team", phase: 1 },
-  { key: "activity", label: "Activity", phase: 1 },
-  { key: "settings", label: "Settings", phase: 2 },
+/** The sidebar's groups, in order. A group someone can open nothing in isn't shown. */
+export const NAV_GROUPS = [
+  { key: "day", label: "Your day" },
+  { key: "sales", label: "Sales and clients" },
+  { key: "growth", label: "Talent and marketing" },
+  { key: "money", label: "Money" },
+  { key: "results", label: "Plans and results" },
+  { key: "admin", label: "Team and admin" },
 ] as const;
+
+export type NavGroup = (typeof NAV_GROUPS)[number]["key"];
+
+/** Every area, in sidebar order. The first four someone can open go in the phone's bottom bar. */
+export const MODULES = [
+  { key: "today", label: "Today", phase: 2, group: "day" },
+  { key: "overview", label: "Command centre", phase: 2, group: "day" },
+  { key: "tasks", label: "Tasks", phase: 2, group: "day" },
+  { key: "chat", label: "Messages", phase: 5, group: "day" },
+  { key: "time", label: "Attendance", phase: 5, group: "day" },
+  { key: "crm", label: "CRM", phase: 3, group: "sales" },
+  { key: "sessions", label: "Visibility Sessions", phase: 1, group: "sales" },
+  { key: "clients", label: "Clients", phase: 3, group: "sales" },
+  { key: "contracts", label: "Contracts", phase: 3, group: "sales" },
+  { key: "talent", label: "Talent", phase: 3, group: "growth" },
+  { key: "marketing", label: "Marketing", phase: 3, group: "growth" },
+  { key: "finance", label: "Finance", phase: 4, group: "money" },
+  { key: "invoices", label: "Invoices", phase: 4, group: "money" },
+  { key: "plan", label: "12-week plan", phase: 5, group: "results" },
+  { key: "kpis", label: "KPIs", phase: 2, group: "results" },
+  { key: "reports", label: "Reports", phase: 4, group: "results" },
+  { key: "team", label: "Team", phase: 1, group: "admin" },
+  { key: "procedures", label: "Procedures", phase: 2, group: "admin" },
+  { key: "activity", label: "Activity", phase: 1, group: "admin" },
+  { key: "settings", label: "Settings", phase: 2, group: "admin" },
+] as const satisfies readonly { key: string; label: string; phase: number; group: NavGroup }[];
 
 export type ModuleKey = (typeof MODULES)[number]["key"];
 

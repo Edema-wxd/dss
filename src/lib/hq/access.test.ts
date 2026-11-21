@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   type Cover,
   MODULES,
+  NAV_GROUPS,
   ROLES,
   canEditGoals,
   canEditProcedures,
@@ -51,15 +52,20 @@ describe("role access", () => {
     expect(cleanRoles(["Superuser", "Sales", "Owner", "Sales"])).toEqual(["Owner", "Sales"]);
   });
 
-  it("lists only built areas in the nav, in HQ's order", () => {
-    expect(navFor(["Owner"]).map((m) => m.key)).toEqual(["today", "chat", "plan", "time", "overview", "tasks", "sessions", "clients", "crm", "talent", "marketing", "finance", "invoices", "kpis", "contracts", "reports", "procedures", "team", "activity", "settings"]);
+  it("lists only built areas in the nav, in sidebar order", () => {
+    expect(navFor(["Owner"]).map((m) => m.key)).toEqual(["today", "overview", "tasks", "chat", "time", "crm", "sessions", "clients", "contracts", "talent", "marketing", "finance", "invoices", "plan", "kpis", "reports", "team", "procedures", "activity", "settings"]);
     // Finance is Owner and Finance only; Admin and Operations (EA) get Invoices without it
     expect(navFor(["Admin"]).map((m) => m.key)).toContain("invoices");
     expect(navFor(["Admin"]).map((m) => m.key)).not.toContain("finance");
     expect(navFor(["Finance"]).map((m) => m.key)).toEqual(expect.arrayContaining(["finance", "invoices"]));
     expect(navFor(["Sales"]).map((m) => m.key)).not.toContain("invoices");
-    expect(navFor(["Contractor"]).map((m) => m.key)).toEqual(["today", "chat", "plan", "tasks", "kpis", "procedures", "settings"]);
-    expect(navFor(["Contributor"]).map((m) => m.key)).toEqual(["today", "chat", "plan", "time", "tasks", "sessions", "kpis", "procedures", "team", "settings"]);
+    expect(navFor(["Contractor"]).map((m) => m.key)).toEqual(["today", "tasks", "chat", "plan", "kpis", "procedures", "settings"]);
+    expect(navFor(["Contributor"]).map((m) => m.key)).toEqual(["today", "tasks", "chat", "time", "sessions", "plan", "kpis", "team", "procedures", "settings"]);
+  });
+
+  it("groups the sidebar, each group's areas together", () => {
+    const groups = MODULES.map((m) => m.group).filter((g, i, all) => g !== all[i - 1]);
+    expect(groups).toEqual(NAV_GROUPS.map((g) => g.key));
   });
 
   it("has a module entry for every area any role can open", () => {
