@@ -316,6 +316,14 @@ test("the 7pm check-in job runs with the cron secret", async ({ request }) => {
   expect(await res.json()).toEqual({ ok: true, sent: 0, owners: 1 });
 });
 
+test("the notifications job needs the cron secret and leaves the queue alone without email", async ({ request }) => {
+  expect((await request.get("/api/cron/notifications")).status()).toBe(401);
+  const res = await request.get("/api/cron/notifications?morning=1", { headers: { authorization: `Bearer ${E2E_CRON_SECRET}` } });
+  // email isn't set up in the tests: nothing is claimed or marked, so it all goes out once it is
+  expect(res.status()).toBe(503);
+  expect(await res.json()).toEqual({ ok: false, error: "Email isn't set up on this server." });
+});
+
 /* ── Phase 3: clients, CRM and contracts ─────────────────────────────── */
 
 test("a new client gets an onboarding checklist with tasks", async ({ page }) => {
