@@ -38,6 +38,11 @@ async function Nav() {
   const pubOnly = marketingTabsFor(user.roles)?.length === 1;
   // channels with something new, on Messages
   const unread = canUse(user.roles, "chat") ? await unreadCount(user.id).catch(() => 0) : 0;
-  const items = navFor(user.roles).map(({ key, label }) => ({ key, label: key === "marketing" && pubOnly ? "Publicity" : label, badge: key === "chat" ? unread : undefined }));
+  const items = navFor(user.roles).map(({ key, label, group }) => ({
+    key,
+    group,
+    label: key === "marketing" && pubOnly ? "Publicity" : label,
+    badge: key === "chat" ? unread : undefined,
+  }));
   return <ShellNav items={items} me={{ name: user.name, email: user.email, role: (user.ownRoles ?? user.roles).join(", ") }} />;
 }

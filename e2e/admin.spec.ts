@@ -62,26 +62,29 @@ test("the first account becomes an Owner and lands in HQ", async ({ page }) => {
   await expect(sidebar(page).getByRole("link")).toHaveText([
     "DSS HQDigital Savvy Studios",
     "Today",
-    "Messages",
-    "12-week plan",
-    "Attendance",
     "Command centre",
     "Tasks",
+    "Messages",
+    "Attendance",
+    "CRM",
     "Visibility Sessions",
     "Clients",
-    "CRM",
+    "Contracts",
     "Talent",
     "Marketing",
     "Finance",
     "Invoices",
+    "12-week plan",
     "KPIs",
-    "Contracts",
     "Reports",
-    "Procedures",
     "Team",
+    "Procedures",
     "Activity",
     "Settings",
   ]);
+  // the links sit under group headings
+  await expect(sidebar(page).getByRole("group", { name: "Money" }).getByRole("link")).toHaveText(["Finance", "Invoices"]);
+  await expect(sidebar(page).getByRole("group")).toHaveCount(6);
   await expect(sidebar(page).getByText("Owner", { exact: true })).toBeVisible();
 });
 
@@ -101,7 +104,9 @@ test("a contractor keeps to their own areas, even by address", async ({ page }) 
     await page.goto(`/admin/${area}`);
     await expect(page).toHaveURL(/\/admin\/today$/);
   }
-  await expect(sidebar(page).getByRole("link")).toHaveText(["DSS HQDigital Savvy Studios", "Today", "Messages", "12-week plan", "Tasks", "KPIs", "Procedures", "Settings"]);
+  await expect(sidebar(page).getByRole("link")).toHaveText(["DSS HQDigital Savvy Studios", "Today", "Tasks", "Messages", "12-week plan", "KPIs", "Procedures", "Settings"]);
+  // groups with nothing they can open, such as Money, are left out
+  await expect(sidebar(page).getByRole("group", { name: "Money" })).toHaveCount(0);
 });
 
 test("a contributor gets Visibility Sessions and Team, but not Activity or team management", async ({ page }) => {
