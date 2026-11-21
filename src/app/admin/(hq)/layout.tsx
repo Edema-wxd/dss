@@ -4,7 +4,8 @@ import { ClockSlot } from "@/components/hq/clock-slot";
 import { ShellNav } from "@/components/hq/shell";
 import { CaptureBar } from "@/components/hq/tasks";
 import { currentUser } from "@/lib/desk/auth";
-import { marketingTabsFor, navFor } from "@/lib/hq/access";
+import { canUse, marketingTabsFor, navFor } from "@/lib/hq/access";
+import { unreadCount } from "@/lib/hq/chat";
 
 // The HQ frame: the dark sidebar on wide screens, a floating pill nav on phones.
 // Signing in happens at /admin/login, outside this frame.
@@ -35,6 +36,8 @@ async function Nav() {
   if (!user) return null;
   // someone whose Marketing is only Publicity (a Talent Manager) sees it named that way
   const pubOnly = marketingTabsFor(user.roles)?.length === 1;
-  const items = navFor(user.roles).map(({ key, label }) => ({ key, label: key === "marketing" && pubOnly ? "Publicity" : label }));
+  // channels with something new, on Messages
+  const unread = canUse(user.roles, "chat") ? await unreadCount(user.id).catch(() => 0) : 0;
+  const items = navFor(user.roles).map(({ key, label }) => ({ key, label: key === "marketing" && pubOnly ? "Publicity" : label, badge: key === "chat" ? unread : undefined }));
   return <ShellNav items={items} me={{ name: user.name, email: user.email, role: (user.ownRoles ?? user.roles).join(", ") }} />;
 }
