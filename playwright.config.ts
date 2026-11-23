@@ -26,6 +26,9 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
+        // full Chromium in headless mode, not the stripped-down headless shell: the shell drops
+        // notifications, which the Messages push test needs
+        channel: "chromium",
         // PW_CHROMIUM_PATH runs an already-installed Chromium when Playwright's own download isn't available
         launchOptions: process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},
       },
