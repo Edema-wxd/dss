@@ -179,6 +179,16 @@ test("the capture bar adds a dated, top-priority task", async ({ page }) => {
   await expect(row.getByText("Top", { exact: true })).toBeVisible();
 });
 
+test("the week view opens with seven days and moves between weeks", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/tasks");
+  await page.getByRole("button", { name: "Week", exact: true }).click();
+  await expect(page.getByText(/^\d{1,2} [A-Z][a-z]{2} to \d{1,2} [A-Z][a-z]{2}$/)).toBeVisible();
+  await expect(page.locator("section[aria-label]").filter({ has: page.getByRole("heading", { level: 2 }) })).toHaveCount(7);
+  await page.getByRole("button", { name: "Next week" }).click();
+  await expect(page.getByRole("button", { name: "This week" })).toBeVisible();
+});
+
 test("the owner gives a task to a team member", async ({ page }) => {
   await signedIn(page, OWNER);
   await page.goto("/admin/tasks");
