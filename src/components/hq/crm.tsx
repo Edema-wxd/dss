@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Download, MessageCircle, Plus, Search } from "lucide-react";
-import { addContact, contactHistory, logTouch, moveContactKind, removeContact, saveContact } from "@/app/admin/(hq)/crm/actions";
+import { addContact, contactHistory, logTouch, moveContactKind, removeContact, saveContact } from "@/app/savvy-hq/(hq)/crm/actions";
 import { Button, Field, btn, fieldClass, useToast } from "@/components/desk/ui";
 import type { Contact, TimelineEntry } from "@/lib/hq/sales";
 import { CURRENCIES, FOLLOW_UP_IN, REL_TYPES, SERVICES, SOURCES, TOUCH_TYPES, followUpDue, label, stagesFor } from "@/lib/hq/sales-model";
@@ -379,7 +379,7 @@ function ContactPanel({ c, w, money, talents, onClose }: { c: Contact; w: WorkPr
         w={w}
         money={money}
         pre={{ name: c.company || c.name, contactName: c.name, email: c.email, service: c.service, fee: c.value === null ? "" : String(c.value), currency: c.currency, leadId: c.ownerId ? String(c.ownerId) : "", fromContact: c.id }}
-        onDone={(id) => (id ? router.push(`/admin/clients/${id}`) : setConverting(false))}
+        onDone={(id) => (id ? router.push(`/savvy-hq/clients/${id}`) : setConverting(false))}
       />
     );
 
@@ -550,7 +550,7 @@ function ContactPanel({ c, w, money, talents, onClose }: { c: Contact; w: WorkPr
           </button>
           {c.kind === "sales" && !c.clientId && <Button onClick={() => setConverting(true)}>Won: make them a client</Button>}
           {c.clientId && (
-            <Button onClick={() => router.push(`/admin/clients/${c.clientId}`)}>Open client</Button>
+            <Button onClick={() => router.push(`/savvy-hq/clients/${c.clientId}`)}>Open client</Button>
           )}
           <Button disabled={pending} onClick={() => run(() => moveContactKind(c.id))}>
             {c.kind === "talent" ? "Move to DSS sales" : "Move to talent relationships"}

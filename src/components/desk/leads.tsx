@@ -1,7 +1,7 @@
 "use client";
 
 import { type LeadFlag } from "@/lib/desk/model";
-import { removeLead, setLeadFlag } from "@/app/admin/actions";
+import { removeLead, setLeadFlag } from "@/app/savvy-hq/actions";
 import { useDesk } from "./desk";
 import { Toggle, ago } from "./ui";
 

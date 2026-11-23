@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { hoursSince } from "@/lib/desk/model";
-import { resendMail } from "@/app/admin/actions";
+import { resendMail } from "@/app/savvy-hq/actions";
 import { useDesk } from "./desk";
 import { ago } from "./ui";
 

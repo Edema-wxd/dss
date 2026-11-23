@@ -11,7 +11,7 @@ import {
   retainerPreview,
   saveInvoiceAction,
   setInvoiceVoid,
-} from "@/app/admin/(hq)/invoices/actions";
+} from "@/app/savvy-hq/(hq)/invoices/actions";
 import { Button, Field, btn, copyText, fieldClass, useToast } from "@/components/desk/ui";
 import type { Payout, TalentBank } from "@/lib/hq/finance";
 import {
@@ -113,7 +113,7 @@ export function InvoicesView(p: InvoicesProps) {
           <span className="flex-1">
             <b>Add your bank accounts first.</b> Your account details and Paystack link print on every invoice.
           </span>
-          <Link href="/admin/settings#invoice-details" className={cn(btn.base, btn.sm)}>
+          <Link href="/savvy-hq/settings#invoice-details" className={cn(btn.base, btn.sm)}>
             Open settings
           </Link>
         </div>
@@ -600,7 +600,7 @@ function Editor({ inv, p, onDone, onPay }: { inv: Invoice; p: InvoicesProps; onD
           {i.payBank && !banks.length && (
             <p className="flex flex-wrap items-center gap-2 rounded-xl bg-peach/40 px-3 py-2 text-sm">
               No {i.currency} bank account saved yet, so the invoice says &quot;Account details to follow&quot;.
-              <Link href="/admin/settings#invoice-details" className={cn(btn.base, btn.sm)}>
+              <Link href="/savvy-hq/settings#invoice-details" className={cn(btn.base, btn.sm)}>
                 Add in Settings
               </Link>
             </p>
@@ -669,7 +669,7 @@ function Editor({ inv, p, onDone, onPay }: { inv: Invoice; p: InvoicesProps; onD
           )}
           <Button onClick={copy}>Copy message</Button>
           {inv.id ? (
-            <a href={`/admin/invoices/${inv.id}/pdf`} className={cn(btn.base, btn.plain)}>
+            <a href={`/savvy-hq/invoices/${inv.id}/pdf`} className={cn(btn.base, btn.plain)}>
               <Download className="size-4" aria-hidden /> Download PDF
             </a>
           ) : (

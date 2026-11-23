@@ -35,14 +35,20 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## Session Desk (admin dashboard)
+## Session Desk and DSS HQ
 
-The admin dashboard for Visibility Session applications lives at `/admin`.
+Two signed-in areas share one set of accounts, passwords and roles:
+
+- `/session-desk`: the Session Desk, for Visibility Session applications, checklist leads, sent
+  emails and the settings the website reads. Anyone whose roles include Visibility Sessions.
+- `/savvy-hq`: DSS HQ, the studio's internal app. Each person sees only the areas their roles allow.
+
+The old `/admin` addresses redirect to these.
 
 - **Data**: Neon Postgres. Set `DATABASE_URL` to the Neon connection string in `.env.local`
   (git ignores it) and in the host's environment settings. Tables are created on first use.
-- **First login**: open `/admin`. If no account exists yet, the page asks you to create the
-  first one, which becomes the admin. Admins add the rest of the team under "Team and setup".
+- **First login**: open `/savvy-hq`. If no account exists yet, the page asks you to create the
+  first one, which becomes the Owner. The Owner adds the rest of the team on HQ's Team page.
 - **Website connection**: the application form and the checklist pop-up post to
   `/api/visibility`. A GET to the same address returns the public settings (sessions left,
   waitlist, booking link, client places line).

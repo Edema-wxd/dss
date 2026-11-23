@@ -17,7 +17,7 @@ import {
   thisMonth,
 } from "@/lib/desk/model";
 import { clientStats, isSlot, monthStats } from "@/lib/desk/logic";
-import { addApplication, removeApplication, saveApplication } from "@/app/admin/actions";
+import { addApplication, removeApplication, saveApplication } from "@/app/savvy-hq/actions";
 import { useDesk } from "./desk";
 import { Button, Field, RouteTag, ago, copyText, fieldClass, useToast } from "./ui";
 

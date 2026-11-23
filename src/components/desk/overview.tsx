@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { BANDS, bandLabel, initials, monthName, naira, truthy, today } from "@/lib/desk/model";
 import { attention, averageReplyHours, clientStats, monthStats, overdueReplies, replyHours, wonValue } from "@/lib/desk/logic";
-import { saveSettings } from "@/app/admin/actions";
+import { saveSettings } from "@/app/savvy-hq/actions";
 import { useDesk } from "./desk";
 import { Empty, Panel, RouteTag, StatusPill, Stepper, Toggle, ago, fmtDay } from "./ui";
 

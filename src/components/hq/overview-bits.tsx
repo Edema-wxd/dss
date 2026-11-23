@@ -1,6 +1,6 @@
 "use client";
 
-import { clearBlocker } from "@/app/admin/(hq)/today/actions";
+import { clearBlocker } from "@/app/savvy-hq/(hq)/today/actions";
 import { Button } from "@/components/desk/ui";
 import { useRun } from "./kit";
 

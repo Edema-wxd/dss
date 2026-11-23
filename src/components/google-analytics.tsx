@@ -5,10 +5,10 @@ import Script from "next/script";
 
 const GA_MEASUREMENT_ID = "G-4864WG85RQ";
 
-/** Loads the Google tag everywhere except the admin desk, so internal use stays out of the numbers. */
+/** Loads the Google tag everywhere except DSS HQ and the Session Desk, so internal use stays out of the numbers. */
 export function GoogleAnalytics() {
   const pathname = usePathname();
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/savvy-hq") || pathname.startsWith("/session-desk")) return null;
 
   return (
     <>

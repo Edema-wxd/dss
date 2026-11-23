@@ -146,17 +146,20 @@ export async function currentUser(): Promise<DeskUser | null> {
   return { id: user.id, name: user.name, email: user.email, roles: withBorrowed(own, user.borrowed ?? []), ownRoles: own };
 }
 
-/** For pages and actions: the signed-in team member, or a redirect to the login page. */
-export async function requireUser() {
+/** For pages and actions: the signed-in team member, or a redirect to a sign-in page (HQ's unless given). */
+export async function requireUser(login = "/savvy-hq/login") {
   const user = await currentUser();
-  if (!user) redirect("/admin/login");
+  if (!user) redirect(login);
   return user;
 }
 
-/** For a page or action in one area: the signed-in person, sent to the admin home if their roles don't cover it. */
+/**
+ * For a page or action in one area: the signed-in person, sent to HQ's home if their roles don't
+ * cover it. Visibility Sessions is the Session Desk, with its own sign-in page.
+ */
 export async function requireModule(mod: ModuleKey) {
-  const user = await requireUser();
-  if (!canUse(user.roles, mod)) redirect("/admin");
+  const user = await requireUser(mod === "sessions" ? "/session-desk/login" : undefined);
+  if (!canUse(user.roles, mod)) redirect("/savvy-hq");
   return user;
 }
 

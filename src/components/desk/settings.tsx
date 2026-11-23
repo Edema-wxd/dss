@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { type EditableSetting, BANDS, STATUSES, STATUS_NOTES, SLOT_STATUSES, digits, monthName, thisMonth, toDateInput, truthy } from "@/lib/desk/model";
 import { monthStats } from "@/lib/desk/logic";
-import { saveSettings } from "@/app/admin/actions";
+import { saveSettings } from "@/app/savvy-hq/actions";
 import { useDesk } from "./desk";
 import { Button, Panel, StatusPill, Stepper, Toggle, fieldClass } from "./ui";
 

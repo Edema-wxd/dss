@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Copy, ExternalLink, Plus, Settings2, Trash2, X } from "lucide-react";
-import { invoiceFromDeal, saveTalentBankAction } from "@/app/admin/(hq)/invoices/actions";
-import { addDeal, addTalent, dealHistory, postDealUpdate, removeDeal, removeDealUpdate, removeTalent, saveDeal, saveTalent } from "@/app/admin/(hq)/talent/actions";
+import { invoiceFromDeal, saveTalentBankAction } from "@/app/savvy-hq/(hq)/invoices/actions";
+import { addDeal, addTalent, dealHistory, postDealUpdate, removeDeal, removeDealUpdate, removeTalent, saveDeal, saveTalent } from "@/app/savvy-hq/(hq)/talent/actions";
 import { Button, Field, Panel, btn, fieldClass, useToast } from "@/components/desk/ui";
 import type { Contact, TimelineEntry } from "@/lib/hq/sales";
 import { CURRENCIES, HEALTH, TALENT_STAGES, label } from "@/lib/hq/sales-model";
@@ -70,7 +70,7 @@ export function TalentRoster(p: Common) {
             const goal = t.goals.find((g) => !g.done);
             const inPlay = p.deals.filter((d) => d.talentId === t.id && OPEN_STAGES.includes(d.stage)).length;
             return (
-              <Link key={t.id} href={`/admin/talent/${t.id}`} className="grid content-start gap-1.5 rounded-[20px] border-2 border-ink bg-white p-4 transition-transform hover:-translate-y-0.5">
+              <Link key={t.id} href={`/savvy-hq/talent/${t.id}`} className="grid content-start gap-1.5 rounded-[20px] border-2 border-ink bg-white p-4 transition-transform hover:-translate-y-0.5">
                 <span className="flex flex-wrap gap-1">
                   <Pill tone={t.status === "signed" ? "ok" : t.status === "trial" ? "warn" : "plain"}>{t.status === "trial" ? "Trial" : label(TALENT_STATUS, t.status)}</Pill>
                   {t.package && <Pill>{t.package}</Pill>}
@@ -192,7 +192,7 @@ function NewTalent({ w, onDone }: { w: WorkProps; money: boolean; onDone: () => 
         e.preventDefault();
         run(async () => {
           const r = await addTalent(d);
-          if (r.ok && r.id) router.push(`/admin/talent/${r.id}`);
+          if (r.ok && r.id) router.push(`/savvy-hq/talent/${r.id}`);
           return r;
         }).then((ok) => ok && onDone());
       }}
@@ -381,7 +381,7 @@ function DealPanel({ d, talents, contacts, w, money, fin, onClose }: Common & { 
     setInvoicing(false);
     if (!r.ok) return toast(r.error);
     toast(r.message ?? "Draft created.");
-    if (r.id) router.push(`/admin/invoices?open=${encodeURIComponent(r.id)}`);
+    if (r.id) router.push(`/savvy-hq/invoices?open=${encodeURIComponent(r.id)}`);
   };
   const [note, setNote] = useState("");
   const [health, setHealth] = useState("");
@@ -612,7 +612,7 @@ export function TalentProfile(p: Common & { t: Talent; bank?: TalentBank | null 
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Link href="/admin/talent" className={cn(btn.base, btn.plain, btn.sm)} aria-label="All talent">
+        <Link href="/savvy-hq/talent" className={cn(btn.base, btn.plain, btn.sm)} aria-label="All talent">
           <ArrowLeft className="size-4" aria-hidden /> All talent
         </Link>
         <span className="flex-1" />
@@ -1200,7 +1200,7 @@ function TermsTab({ t, w, money, fin, bank }: { t: Talent; w: WorkProps; money: 
             Save
           </button>
           <span className="flex-1" />
-          <Button tone="ghost" className="text-pink" disabled={pending} onClick={() => window.confirm(`Remove ${t.name} from the roster? Their deals stay.`) && run(() => removeTalent(t.id)).then((ok) => ok && router.push("/admin/talent"))}>
+          <Button tone="ghost" className="text-pink" disabled={pending} onClick={() => window.confirm(`Remove ${t.name} from the roster? Their deals stay.`) && run(() => removeTalent(t.id)).then((ok) => ok && router.push("/savvy-hq/talent"))}>
             Remove from roster
           </Button>
         </div>

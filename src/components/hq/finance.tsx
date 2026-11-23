@@ -15,7 +15,7 @@ import {
   saveFinanceFigures,
   saveIncomeAction,
   setRetainerSkipAction,
-} from "@/app/admin/(hq)/finance/actions";
+} from "@/app/savvy-hq/(hq)/finance/actions";
 import { Button, Field, btn, fieldClass } from "@/components/desk/ui";
 import {
   ACCTS,
@@ -413,7 +413,7 @@ function RetainerCard({ f, books, m, canInvoices }: { f: F; books: Books; m: str
                   </Button>
                 )}
                 {!r.auto && !r.skip && !r.invoiced && canInvoices && (
-                  <Link href="/admin/invoices" className={cn(btn.base, btn.sm)}>
+                  <Link href="/savvy-hq/invoices" className={cn(btn.base, btn.sm)}>
                     Invoice
                   </Link>
                 )}

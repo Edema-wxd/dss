@@ -14,7 +14,7 @@ import {
   saveMonthStatsAction,
   savePillars,
   savePostAction,
-} from "@/app/admin/(hq)/marketing/actions";
+} from "@/app/savvy-hq/(hq)/marketing/actions";
 import { Button, Field, Panel, btn, fieldClass } from "@/components/desk/ui";
 import type { Account, Ad, MonthStatRow, NewsItem, Post, SyncState, WebMonth } from "@/lib/hq/marketing";
 import {

@@ -30,8 +30,8 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { logout } from "@/app/admin/actions";
-import { NAV_GROUPS, type ModuleKey, type NavGroup } from "@/lib/hq/access";
+import { logout } from "@/app/savvy-hq/actions";
+import { NAV_GROUPS, type ModuleKey, type NavGroup, areaHref } from "@/lib/hq/access";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<ModuleKey, LucideIcon> = {
@@ -84,7 +84,7 @@ function Badge({ n, label }: { n?: number; label: string }) {
 }
 type Me = { name: string; email: string; role: string };
 
-const hrefOf = (key: ModuleKey) => `/admin/${key}`;
+const hrefOf = areaHref;
 const isHere = (path: string, key: ModuleKey) => path === hrefOf(key) || path.startsWith(`${hrefOf(key)}/`);
 const initials = (name: string) =>
   name
@@ -96,7 +96,7 @@ const initials = (name: string) =>
 
 function Brand() {
   return (
-    <Link href="/admin" className="flex items-center gap-2.5 px-2 pt-1 pb-4">
+    <Link href="/savvy-hq" className="flex items-center gap-2.5 px-2 pt-1 pb-4">
       <Image src="/icon.png" alt="" width={38} height={38} unoptimized className="size-[38px] rounded-[11px] bg-pink" />
       <span>
         <b className="block font-display text-xl leading-none font-bold tracking-[-0.01em]">

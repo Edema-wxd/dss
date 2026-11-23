@@ -21,7 +21,7 @@ export function checkinEmail(o: { firstName: string; today: string; next: string
   const later = sortTasks(open.filter((t) => t.due && t.due > today && t.due <= week));
   const list = [...late, ...later];
   const nextLabel = relDay(next, today).toLowerCase();
-  const end = `${o.site}/admin/today/end`;
+  const end = `${o.site}/savvy-hq/today/end`;
   const dueText = (t: T) => (t.due < today ? `overdue since ${relDay(t.due, today).toLowerCase()}` : `due ${relDay(t.due, today).toLowerCase()}`);
   const subject = `Your end of day check-in, ${longDate(today)}`;
 
@@ -77,7 +77,7 @@ ${
 /** The 1st of the month: a nudge to download the backup, when the last one is over 30 days old. */
 export function backupReminderEmail(o: { firstName: string; site: string; daysSince: number | null }) {
   const when = o.daysSince === null ? "There's no backup yet." : `The last backup was ${o.daysSince} days ago.`;
-  const url = `${o.site}/admin/settings`;
+  const url = `${o.site}/savvy-hq/settings`;
   const text = [
     `Hi ${o.firstName},`,
     "",

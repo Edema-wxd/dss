@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Check, Pause, Play } from "lucide-react";
-import { endFocus } from "@/app/admin/(hq)/tasks/actions";
+import { endFocus } from "@/app/savvy-hq/(hq)/tasks/actions";
 import { btn } from "@/components/desk/ui";
 import { FOCUS_LENGTHS, type FocusClock, clockText, left, newClock, pause, running, spentMinutes, start, started } from "@/lib/hq/focus-model";
 import { cn } from "@/lib/utils";
