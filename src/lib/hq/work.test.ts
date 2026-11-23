@@ -40,6 +40,11 @@ describe("Lagos dates", () => {
     expect(relDay("2026-12-03", THU)).toBe("3 Dec");
   });
 
+  it("gives the plain date when there's no today to compare with, as the week view's heading does", () => {
+    expect(relDay("2026-11-23", "")).toBe("23 Nov");
+    expect(relDay("", "")).toBe("");
+  });
+
   it("keeps month-end dates sensible when adding a month", () => {
     expect(addMonths("2026-01-31", 1)).toBe("2026-02-28");
     expect(addMonths("2026-11-19", 1)).toBe("2026-12-19");

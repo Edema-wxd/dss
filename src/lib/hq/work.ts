@@ -53,6 +53,8 @@ const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frid
 /** "Today", "Tomorrow", "Yesterday", "Friday" (within a week), or "3 Dec". */
 export function relDay(key: string, today: string) {
   if (!key) return "";
+  // no today to compare with: just the date
+  if (!today) return parse(key).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
   if (key === today) return "Today";
   if (key === addDays(today, 1)) return "Tomorrow";
   if (key === addDays(today, -1)) return "Yesterday";
