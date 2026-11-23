@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import type { ActionResult } from "@/app/savvy-hq/actions";
 import { requireModule } from "@/lib/desk/auth";
 import { canUse } from "@/lib/hq/access";
@@ -24,6 +25,8 @@ import {
 } from "@/lib/hq/chat-model";
 import * as data from "@/lib/hq/data";
 import { notify } from "@/lib/hq/notify";
+import * as push from "@/lib/hq/push";
+import { isPushMode } from "@/lib/hq/push-model";
 import { lagosToday, longDate } from "@/lib/hq/work";
 
 // Messages. Everyone with the chat module reads and posts in every channel, except that only the
@@ -84,7 +87,34 @@ export async function sendMessage(id: string, input: { text?: unknown; reply?: u
   await chat.markRead(user.id, id, msg.at);
   const who = everyone ? people.filter((p) => p.id !== user.id).map((p) => p.id) : mentions;
   for (const to of who.slice(0, 40)) await notify(to, `${user.name} mentioned you in ${c.name}`, plainOf(text).slice(0, 240), `chat?c=${id}`, user.id);
+  // push notifications go out after the reply, so sending never waits on the push services
+  after(() => push.pushMessage({ id: c.id, name: c.name }, { id: user.id, name: user.name }, { by: user.id, text, files, mentions, everyone }));
   return { ok: true, msg };
+}
+
+/* ── Push notifications on this device ───────────────────────────────── */
+
+/** Turns notifications on for this browser, or changes what it gets. */
+export async function savePush(sub: unknown, mode: unknown): Promise<ActionResult> {
+  const user = await requireModule("chat");
+  if (!push.pushConfigured()) return fail("Notifications aren't set up on this server yet.");
+  const device = push.readSub(sub);
+  if (!device) return fail("This browser didn't give a usable notification address. Try again.");
+  const m = isPushMode(mode) ? mode : "all";
+  await push.saveDevice(user.id, device, m);
+  return { ok: true, message: m === "mentions" ? "Notifications on for mentions." : "Notifications on for every message." };
+}
+
+export async function stopPush(endpoint: unknown): Promise<ActionResult> {
+  const user = await requireModule("chat");
+  await push.removeDevice(user.id, String(endpoint ?? "").slice(0, 1100));
+  return { ok: true, message: "Notifications off on this device." };
+}
+
+/** Whether this browser is signed up for this person, and for what. */
+export async function pushState(endpoint: unknown) {
+  const user = await requireModule("chat");
+  return push.deviceMode(user.id, String(endpoint ?? "").slice(0, 1100));
 }
 
 async function mine(id: string, mid: string, allowAdmin: boolean) {

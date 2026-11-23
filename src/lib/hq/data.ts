@@ -452,12 +452,15 @@ export async function patchGeneral(patch: GeneralSettings, by: number) {
 
 /* ── Backup ──────────────────────────────────────────────────────────── */
 
-/** Every table HQ keeps, for the owner's JSON backup. Passwords and sign-in sessions are never included. */
+/**
+ * Every table HQ keeps, for the owner's JSON backup. Passwords, sign-in sessions and the devices
+ * signed up for push notifications are never included.
+ */
 export async function backupData() {
   const q = await db();
   const tables = (await q.query(
     `select table_name as name from information_schema.tables where table_schema = 'public'
-       and (table_name like 'hq\\_%' or table_name like 'vs\\_%' or table_name = 'desk_audit') order by table_name`,
+       and (table_name like 'hq\\_%' or table_name like 'vs\\_%' or table_name = 'desk_audit') and table_name <> 'hq_push_subs' order by table_name`,
   )) as { name: string }[];
   const out: Record<string, unknown[]> = {};
   for (const { name } of tables) out[name] = await q.query(`select * from ${name}`);

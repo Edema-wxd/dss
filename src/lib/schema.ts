@@ -712,6 +712,18 @@ const HQ = [
   )`,
   /* each person's chat look: bubble colour, wallpaper, text size, what Enter does, and a status line */
   `alter table desk_users add column if not exists chat jsonb not null default '{}'`,
+  /* Web Push for Messages: one row per device (browser) that turned notifications on, and whether
+     it wants every message or only mentions */
+  `create table if not exists hq_push_subs (
+    endpoint text primary key,
+    user_id bigint not null references desk_users(id) on delete cascade,
+    p256dh text not null,
+    auth text not null,
+    mode text not null default 'all',
+    created_at timestamptz not null default now(),
+    last_ok timestamptz
+  )`,
+  `create index if not exists hq_push_subs_user on hq_push_subs (user_id)`,
 
   /* leave and availability: requests, relief cover, public holidays (no person) and day changes (type shift) */
   `alter table desk_users add column if not exists pattern_req jsonb`,

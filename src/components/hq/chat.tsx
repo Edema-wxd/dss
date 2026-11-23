@@ -42,6 +42,7 @@ import {
 import type { Member } from "@/lib/hq/chat";
 import { cn } from "@/lib/utils";
 import { Avatar, Dialog } from "./kit";
+import { PushButton } from "./push-switch";
 
 const LAGOS = "Africa/Lagos";
 const dayOf = (at: string) => new Intl.DateTimeFormat("en-CA", { timeZone: LAGOS }).format(new Date(at));
@@ -105,10 +106,10 @@ function useAct() {
 }
 
 type Me = { id: number; name: string; admin: boolean; poster: boolean; owner: boolean; tasks: boolean };
-type Props = { me: Me; today: string; members: Member[]; look: Look; filesOn: boolean; initial: ChannelLoad | null; channels: Channel[] };
+type Props = { me: Me; today: string; members: Member[]; look: Look; filesOn: boolean; pushKey: string; initial: ChannelLoad | null; channels: Channel[] };
 type Pending = { name: string; type: string; size: number; state: "up" | "ok" | "err"; key?: string };
 
-export function ChatView({ me, today, members, look: look0, filesOn, initial, channels: channels0 }: Props) {
+export function ChatView({ me, today, members, look: look0, filesOn, pushKey, initial, channels: channels0 }: Props) {
   const act = useAct();
   const toast = useToast();
   const router = useRouter();
@@ -227,6 +228,7 @@ export function ChatView({ me, today, members, look: look0, filesOn, initial, ch
             <b className="block font-display text-lg">Messages</b>
             <small className="text-xs text-hq-muted">{unread ? `${unread} unread` : "You're all caught up"}</small>
           </div>
+          {pushKey && <PushButton pushKey={pushKey} />}
           <button type="button" onClick={() => setLookOpen(true)} aria-label="Colours and wallpaper" className="grid size-9 place-items-center rounded-full hover:bg-hq-side-2">
             <Settings2 className="size-4" aria-hidden />
           </button>

@@ -917,3 +917,33 @@ test("focus mode: time a task, ignore Escape, and finish it with Done with it", 
   await expect(focus).toBeHidden();
   await expect(page.getByText("Done. Nice.")).toBeVisible();
 });
+
+test("messages: the bell offers notifications, and the service worker shows a push and opens its channel", async ({ page, context }) => {
+  await context.grantPermissions(["notifications"]);
+  await signedIn(page, OWNER);
+  await page.goto("/savvy-hq/chat");
+  await page.getByRole("button", { name: "Notifications: off" }).click();
+  const panel = page.getByRole("dialog", { name: "Notifications" });
+  await expect(panel.getByRole("button", { name: "Off" })).toHaveAttribute("aria-pressed", "true");
+  await expect(panel.getByRole("button", { name: "Every message" })).toBeVisible();
+  await panel.getByRole("button", { name: "Close" }).click();
+
+  // the service worker is registered for HQ only
+  expect(await page.evaluate(async () => (await navigator.serviceWorker.ready).scope)).toMatch(/\/savvy-hq\/$/);
+
+  // a push straight to the service worker, as a push service would deliver it
+  const cdp = await context.newCDPSession(page);
+  const regs: { registrationId: string; scopeURL: string }[] = [];
+  cdp.on("ServiceWorker.workerRegistrationUpdated", (e) => regs.push(...e.registrations));
+  await cdp.send("ServiceWorker.enable");
+  await expect.poll(() => regs.find((r) => r.scopeURL.endsWith("/savvy-hq/"))).toBeTruthy();
+  const reg = regs.find((r) => r.scopeURL.endsWith("/savvy-hq/"))!;
+  await cdp.send("ServiceWorker.deliverPushMessage", {
+    origin: new URL(page.url()).origin,
+    registrationId: reg.registrationId,
+    data: JSON.stringify({ title: "Bo in Wins", body: "We signed the new client", url: "/savvy-hq/chat?c=wins", tag: "chat-wins" }),
+  });
+  await expect
+    .poll(() => page.evaluate(async () => (await (await navigator.serviceWorker.ready).getNotifications()).map((n) => `${n.title}: ${n.body}`)))
+    .toEqual(["Bo in Wins: We signed the new client"]);
+});

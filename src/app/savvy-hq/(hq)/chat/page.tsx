@@ -8,6 +8,7 @@ import { canUse, isOwner } from "@/lib/hq/access";
 import * as chat from "@/lib/hq/chat";
 import { chatAdmin, postsAnnouncements } from "@/lib/hq/chat-model";
 import { ownerId } from "@/lib/hq/notify";
+import { pushConfigured, vapidPublicKey } from "@/lib/hq/push";
 import { filesOn } from "@/lib/hq/storage";
 import { lagosToday } from "@/lib/hq/work";
 
@@ -39,6 +40,8 @@ async function Chat({ searchParams }: Pick<PageProps<"/savvy-hq/chat">, "searchP
       members,
       look: members.find((m) => m.id === user.id)?.look ?? {},
       filesOn: filesOn(),
+      // the public half of the push key; empty when push isn't set up on this server
+      pushKey: pushConfigured() ? vapidPublicKey() : "",
       channels,
       initial: pick ? { channel: pick.id, messages, readAt: pick.readAt, channels } : null,
     };
