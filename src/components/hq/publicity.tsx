@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ExternalLink, Plus, Search } from "lucide-react";
-import { removeMedia, removePitch, saveMediaAction, savePitchAction } from "@/app/admin/(hq)/marketing/actions";
+import { removeMedia, removePitch, saveMediaAction, savePitchAction } from "@/app/savvy-hq/(hq)/marketing/actions";
 import { Button, Field, Panel, btn, fieldClass } from "@/components/desk/ui";
 import { label } from "@/lib/hq/sales-model";
 import type { Media, Pitch } from "@/lib/hq/talent";

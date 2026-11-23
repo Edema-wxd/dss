@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   for (const p of owners) {
     const tasks = await listTasks({ assigneeId: p.id, doneSince: today });
     const link = (task: string, action: "done" | "carry" | "drop") =>
-      linksConfigured() ? `${site}/admin/act/${encodeURIComponent(signAction({ task, action, user: p.id, exp, ...(action === "carry" ? { to: next } : {}) }))}` : null;
+      linksConfigured() ? `${site}/savvy-hq/act/${encodeURIComponent(signAction({ task, action, user: p.id, exp, ...(action === "carry" ? { to: next } : {}) }))}` : null;
     const mail = checkinEmail({ firstName: p.name.split(" ")[0], today, next, tasks, site, link });
     if (await sendHqMail({ kind: "hq.checkin", to: p.notifyEmail || p.email, ...mail })) sent.push(p.email);
   }

@@ -20,6 +20,6 @@ export function SubTabs({ label, tabs, current }: { label: string; tabs: readonl
 }
 
 export const TEAM_TABS = [
-  ["people", "People and access", "/admin/team"],
-  ["leave", "Leave and availability", "/admin/team/leave"],
+  ["people", "People and access", "/savvy-hq/team"],
+  ["leave", "Leave and availability", "/savvy-hq/team/leave"],
 ] as const;

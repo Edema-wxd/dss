@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { type DeskData, hoursSince } from "@/lib/desk/model";
 import type { DeskUser } from "@/lib/desk/auth";
 import type { SyncStatus } from "@/lib/desk/sheets";
-import type { ActionResult } from "@/app/admin/actions";
+import type { ActionResult } from "@/app/savvy-hq/actions";
 import { PageHeader } from "@/components/hq/shell";
 import { useToast } from "./ui";
 import { Overview } from "./overview";

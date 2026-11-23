@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Download, FileChartColumn, Plus } from "lucide-react";
-import { fileReport, rebuildReport } from "@/app/admin/(hq)/reports/actions";
+import { fileReport, rebuildReport } from "@/app/savvy-hq/(hq)/reports/actions";
 import { Button, Field, btn, fieldClass, useToast } from "@/components/desk/ui";
 import { addMonth, monthName } from "@/lib/hq/finance-model";
 import { REP_TYPES, type RepType, defaultReportMonth } from "@/lib/hq/report-model";
@@ -12,7 +12,7 @@ import { Dialog, EmptyNote, Pill, useRun } from "./kit";
 
 // The report archive, and the "Monthly report" button every dashboard carries.
 
-const pdfHref = (type: string, m: string) => `/admin/reports/${type}_${m}/pdf`;
+const pdfHref = (type: string, m: string) => `/savvy-hq/reports/${type}_${m}/pdf`;
 const shortD = (iso: string) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Lagos" }) : "");
 
 /** Builds a report, files it when the person can, then downloads the slides. */

@@ -1,15 +1,17 @@
 "use client";
 
 import { useActionState } from "react";
-import { login, setupFirstUser } from "@/app/admin/actions";
+import { login, setupFirstUser } from "@/app/savvy-hq/actions";
 import { cn } from "@/lib/utils";
 import { Field, btn, fieldClass } from "./ui";
 
-export function LoginForm() {
+/** Signing in. `next` is the area to open afterwards; the same account works for both. */
+export function LoginForm({ next = "/savvy-hq", place = "DSS HQ" }: { next?: string; place?: string }) {
   const [state, action, pending] = useActionState(login, null);
   return (
     <form action={action} className="grid gap-4">
-      <p className="text-slate">Sign in to DSS HQ with your email and password.</p>
+      <input type="hidden" name="next" value={next} />
+      <p className="text-slate">Sign in to {place} with your email and password.</p>
       <Field label="Email">
         <input name="email" type="email" required autoComplete="username" className={fieldClass} />
       </Field>

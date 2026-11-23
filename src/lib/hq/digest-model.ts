@@ -34,7 +34,7 @@ export type QueueItem = { id: string; title: string; body: string; link: string;
 export function updatesEmail(o: { name: string; items: readonly QueueItem[]; site: string }) {
   const n = o.items.length;
   const subject = n === 1 ? o.items[0].title : `DSS HQ: ${n} updates for you`;
-  const home = `${o.site}/admin`;
+  const home = `${o.site}/savvy-hq`;
   const text = [
     `Hi ${first(o.name)},`,
     "",
@@ -200,7 +200,7 @@ export function morningEmail(p: SumPerson, s: Snapshot, site: string) {
   const sections = morningSections(p, s);
   if (!sections.length && !isOwnerRole(p.roles)) return null;
   const subject = `DSS HQ: your day, ${longDate(s.today)}`;
-  const home = `${site}/admin`;
+  const home = `${site}/savvy-hq`;
   const text = [
     `Good morning ${first(p.name)},`,
     "",

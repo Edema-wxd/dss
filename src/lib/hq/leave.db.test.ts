@@ -88,6 +88,6 @@ describe.skipIf(!usable)("leave and attendance in Postgres", () => {
     await sql.query(`update desk_users set notify_mode = 'off' where id = $1`, [cy]);
     expect(await notify(cy, "Hi", "Body", "today", ada)).toBe(false);
     const rows = await sql.query(`select title, link from hq_notify`);
-    expect(rows).toEqual([{ title: "Hi", link: expect.stringMatching(/\/admin\/team\/leave$/) }]);
+    expect(rows).toEqual([{ title: "Hi", link: expect.stringMatching(/\/savvy-hq\/team\/leave$/) }]);
   });
 });

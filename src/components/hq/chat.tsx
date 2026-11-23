@@ -18,8 +18,8 @@ import {
   sendMessage,
   setMute,
   togglePin,
-} from "@/app/admin/(hq)/chat/actions";
-import type { ActionResult } from "@/app/admin/actions";
+} from "@/app/savvy-hq/(hq)/chat/actions";
+import type { ActionResult } from "@/app/savvy-hq/actions";
 import { Button, Field, fieldClass, useToast } from "@/components/desk/ui";
 import {
   CHAT_COLORS,
@@ -207,7 +207,7 @@ export function ChatView({ me, today, members, look: look0, filesOn, initial, ch
     setMsgs(r.messages);
     setReadAt0(r.readAt);
     setChannels(r.channels);
-    window.history.replaceState(null, "", `/admin/chat?c=${encodeURIComponent(id)}`);
+    window.history.replaceState(null, "", `/savvy-hq/chat?c=${encodeURIComponent(id)}`);
   }
 
   const shown = find ? msgs.filter((m) => m.text.toLowerCase().includes(find.toLowerCase())) : msgs;
@@ -604,7 +604,7 @@ function MessageRow({ m, me, cont, ch, msgs, sel, nameOf, lookOf, members, files
                 </button>
               )}
               {m.files.map((f, i) => (
-                <FileChip key={i} f={f} href={`/admin/chat/file?c=${encodeURIComponent(ch.id)}&m=${encodeURIComponent(m.id)}&i=${i}`} usable={filesOn && f.key?.startsWith("chat/")} />
+                <FileChip key={i} f={f} href={`/savvy-hq/chat/file?c=${encodeURIComponent(ch.id)}&m=${encodeURIComponent(m.id)}&i=${i}`} usable={filesOn && f.key?.startsWith("chat/")} />
               ))}
               {m.text && (
                 <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">
@@ -808,7 +808,7 @@ function Composer({ ch, me, members, look, filesOn, msgs, reply, edit, draft, on
       setFiles((fs) => [...fs, p]);
       const form = new FormData();
       form.append("file", file);
-      const r = await fetch("/admin/chat/upload", { method: "POST", body: form }).catch(() => null);
+      const r = await fetch("/savvy-hq/chat/upload", { method: "POST", body: form }).catch(() => null);
       const j = r ? await r.json().catch(() => ({})) : {};
       if (r?.ok) Object.assign(p, { state: "ok", key: j.key, type: j.type, size: j.size });
       else {
@@ -1072,7 +1072,7 @@ function Details({
             {files.map(({ f, i, m }) => (
               <li key={`${m.id}-${i}`} className="flex items-center gap-2 text-sm">
                 <FileText className="size-4 flex-none" aria-hidden />
-                <a href={`/admin/chat/file?c=${encodeURIComponent(ch.id)}&m=${encodeURIComponent(m.id)}&i=${i}`} target="_blank" rel="noopener" className="min-w-0 flex-1 truncate underline">
+                <a href={`/savvy-hq/chat/file?c=${encodeURIComponent(ch.id)}&m=${encodeURIComponent(m.id)}&i=${i}`} target="_blank" rel="noopener" className="min-w-0 flex-1 truncate underline">
                   {f.name}
                 </a>
                 <span className="text-xs text-slate">{first(nameOf(m.by))}</span>

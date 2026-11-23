@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useTransition } from "react";
 import { X } from "lucide-react";
-import type { ActionResult } from "@/app/admin/actions";
+import type { ActionResult } from "@/app/savvy-hq/actions";
 import { useToast } from "@/components/desk/ui";
 import { relDay } from "@/lib/hq/work";
 import { cn } from "@/lib/utils";

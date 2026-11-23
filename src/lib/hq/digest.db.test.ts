@@ -45,7 +45,7 @@ describe.skipIf(!usable)("the notifications job in Postgres", () => {
     expect(r).toMatchObject({ sent: 2, recipients: 2, items: 3, skipped: 0, failed: 0 });
     const toBo = outbox.find((m) => m.to === "bo@example.test")!;
     expect(toBo.subject).toBe("DSS HQ: 2 updates for you");
-    expect(toBo.text).toContain("/admin/chat?c=general");
+    expect(toBo.text).toContain("/savvy-hq/chat?c=general");
     expect(outbox.find((m) => m.to === "ada@example.test")!.subject).toBe("Bo has requested time off");
     expect(await unsent()).toBe(0);
     outbox.length = 0;

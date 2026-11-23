@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Clock, Play, Plus, Search, Trash2, Zap } from "lucide-react";
-import { addTask, captureTask, carryTask, removeTask, saveTask, toggleTask } from "@/app/admin/(hq)/tasks/actions";
+import { addTask, captureTask, carryTask, removeTask, saveTask, toggleTask } from "@/app/savvy-hq/(hq)/tasks/actions";
 import { Button, Field, btn, fieldClass } from "@/components/desk/ui";
 import type { ChecklistItem, Task } from "@/lib/hq/data";
 import { ESTIMATES, PRIORITIES, REPEATS, TASK_STATUS, addDays, minutes, relDay, sortTasks, weekStart } from "@/lib/hq/work";

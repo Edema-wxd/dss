@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ExternalLink, Plus } from "lucide-react";
-import { addMissingClientContracts, removeContract, renewContract, renewalTask, saveContractAction } from "@/app/admin/(hq)/contracts/actions";
+import { addMissingClientContracts, removeContract, renewContract, renewalTask, saveContractAction } from "@/app/savvy-hq/(hq)/contracts/actions";
 import { Button, Field, Panel, btn, fieldClass } from "@/components/desk/ui";
 import type { Contract } from "@/lib/hq/sales";
 import { CT_KINDS, CT_RENEW, CT_STATUS, CURRENCIES, contractRank, contractState, label, renewedEnd } from "@/lib/hq/sales-model";

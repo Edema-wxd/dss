@@ -17,8 +17,8 @@ import {
   tacticToTask,
   tickTactic,
   updateGoalProgress,
-} from "@/app/admin/(hq)/plan/actions";
-import type { PlanData } from "@/app/admin/(hq)/plan/load";
+} from "@/app/savvy-hq/(hq)/plan/actions";
+import type { PlanData } from "@/app/savvy-hq/(hq)/plan/load";
 import { Button, Field, Panel, fieldClass } from "@/components/desk/ui";
 import {
   CYCLE_STATUSES,
@@ -122,11 +122,11 @@ export function PlanView({ d, tab }: { d: PlanData; tab: Tab }) {
   const daysLeft = Math.max(0, Math.round((D(weekEnd(c.start, 12)).getTime() - D(d.today).getTime()) / 864e5));
   const withTactics = d.people.filter((p) => d.tactics.some((t) => t.userId === p.id)).length;
   const tabs: [Tab, string, string][] = [
-    ["week", "This week", "/admin/plan"],
-    ["goals", "Goals", "/admin/plan?tab=goals"],
-    ["board", "Scoreboard", "/admin/plan?tab=board"],
-    ["reviews", "Reviews", "/admin/plan?tab=reviews"],
-    ...(d.lead ? ([["setup", "Plan setup", "/admin/plan?tab=setup"]] as [Tab, string, string][]) : []),
+    ["week", "This week", "/savvy-hq/plan"],
+    ["goals", "Goals", "/savvy-hq/plan?tab=goals"],
+    ["board", "Scoreboard", "/savvy-hq/plan?tab=board"],
+    ["reviews", "Reviews", "/savvy-hq/plan?tab=reviews"],
+    ...(d.lead ? ([["setup", "Plan setup", "/savvy-hq/plan?tab=setup"]] as [Tab, string, string][]) : []),
   ];
   const t: Tab = tabs.some(([k]) => k === tab) ? tab : "week";
   const open = c.status !== "closed" && w <= 12;
@@ -427,7 +427,7 @@ function GoalsTab({ d, c }: { d: PlanData; c: Cycle }) {
         {d.lead ? (
           <>
             Pick 1 to 3 measurable goals for these 12 weeks in{" "}
-            <Link href="/admin/plan?tab=setup" className="font-semibold text-ink underline">
+            <Link href="/savvy-hq/plan?tab=setup" className="font-semibold text-ink underline">
               Plan setup
             </Link>
             .
@@ -1029,7 +1029,7 @@ export function PlanTodayCard({ p }: { p: PlanCard }) {
     <div className="mb-2 flex items-center gap-2">
       <span className="text-xs font-bold tracking-[0.06em] text-[#b8114a] uppercase">{label}</span>
       <span className="flex-1" />
-      <Link href="/admin/plan" className="text-sm font-semibold underline">
+      <Link href="/savvy-hq/plan" className="text-sm font-semibold underline">
         Open
       </Link>
     </div>
@@ -1073,7 +1073,7 @@ export function PlanTodayCard({ p }: { p: PlanCard }) {
       ) : (
         <p className="text-sm text-slate">
           No tactics for you this week.{" "}
-          <Link href="/admin/plan" className="font-semibold text-ink underline">
+          <Link href="/savvy-hq/plan" className="font-semibold text-ink underline">
             Add one
           </Link>
         </p>

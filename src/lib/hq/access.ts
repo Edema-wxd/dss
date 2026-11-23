@@ -41,6 +41,9 @@ export const MODULES = [
 
 export type ModuleKey = (typeof MODULES)[number]["key"];
 
+/** Where an area lives. Visibility Sessions is its own app, the Session Desk; the rest is DSS HQ. */
+export const areaHref = (key: ModuleKey) => (key === "sessions" ? "/session-desk" : `/savvy-hq/${key}`);
+
 /** Areas that exist in this build. The rest are listed above so access rules are settled once. */
 export const BUILT: readonly ModuleKey[] = ["today", "chat", "plan", "time", "overview", "tasks", "sessions", "clients", "crm", "talent", "marketing", "finance", "invoices", "kpis", "contracts", "reports", "procedures", "team", "activity", "settings"];
 

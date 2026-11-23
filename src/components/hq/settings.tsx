@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Download } from "lucide-react";
-import { saveGoals, saveProfile } from "@/app/admin/(hq)/settings/actions";
+import { saveGoals, saveProfile } from "@/app/savvy-hq/(hq)/settings/actions";
 import { Field, Panel, btn, fieldClass } from "@/components/desk/ui";
 import type { GeneralSettings, Person, Workday } from "@/lib/hq/data";
 import { cn } from "@/lib/utils";
@@ -64,7 +64,7 @@ export function SettingsView({ me, canEditGoals, owner, general, workday, backup
               </p>
             </div>
             {(backupDays === null || backupDays > 30) && <Pill tone="rose">Due</Pill>}
-            <a href="/admin/settings/backup" download className={cn(btn.base, btn.primary)}>
+            <a href="/savvy-hq/settings/backup" download className={cn(btn.base, btn.primary)}>
               <Download className="size-4" aria-hidden /> Download a backup
             </a>
           </div>

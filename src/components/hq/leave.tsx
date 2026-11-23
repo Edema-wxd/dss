@@ -16,7 +16,7 @@ import {
   setAllowance,
   shiftReply,
   withdrawShift,
-} from "@/app/admin/(hq)/team/leave/actions";
+} from "@/app/savvy-hq/(hq)/team/leave/actions";
 import { Button, Field, Panel, btn, fieldClass } from "@/components/desk/ui";
 import type { TeamPerson } from "@/lib/hq/leave";
 import {

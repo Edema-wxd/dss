@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { removeBank, saveBank, saveInvoiceDetails } from "@/app/admin/(hq)/invoices/actions";
+import { removeBank, saveBank, saveInvoiceDetails } from "@/app/savvy-hq/(hq)/invoices/actions";
 import { Button, Field, Panel, btn, fieldClass } from "@/components/desk/ui";
 import { type Bank, type InvoiceSettings, INV_DEFAULTS } from "@/lib/hq/invoice-model";
 import { cn } from "@/lib/utils";

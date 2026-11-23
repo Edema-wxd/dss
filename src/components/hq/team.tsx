@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { addTeamMember, removeTeamMember, setTeamActive, setTeamPassword, setTeamRoles, syncSheet } from "@/app/admin/actions";
+import { addTeamMember, removeTeamMember, setTeamActive, setTeamPassword, setTeamRoles, syncSheet } from "@/app/savvy-hq/actions";
 import type { DeskUser, TeamMember } from "@/lib/desk/auth";
 import type { SyncStatus } from "@/lib/desk/sheets";
 import { ROLES, ROLE_NOTES, type Role } from "@/lib/hq/access";
@@ -198,7 +198,7 @@ export function TeamView({ me, members, canManage, canSync, sheet }: Props) {
 
         <Panel title="How access works">
           <ul className="grid list-disc gap-2 pl-5 text-sm">
-            <li>Everyone signs in at /admin/login with their own email and password.</li>
+            <li>Everyone signs in at /savvy-hq/login with their own email and password.</li>
             <li>Roles decide which areas of HQ someone can open. Someone with two roles gets both sets of areas.</li>
             <li>The server checks the role on every page and every save, so hiding an area in the menu is never the only protection.</li>
             <li>Only an Owner can add people, change roles, set passwords or switch someone off. Switching someone off signs them out straight away.</li>
@@ -218,7 +218,7 @@ export function TeamView({ me, members, canManage, canSync, sheet }: Props) {
               The application form and the checklist pop-up post to <code className="rounded bg-paper px-1">/api/visibility</code>. Every
               submission lands in Visibility Sessions.
             </li>
-            <li>Founders never see HQ. Everything under /admin needs an account.</li>
+            <li>Founders never see HQ. Everything under /savvy-hq needs an account.</li>
           </ol>
         </Panel>
       </div>

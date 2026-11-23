@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { confirmQuickAction, type QuickResult } from "@/app/admin/act/[token]/actions";
+import { confirmQuickAction, type QuickResult } from "@/app/savvy-hq/act/[token]/actions";
 import { btn } from "@/components/desk/ui";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ export function QuickConfirm({ token, label }: { token: string; label: string })
           {result.message}
         </p>
         <p className="text-sm text-slate">You can close this page, or open HQ.</p>
-        <Link href="/admin/today/end" className={cn(btn.base, btn.plain, "justify-self-start")}>
+        <Link href="/savvy-hq/today/end" className={cn(btn.base, btn.plain, "justify-self-start")}>
           Open End of day in HQ
         </Link>
       </div>

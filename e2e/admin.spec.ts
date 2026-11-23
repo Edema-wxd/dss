@@ -14,7 +14,7 @@ const STAFF = { name: "Bo Staff", email: "bo@example.test", password: "staff-pas
 const CONTRACTOR = { name: "Cy Contractor", email: "cy@example.test", password: "contr-pass-123" };
 
 async function signIn(page: Page, who: { email: string; password: string }) {
-  await page.goto("/admin/login");
+  await page.goto("/savvy-hq/login");
   await page.getByLabel("Email").fill(who.email);
   await page.getByLabel("Password").fill(who.password);
   await page.getByRole("button", { name: "Sign in" }).click();
@@ -23,12 +23,12 @@ async function signIn(page: Page, who: { email: string; password: string }) {
 /** Signs in and waits until HQ has opened. */
 async function signedIn(page: Page, who: { email: string; password: string }) {
   await signIn(page, who);
-  await expect(page).not.toHaveURL(/\/admin\/login$/);
+  await expect(page).not.toHaveURL(/\/savvy-hq\/login$/);
 }
 
 async function signOut(page: Page) {
   await page.getByRole("complementary", { name: "DSS HQ navigation" }).getByRole("button", { name: "Sign out" }).click();
-  await expect(page).toHaveURL(/\/admin\/login$/);
+  await expect(page).toHaveURL(/\/savvy-hq\/login$/);
 }
 
 const sidebar = (page: Page) => page.getByRole("complementary", { name: "DSS HQ navigation" });
@@ -46,18 +46,18 @@ async function addPerson(page: Page, who: typeof STAFF, roles: string[]) {
 }
 
 test("someone signed out is sent to the login page", async ({ page }) => {
-  await page.goto("/admin/team");
-  await expect(page).toHaveURL(/\/admin\/login$/);
+  await page.goto("/savvy-hq/team");
+  await expect(page).toHaveURL(/\/savvy-hq\/login$/);
 });
 
 test("the first account becomes an Owner and lands in HQ", async ({ page }) => {
-  await page.goto("/admin/login");
+  await page.goto("/savvy-hq/login");
   await page.getByLabel("Your name").fill(OWNER.name);
   await page.getByLabel("Email").fill(OWNER.email);
   await page.getByLabel("Password").fill(OWNER.password);
   await page.getByRole("button", { name: "Create the owner account" }).click();
 
-  await expect(page).toHaveURL(/\/admin\/today$/);
+  await expect(page).toHaveURL(/\/savvy-hq\/today$/);
   await expect(page.getByRole("heading", { name: /Ada\.$/, level: 1 })).toBeVisible();
   await expect(sidebar(page).getByRole("link")).toHaveText([
     "DSS HQDigital Savvy Studios",
@@ -99,10 +99,10 @@ test("the owner adds a staff member and a contractor", async ({ page }) => {
 
 test("a contractor keeps to their own areas, even by address", async ({ page }) => {
   await signedIn(page, CONTRACTOR);
-  await expect(page).toHaveURL(/\/admin\/today$/);
-  for (const area of ["sessions", "team", "activity", "overview"]) {
-    await page.goto(`/admin/${area}`);
-    await expect(page).toHaveURL(/\/admin\/today$/);
+  await expect(page).toHaveURL(/\/savvy-hq\/today$/);
+  for (const path of ["/session-desk", "/savvy-hq/team", "/savvy-hq/activity", "/savvy-hq/overview"]) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/savvy-hq\/today$/);
   }
   await expect(sidebar(page).getByRole("link")).toHaveText(["DSS HQDigital Savvy Studios", "Today", "Tasks", "Messages", "12-week plan", "KPIs", "Procedures", "Settings"]);
   // groups with nothing they can open, such as Money, are left out
@@ -111,25 +111,52 @@ test("a contractor keeps to their own areas, even by address", async ({ page }) 
 
 test("a contributor gets Visibility Sessions and Team, but not Activity or team management", async ({ page }) => {
   await signedIn(page, STAFF);
-  await expect(page).toHaveURL(/\/admin\/today$/);
+  await expect(page).toHaveURL(/\/savvy-hq\/today$/);
   await expect(sidebar(page).getByRole("link", { name: "Activity" })).toHaveCount(0);
 
-  await page.goto("/admin/activity");
-  await expect(page).toHaveURL(/\/admin\/today$/);
+  await page.goto("/savvy-hq/activity");
+  await expect(page).toHaveURL(/\/savvy-hq\/today$/);
 
-  await page.goto("/admin/team");
+  await page.goto("/savvy-hq/team");
   await expect(page.getByText("Ask an owner to add people or change roles.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Manage" })).toHaveCount(0);
   await signOut(page);
 });
 
+test("the Session Desk has its own sign-in, with the same account as HQ", async ({ page }) => {
+  await page.goto("/session-desk");
+  await expect(page).toHaveURL(/\/session-desk\/login$/);
+  await expect(page.getByRole("heading", { name: "Session Desk", level: 1 })).toBeVisible();
+  await page.getByLabel("Email").fill(STAFF.email);
+  await page.getByLabel("Password").fill(STAFF.password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/session-desk$/);
+  await expect(page.getByRole("heading", { name: "Visibility Sessions", level: 1 })).toBeVisible();
+  // the same session opens HQ, and HQ's sidebar leads back to the desk
+  await page.getByRole("link", { name: "DSS HQ" }).click();
+  await expect(page).toHaveURL(/\/savvy-hq\/today$/);
+  await sidebar(page).getByRole("link", { name: "Visibility Sessions" }).click();
+  await expect(page).toHaveURL(/\/session-desk$/);
+  // signing out of the desk comes back to the desk's sign-in
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page).toHaveURL(/\/session-desk\/login$/);
+});
+
+test("old /admin addresses move to HQ and the Session Desk", async ({ page }) => {
+  await signedIn(page, OWNER);
+  await page.goto("/admin/tasks");
+  await expect(page).toHaveURL(/\/savvy-hq\/tasks$/);
+  await page.goto("/admin/sessions");
+  await expect(page).toHaveURL(/\/session-desk$/);
+});
+
 test("the owner sees each change in Activity, and can switch someone off", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/activity");
+  await page.goto("/savvy-hq/activity");
   await expect(page.getByText(`Added ${CONTRACTOR.name} (${CONTRACTOR.email}) as Contractor`)).toBeVisible();
   await expect(page.getByText(`${OWNER.name} created the first HQ account`)).toBeVisible();
 
-  await page.goto("/admin/team");
+  await page.goto("/savvy-hq/team");
   const row = page.getByRole("listitem").filter({ hasText: CONTRACTOR.email });
   await row.getByRole("button", { name: "Manage" }).click();
   await row.getByRole("button", { name: "Switch off access" }).click();
@@ -142,7 +169,7 @@ test("the owner sees each change in Activity, and can switch someone off", async
 
 test("the owner can't remove the last Owner role", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/team");
+  await page.goto("/savvy-hq/team");
   const row = page.getByRole("listitem").filter({ hasText: OWNER.email });
   await row.getByRole("button", { name: "Manage" }).click();
   await row.getByRole("checkbox", { name: /^Owner/ }).uncheck();
@@ -160,7 +187,7 @@ test("on a phone, the areas sit in a bottom bar with a menu", async ({ page }) =
   await quick.getByRole("button", { name: "Menu" }).click();
   const menu = page.getByRole("dialog", { name: "Menu" });
   await menu.getByRole("link", { name: "Activity" }).click();
-  await expect(page).toHaveURL(/\/admin\/activity$/);
+  await expect(page).toHaveURL(/\/savvy-hq\/activity$/);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
@@ -172,7 +199,7 @@ test("the capture bar adds a dated, top-priority task", async ({ page }) => {
   await page.getByLabel("Capture a task").fill("Send the brief tomorrow!");
   await page.getByLabel("Capture a task").press("Enter");
   await expect(page.getByText("Captured, due tomorrow.")).toBeVisible();
-  await page.goto("/admin/tasks");
+  await page.goto("/savvy-hq/tasks");
   await page.getByRole("button", { name: "List" }).click();
   const row = page.locator("section").filter({ hasText: "This week" });
   await expect(row.getByText("Send the brief")).toBeVisible();
@@ -181,7 +208,7 @@ test("the capture bar adds a dated, top-priority task", async ({ page }) => {
 
 test("the week view opens with seven days and moves between weeks", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/tasks");
+  await page.goto("/savvy-hq/tasks");
   await page.getByRole("button", { name: "Week", exact: true }).click();
   await expect(page.getByText(/^\d{1,2} [A-Z][a-z]{2} to \d{1,2} [A-Z][a-z]{2}$/)).toBeVisible();
   await expect(page.locator("section[aria-label]").filter({ has: page.getByRole("heading", { level: 2 }) })).toHaveCount(7);
@@ -191,7 +218,7 @@ test("the week view opens with seven days and moves between weeks", async ({ pag
 
 test("the owner gives a task to a team member", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/tasks");
+  await page.goto("/savvy-hq/tasks");
   await page.getByRole("button", { name: "New task" }).click();
   const dialog = page.getByRole("dialog", { name: "New task" });
   await dialog.getByLabel("What needs doing?").fill("Review the deck");
@@ -229,7 +256,7 @@ test("a day: choose three, tick one off, close it with a blocker", async ({ page
   await expect(page.getByText("Done. Nice.")).toBeVisible();
   await expect(first.getByRole("heading")).not.toHaveText(title ?? "");
 
-  await page.goto("/admin/today/end");
+  await page.goto("/savvy-hq/today/end");
   await expect(page.getByRole("heading", { name: "Done today" })).toBeVisible();
   await page.getByLabel("Anything blocking you?").fill("Waiting on copy");
   await page.getByRole("button", { name: "Close my day" }).click();
@@ -239,7 +266,7 @@ test("a day: choose three, tick one off, close it with a blocker", async ({ page
 
 test("the owner sees the blocker on the Command centre and marks it handled", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/overview");
+  await page.goto("/savvy-hq/overview");
   await expect(page.getByText("Bo is blocked")).toBeVisible();
   await expect(page.getByText("Waiting on copy")).toBeVisible();
   await page.getByRole("button", { name: "Handled" }).click();
@@ -248,13 +275,13 @@ test("the owner sees the blocker on the Command centre and marks it handled", as
 
 test("KPIs: the owner sets a template, the team member logs a number", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/kpis");
+  await page.goto("/savvy-hq/kpis");
   await page.getByRole("button", { name: "Use the Contributor template" }).click();
   await expect(page.getByText("Deliverables delivered on time")).toBeVisible();
   await signOut(page);
 
   await signedIn(page, STAFF);
-  await page.goto("/admin/kpis");
+  await page.goto("/savvy-hq/kpis");
   await page.getByRole("button", { name: "Update my numbers" }).click();
   await page.getByRole("dialog", { name: "Update my numbers" }).getByLabel(/Deliverables delivered on time/).fill("80");
   await page.getByRole("button", { name: "Save numbers" }).click();
@@ -264,7 +291,7 @@ test("KPIs: the owner sets a template, the team member logs a number", async ({ 
 
 test("procedures: the owner writes one, a team member turns it into a task", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/procedures");
+  await page.goto("/savvy-hq/procedures");
   await page.getByRole("button", { name: "Procedure" }).click();
   const form = page.getByRole("dialog", { name: "New procedure" });
   await form.getByLabel("Name").fill("Monthly invoice run");
@@ -274,19 +301,19 @@ test("procedures: the owner writes one, a team member turns it into a task", asy
   await signOut(page);
 
   await signedIn(page, STAFF);
-  await page.goto("/admin/procedures");
+  await page.goto("/savvy-hq/procedures");
   await expect(page.getByRole("button", { name: "Procedure", exact: true })).toHaveCount(0);
   await page.getByRole("heading", { name: "Monthly invoice run" }).click();
   await page.getByRole("button", { name: "Make it a task" }).click();
   await expect(page.getByText("Task added to your list")).toBeVisible();
-  await page.goto("/admin/tasks");
+  await page.goto("/savvy-hq/tasks");
   await expect(page.getByRole("button", { name: /Monthly invoice run/ })).toContainText("0/2");
   await signOut(page);
 });
 
 test("settings: a profile saves, and the owner downloads a backup without passwords", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/settings");
+  await page.goto("/savvy-hq/settings");
   await page.getByLabel("Title").fill("Founder");
   await page.getByRole("button", { name: "Save profile" }).click();
   await expect(page.getByText("Profile saved.")).toBeVisible();
@@ -303,7 +330,7 @@ test("settings: a profile saves, and the owner downloads a backup without passwo
 
 test("a contractor only ever sees their own tasks", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/team");
+  await page.goto("/savvy-hq/team");
   const row = page.getByRole("listitem").filter({ hasText: CONTRACTOR.email });
   await row.getByRole("button", { name: "Manage" }).click();
   await row.getByRole("button", { name: "Switch access back on" }).click();
@@ -311,14 +338,14 @@ test("a contractor only ever sees their own tasks", async ({ page }) => {
   await signOut(page);
 
   await signedIn(page, CONTRACTOR);
-  await page.goto("/admin/tasks");
+  await page.goto("/savvy-hq/tasks");
   await expect(page.getByLabel("Whose tasks")).toHaveCount(0);
   await expect(page.getByText("Review the deck")).toHaveCount(0);
   await expect(page.getByText("Send the brief")).toHaveCount(0);
 });
 
 test("one-tap links and cron jobs refuse anything unsigned", async ({ page, request }) => {
-  await page.goto("/admin/act/not-a-real-link");
+  await page.goto("/savvy-hq/act/not-a-real-link");
   await expect(page.getByText("This link has expired or isn't valid.")).toBeVisible();
   expect((await request.get("/api/cron/evening-checkin")).status()).toBe(401);
   expect((await request.get("/api/cron/backup-reminder", { headers: { authorization: "Bearer wrong" } })).status()).toBe(401);
@@ -331,7 +358,7 @@ test("a signed one-tap link from the check-in email marks a task done", async ({
   );
   await disconnect();
   const token = signAction({ task: task.id, action: "done", user: task.uid, exp: Math.floor(Date.now() / 1000) + 3600 }, E2E_LINK_SECRET);
-  await page.goto(`/admin/act/${encodeURIComponent(token)}`);
+  await page.goto(`/savvy-hq/act/${encodeURIComponent(token)}`);
   await expect(page.getByText("Review the deck")).toBeVisible();
   await page.getByRole("button", { name: "Yes, it's done" }).click();
   await expect(page.getByRole("status")).toHaveText("Done: Review the deck.");
@@ -356,7 +383,7 @@ test("the notifications job needs the cron secret and leaves the queue alone wit
 
 test("a new client gets an onboarding checklist with tasks", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/clients");
+  await page.goto("/savvy-hq/clients");
   await page.getByRole("button", { name: "New client" }).click();
   const form = page.getByRole("dialog", { name: "New client" });
   await form.getByLabel("Client or company name").fill("Acme Test Co");
@@ -376,13 +403,13 @@ test("a website application arrives in the CRM as a new lead", async ({ page, re
   });
   expect(res.ok()).toBe(true);
   await signedIn(page, OWNER);
-  await page.goto("/admin/crm");
+  await page.goto("/savvy-hq/crm");
   await expect(page.getByRole("region", { name: "New lead" }).getByText("Bright Co")).toBeVisible();
 });
 
 test("CRM: log a call, then turn the lead into a client", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/crm");
+  await page.goto("/savvy-hq/crm");
   await page.getByRole("button", { name: "Add lead" }).click();
   const form = page.getByRole("dialog", { name: "New sales lead" });
   await form.getByLabel("Company or brand").fill("Bloom Studio");
@@ -399,13 +426,13 @@ test("CRM: log a call, then turn the lead into a client", async ({ page }) => {
 
   await panel.getByRole("button", { name: "Won: make them a client" }).click();
   await panel.getByRole("button", { name: "Add client" }).click();
-  await expect(page).toHaveURL(/\/admin\/clients\//);
+  await expect(page).toHaveURL(/\/savvy-hq\/clients\//);
   await expect(page.getByRole("heading", { name: "Bloom Studio", level: 1 })).toBeVisible();
 });
 
 test("contracts: add the missing client agreements from client dates", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/contracts");
+  await page.goto("/savvy-hq/contracts");
   await expect(page.getByText(/clients have no contract on file/)).toBeVisible();
   await page.getByRole("button", { name: "Add them from client dates" }).click();
   await expect(page.getByText(/client contracts added/)).toBeVisible();
@@ -415,8 +442,8 @@ test("contracts: add the missing client agreements from client dates", async ({ 
 test("a contributor can't open Clients, CRM or Contracts", async ({ page }) => {
   await signedIn(page, STAFF);
   for (const area of ["clients", "crm", "contracts"]) {
-    await page.goto(`/admin/${area}`);
-    await expect(page).toHaveURL(/\/admin\/today$/);
+    await page.goto(`/savvy-hq/${area}`);
+    await expect(page).toHaveURL(/\/savvy-hq\/today$/);
   }
 });
 
@@ -424,12 +451,12 @@ test("a contributor can't open Clients, CRM or Contracts", async ({ page }) => {
 
 test("talent: add someone to the roster, track a brand and post an update", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/talent");
+  await page.goto("/savvy-hq/talent");
   await page.getByRole("button", { name: "Talent", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Add talent" });
   await form.getByLabel("Name").fill("Test Talent");
   await form.getByRole("button", { name: "Add talent" }).click();
-  await expect(page).toHaveURL(/\/admin\/talent\//);
+  await expect(page).toHaveURL(/\/savvy-hq\/talent\//);
   await expect(page.getByRole("heading", { name: "Test Talent", level: 1 })).toBeVisible();
 
   await page.getByRole("button", { name: "Add a brand" }).click();
@@ -448,7 +475,7 @@ test("talent: add someone to the roster, track a brand and post an update", asyn
 
 test("publicity: a pitch warms the outlet up", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/marketing/publicity");
+  await page.goto("/savvy-hq/marketing/publicity");
   await page.getByRole("button", { name: "Media contact" }).click();
   const m = page.getByRole("dialog", { name: "Add a media contact" });
   await m.getByLabel("Outlet or agency name").fill("Test FM");
@@ -466,18 +493,18 @@ test("publicity: a pitch warms the outlet up", async ({ page }) => {
 
 test("a Talent Manager sees Publicity, not the rest of Marketing", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/team");
+  await page.goto("/savvy-hq/team");
   await addPerson(page, { name: "Tia Talent", email: "tia@example.test", password: "tia-pass-1234" }, ["Talent Manager"]);
   await signOut(page);
   await signedIn(page, { email: "tia@example.test", password: "tia-pass-1234" });
   await expect(sidebar(page).getByRole("link", { name: "Publicity" })).toBeVisible();
   await expect(sidebar(page).getByRole("link", { name: "Marketing" })).toHaveCount(0);
-  await page.goto("/admin/marketing/publicity");
+  await page.goto("/savvy-hq/marketing/publicity");
   await expect(page.getByRole("heading", { name: "Publicity", level: 1 })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Marketing" })).toHaveCount(0);
   for (const tab of ["", "/accounts", "/planner", "/ads"]) {
-    await page.goto(`/admin/marketing${tab}`);
-    await expect(page).toHaveURL(/\/admin\/marketing\/publicity$/);
+    await page.goto(`/savvy-hq/marketing${tab}`);
+    await expect(page).toHaveURL(/\/savvy-hq\/marketing\/publicity$/);
   }
 });
 
@@ -485,10 +512,10 @@ test("a Talent Manager sees Publicity, not the rest of Marketing", async ({ page
 
 test("marketing: add an account, log a month, and see it on the overview", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/marketing");
+  await page.goto("/savvy-hq/marketing");
   await expect(page.getByText("Add DSS's social accounts to start.")).toBeVisible();
 
-  await page.goto("/admin/marketing/accounts");
+  await page.goto("/savvy-hq/marketing/accounts");
   await page.getByRole("button", { name: "Add account" }).click();
   const acc = page.getByRole("dialog", { name: "Add an account" });
   await acc.getByLabel("Handle or name").fill("@dss");
@@ -509,7 +536,7 @@ test("marketing: add an account, log a month, and see it on the overview", async
   await stats.getByRole("button", { name: "Save numbers" }).click();
   await expect(page.getByText("Numbers saved.")).toBeVisible();
 
-  await page.goto("/admin/marketing");
+  await page.goto("/savvy-hq/marketing");
   await page.getByRole("button", { name: "90 days" }).click();
   await expect(page.getByText("Total followers")).toBeVisible();
   await expect(page.getByRole("row", { name: /Instagram @dss/ })).toContainText("1,500");
@@ -517,7 +544,7 @@ test("marketing: add an account, log a month, and see it on the overview", async
 
 test("marketing: plan a post and add a news story", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/marketing/planner");
+  await page.goto("/savvy-hq/marketing/planner");
   await page.getByRole("button", { name: "Post", exact: true }).click();
   const post = page.getByRole("dialog", { name: "Plan a post" });
   await post.getByLabel("Post idea or hook").fill("Three launch mistakes");
@@ -525,7 +552,7 @@ test("marketing: plan a post and add a news story", async ({ page }) => {
   await expect(page.getByText("Post added to the planner.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Three launch mistakes" })).toBeVisible();
 
-  await page.goto("/admin/marketing/news");
+  await page.goto("/savvy-hq/marketing/news");
   await page.getByRole("button", { name: "Add a story" }).click();
   const story = page.getByRole("dialog", { name: "Add a story" });
   await story.getByLabel("Headline").fill("A platform changed its algorithm");
@@ -543,7 +570,7 @@ test("the data feed job refuses without the secret, and explains a missing servi
 
 test("finance: log an expense and see it in spend and profit and loss", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/finance");
+  await page.goto("/savvy-hq/finance");
   await expect(page.getByRole("heading", { name: "Money, clearly." })).toBeVisible();
   await page.getByRole("button", { name: "Expense", exact: true }).first().click();
   const form = page.getByRole("dialog", { name: "Add an expense" });
@@ -561,7 +588,7 @@ test("finance: log an expense and see it in spend and profit and loss", async ({
 
 test("invoices: add a bank account, raise an invoice, send it and record a part payment", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/settings");
+  await page.goto("/savvy-hq/settings");
   const details = page.locator("#invoice-details");
   await details.getByRole("button", { name: "Add account" }).click();
   const bank = page.getByRole("dialog", { name: "Add account" });
@@ -570,7 +597,7 @@ test("invoices: add a bank account, raise an invoice, send it and record a part 
   await bank.getByRole("button", { name: "Save account" }).click();
   await expect(page.getByText("Bank account saved.")).toBeVisible();
 
-  await page.goto("/admin/invoices");
+  await page.goto("/savvy-hq/invoices");
   await page.getByRole("button", { name: "New invoice" }).click();
   const ed = page.getByRole("dialog", { name: "New invoice" });
   await expect(ed.getByLabel("Invoice number")).toHaveValue(/^DSS-INV-\d{4}-001$/);
@@ -604,15 +631,15 @@ test("invoices: add a bank account, raise an invoice, send it and record a part 
 
 test("an Admin gets Invoices but not Finance", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/team");
+  await page.goto("/savvy-hq/team");
   await addPerson(page, { name: "Dee Admin", email: "dee@example.test", password: "dee-pass-1234" }, ["Admin"]);
   await signOut(page);
   await signedIn(page, { email: "dee@example.test", password: "dee-pass-1234" });
   await expect(sidebar(page).getByRole("link", { name: "Invoices" })).toBeVisible();
   await expect(sidebar(page).getByRole("link", { name: "Finance" })).toHaveCount(0);
-  await page.goto("/admin/finance");
-  await expect(page).toHaveURL(/\/admin\/today$/);
-  await page.goto("/admin/invoices");
+  await page.goto("/savvy-hq/finance");
+  await expect(page).toHaveURL(/\/savvy-hq\/today$/);
+  await page.goto("/savvy-hq/invoices");
   await expect(page.getByRole("button", { name: /Brandco Test/ })).toBeVisible();
 });
 
@@ -626,7 +653,7 @@ test("the nightly records job refuses without the secret, and still files retain
 
 test("reports: last month is filed on its own, and any report downloads as slides", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/reports");
+  await page.goto("/savvy-hq/reports");
   await expect(page.getByRole("heading", { name: "Report archive" })).toBeVisible();
   // opening the archive files last month's seven reports
   await expect(page.getByText("filed automatically")).toHaveCount(7);
@@ -635,23 +662,23 @@ test("reports: last month is filed on its own, and any report downloads as slide
   expect(pdf.headers()["content-type"]).toBe("application/pdf");
   expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
 
-  await page.goto("/admin/crm");
+  await page.goto("/savvy-hq/crm");
   await page.getByRole("button", { name: "Monthly report" }).click();
   const form = page.getByRole("dialog", { name: "Monthly report" });
   await expect(form.getByLabel("Report")).toHaveValue("sales");
   const download = page.waitForEvent("download");
   await form.getByRole("button", { name: "Save and download slides" }).click();
   expect((await download).suggestedFilename()).toMatch(/^DSS-sales-report-\d{4}-\d{2}\.pdf$/);
-  await page.goto("/admin/reports");
+  await page.goto("/savvy-hq/reports");
   await expect(page.getByText(/by Ada/)).toBeVisible();
 });
 
 test("a contributor can't open Reports or a Finance report", async ({ page }) => {
   await signedIn(page, STAFF);
-  await page.goto("/admin/reports");
-  await expect(page).toHaveURL(/\/admin\/today$/);
+  await page.goto("/savvy-hq/reports");
+  await expect(page).toHaveURL(/\/savvy-hq\/today$/);
   const month = await page.evaluate(() => new Date().toISOString().slice(0, 7));
-  expect((await page.request.get(`/admin/reports/finance_${month}/pdf`)).status()).toBe(403);
+  expect((await page.request.get(`/savvy-hq/reports/finance_${month}/pdf`)).status()).toBe(403);
 });
 
 test("the monthly reports job refuses without the secret", async ({ request }) => {
@@ -680,16 +707,16 @@ test("attendance: clock in, take a break, and clock out with a report", async ({
   await eod.getByRole("button", { name: "Clock out" }).click();
   await expect(page.getByText(/Clocked out after/)).toBeVisible();
   await expect(header.getByRole("button", { name: /^✓ Done/ })).toBeVisible();
-  await page.goto("/admin/time");
+  await page.goto("/savvy-hq/time");
   await expect(page.getByText(/report sent/)).toBeVisible();
   await signOut(page);
 
   await signedIn(page, OWNER);
-  await page.goto("/admin/time");
+  await page.goto("/savvy-hq/time");
   await page.getByRole("button", { name: "End-of-day reports" }).click();
   await expect(page.getByText("Drafted the launch post")).toBeVisible();
   await expect(page.getByText("Waiting on photos")).toBeVisible();
-  const csv = await page.request.get("/admin/time/sheet");
+  const csv = await page.request.get("/savvy-hq/time/sheet");
   expect(csv.headers()["content-type"]).toContain("text/csv");
   expect(await csv.text()).toContain('"Bo Staff","Contributor"');
 });
@@ -697,15 +724,15 @@ test("attendance: clock in, take a break, and clock out with a report", async ({
 test("a contractor has no Attendance or timesheet", async ({ page }) => {
   await signedIn(page, CONTRACTOR);
   await expect(page.getByRole("banner").getByRole("button", { name: "Clock in" })).toHaveCount(0);
-  await page.goto("/admin/time");
-  await expect(page).toHaveURL(/\/admin\/today$/);
-  expect((await page.request.get("/admin/time/sheet")).status()).toBe(403);
+  await page.goto("/savvy-hq/time");
+  await expect(page).toHaveURL(/\/savvy-hq\/today$/);
+  expect((await page.request.get("/savvy-hq/time/sheet")).status()).toBe(403);
 });
 
 test("leave: the relief agrees, the owner approves, and the relief covers the pages while they're away", async ({ page }) => {
   const today = await page.evaluate(() => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos" }).format(new Date()));
   await signedIn(page, TIA);
-  await page.goto("/admin/team/leave");
+  await page.goto("/savvy-hq/team/leave");
   await page.getByRole("button", { name: "Request time off" }).click();
   const form = page.getByRole("dialog", { name: "Request time off" });
   await form.getByLabel("Relief officer").selectOption({ label: STAFF.name });
@@ -721,14 +748,14 @@ test("leave: the relief agrees, the owner approves, and the relief covers the pa
   await signedIn(page, STAFF);
   await expect(sidebar(page).getByRole("link", { name: "Talent" })).toHaveCount(0);
   await expect(page.getByText(/1 request needs your answer/)).toBeVisible();
-  await page.goto("/admin/team/leave");
+  await page.goto("/savvy-hq/team/leave");
   await page.getByRole("button", { name: "I'll cover" }).click();
   await expect(page.getByText(/request now goes to the owner/)).toBeVisible();
   await signOut(page);
 
   await signedIn(page, OWNER);
   await expect(page.getByText(/1 time-off request ready for your decision/)).toBeVisible();
-  await page.goto("/admin/team/leave");
+  await page.goto("/savvy-hq/team/leave");
   await page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(page.getByText("Approved.")).toBeVisible();
   await signOut(page);
@@ -737,8 +764,8 @@ test("leave: the relief agrees, the owner approves, and the relief covers the pa
   await signedIn(page, STAFF);
   await expect(page.getByText(/You're covering for Tia/)).toBeVisible();
   await expect(sidebar(page).getByRole("link", { name: "Talent" })).toBeVisible();
-  await page.goto("/admin/talent");
-  await expect(page).toHaveURL(/\/admin\/talent$/);
+  await page.goto("/savvy-hq/talent");
+  await expect(page).toHaveURL(/\/savvy-hq\/talent$/);
 });
 
 /* ── Phase 5b: the 12-week plan ──────────────────────────────────────── */
@@ -752,10 +779,10 @@ test("plan: the owner sets a goal and a tactic, and finishing its task ticks the
     return d.toISOString().slice(0, 10);
   });
   await signedIn(page, OWNER);
-  await page.goto("/admin/plan");
+  await page.goto("/savvy-hq/plan");
   await page.getByRole("button", { name: "Start the first 12 weeks" }).click();
   await expect(page.getByText(/Add your goals/)).toBeVisible();
-  await page.goto("/admin/plan?tab=setup");
+  await page.goto("/savvy-hq/plan?tab=setup");
   await page.getByLabel("Week 1 starts (a Monday)").fill(monday);
   await page.getByLabel("Why these 12 weeks matter").fill("Fill the pipeline before the new year");
   await page.getByRole("button", { name: "Save the cycle" }).click();
@@ -782,17 +809,17 @@ test("plan: the owner sets a goal and a tactic, and finishing its task ticks the
 
   await signedIn(page, STAFF);
   await expect(page.getByText("12-week plan · week 1", { exact: true })).toBeVisible();
-  await page.goto("/admin/plan");
+  await page.goto("/savvy-hq/plan");
   await expect(page.getByText("Fill the pipeline before the new year")).toBeVisible();
   const mine = page.locator("section").filter({ has: page.getByRole("heading", { name: "My tactics · week 1" }) });
   await expect(mine.getByText("set by Ada")).toBeVisible();
   await mine.getByRole("button", { name: "Task" }).click();
   await expect(page.getByText(/On your task list for this week/)).toBeVisible();
-  await page.goto("/admin/tasks");
+  await page.goto("/savvy-hq/tasks");
   await page.getByRole("button", { name: "List", exact: true }).click();
   await page.getByRole("checkbox", { name: "Mark Send 5 pitches done" }).click();
   await expect(page.getByRole("checkbox", { name: "Mark Send 5 pitches done" })).toHaveCount(0);
-  await page.goto("/admin/plan");
+  await page.goto("/savvy-hq/plan");
   await expect(mine.getByRole("button", { name: "Mark not done: Send 5 pitches, week 1" })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Weekly review" }).click();
   const review = page.getByRole("dialog", { name: "Week 1 review" });
@@ -804,11 +831,11 @@ test("plan: the owner sets a goal and a tactic, and finishing its task ticks the
 
   // the owner reads everyone's reviews; a contractor sees only their own row on the scoreboard
   await signedIn(page, OWNER);
-  await page.goto("/admin/plan?tab=reviews");
+  await page.goto("/savvy-hq/plan?tab=reviews");
   await expect(page.getByText("Two calls booked from the pitches")).toBeVisible();
   await signOut(page);
   await signedIn(page, CONTRACTOR);
-  await page.goto("/admin/plan?tab=board");
+  await page.goto("/savvy-hq/plan?tab=board");
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByRole("table").getByText("Bo", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Plan setup" })).toHaveCount(0);
@@ -818,7 +845,7 @@ test("plan: the owner sets a goal and a tactic, and finishing its task ticks the
 
 test("messages: mention someone, react, reply, make a task, and Got it on an announcement", async ({ page }) => {
   await signedIn(page, OWNER);
-  await page.goto("/admin/chat");
+  await page.goto("/savvy-hq/chat");
   const channels = page.getByRole("complementary", { name: "Channels" });
   await expect(channels.getByRole("button", { name: /General/ })).toHaveAttribute("aria-current", "true");
   const log = page.getByRole("log", { name: "Messages in General" });
@@ -838,7 +865,7 @@ test("messages: mention someone, react, reply, make a task, and Got it on an ann
 
   await signedIn(page, STAFF);
   await expect(sidebar(page).getByRole("link", { name: /Messages.*unread/ })).toBeVisible();
-  await page.goto("/admin/chat");
+  await page.goto("/savvy-hq/chat");
   await expect(channels.getByRole("button", { name: /General/ }).getByLabel("You were mentioned")).toBeVisible();
   const msg = log.locator("[id^=m-]").filter({ hasText: "can you send the deck?" });
   await expect(msg.getByText("@Bo Staff")).toBeVisible();
@@ -863,7 +890,7 @@ test("messages: mention someone, react, reply, make a task, and Got it on an ann
   await signOut(page);
 
   await signedIn(page, OWNER);
-  await page.goto("/admin/chat?c=announcements");
+  await page.goto("/savvy-hq/chat?c=announcements");
   await expect(page.getByText(/Seen by 1 of/)).toBeVisible();
 });
 
@@ -872,7 +899,7 @@ test("focus mode: time a task, ignore Escape, and finish it with Done with it", 
   await page.getByLabel("Capture a task").fill("Outline the focus test today");
   await page.getByLabel("Capture a task").press("Enter");
   await expect(page.getByText("Captured, due today.")).toBeVisible();
-  await page.goto("/admin/tasks");
+  await page.goto("/savvy-hq/tasks");
   await page.getByRole("button", { name: "List" }).click();
   await page.getByText("Outline the focus test").click();
   await page.getByRole("dialog", { name: "Task" }).getByRole("button", { name: "Focus on this" }).click();

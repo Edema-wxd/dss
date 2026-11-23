@@ -13,7 +13,7 @@ import {
   saveKpi,
   setCanPropose,
   withdrawProposal,
-} from "@/app/admin/(hq)/kpis/actions";
+} from "@/app/savvy-hq/(hq)/kpis/actions";
 import { Button, Field, Panel, btn, fieldClass } from "@/components/desk/ui";
 import type { KpiWithState, Proposal } from "@/lib/hq/data";
 import { KPI_PERIODS, KPI_SOURCES, KPI_UNITS, formatKpi, personScore } from "@/lib/hq/work";

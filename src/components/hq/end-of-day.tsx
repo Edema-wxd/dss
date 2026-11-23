@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, CornerDownRight, Trash2 } from "lucide-react";
-import { closeDay } from "@/app/admin/(hq)/today/actions";
-import { carryTask, removeTask, toggleTask } from "@/app/admin/(hq)/tasks/actions";
+import { closeDay } from "@/app/savvy-hq/(hq)/today/actions";
+import { carryTask, removeTask, toggleTask } from "@/app/savvy-hq/(hq)/tasks/actions";
 import { Button, Field, Panel, btn, fieldClass } from "@/components/desk/ui";
 import type { Standup, Task } from "@/lib/hq/data";
 import { relDay, sortTasks } from "@/lib/hq/work";
@@ -40,7 +40,7 @@ export function EndOfDay({ w, standup, next, done, open }: Props) {
             <b>First thing {nextLabel}:</b> {standup.tomorrow}
           </p>
         )}
-        <Link href="/admin/today" className={cn(btn.base, btn.plain, "mt-4")}>
+        <Link href="/savvy-hq/today" className={cn(btn.base, btn.plain, "mt-4")}>
           Back to Today
         </Link>
       </Panel>

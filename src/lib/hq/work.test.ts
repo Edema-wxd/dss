@@ -158,21 +158,21 @@ describe("emails", () => {
     { id: "d", title: "Book the studio", due: THU, priority: "normal", status: "done", doneDay: THU },
     { id: "e", title: "Next month's plan", due: "2026-12-20", priority: "normal", status: "todo", doneDay: "" },
   ];
-  const mail = checkinEmail({ firstName: "Ada", today: THU, next: FRI, tasks, site: "https://example.test", link: (t, a) => `https://example.test/admin/act/${t}-${a}` });
+  const mail = checkinEmail({ firstName: "Ada", today: THU, next: FRI, tasks, site: "https://example.test", link: (t, a) => `https://example.test/savvy-hq/act/${t}-${a}` });
 
   it("lists what's done, then open work overdue first, with one-tap links", () => {
     expect(mail.subject).toBe("Your end of day check-in, Thursday 19 November");
     expect(mail.text).toContain("Closed today (1):\n  Book the studio");
     expect(mail.text).toMatch(/1\. Send the report, overdue since yesterday[\s\S]*2\. Call the client, due today[\s\S]*3\. Draft the brief, due tuesday/);
-    expect(mail.text).toContain("Move to tomorrow: https://example.test/admin/act/a-carry");
+    expect(mail.text).toContain("Move to tomorrow: https://example.test/savvy-hq/act/a-carry");
     expect(mail.text).not.toContain("Next month's plan");
-    expect(mail.html).toContain("https://example.test/admin/today/end");
+    expect(mail.html).toContain("https://example.test/savvy-hq/today/end");
   });
 
   it("works without links, pointing to End of day instead", () => {
     const plain = checkinEmail({ firstName: "Ada", today: THU, next: FRI, tasks, site: "https://example.test", link: () => null });
-    expect(plain.text).not.toContain("/admin/act/");
-    expect(plain.text).toContain("https://example.test/admin/today/end");
+    expect(plain.text).not.toContain("/savvy-hq/act/");
+    expect(plain.text).toContain("https://example.test/savvy-hq/today/end");
   });
 
   it("never uses em or en dashes", () => {

@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, Copy, MessageCircle, Play, Plus } from "lucide-react";
-import { addTodayTask, startDay, swapThree } from "@/app/admin/(hq)/today/actions";
-import { toggleTask } from "@/app/admin/(hq)/tasks/actions";
-import { quickTouch } from "@/app/admin/(hq)/crm/actions";
+import { addTodayTask, startDay, swapThree } from "@/app/savvy-hq/(hq)/today/actions";
+import { toggleTask } from "@/app/savvy-hq/(hq)/tasks/actions";
+import { quickTouch } from "@/app/savvy-hq/(hq)/crm/actions";
 import { QUICK_TOUCHES } from "@/lib/hq/sales-model";
 import { Button, Panel, btn, fieldClass, useToast } from "@/components/desk/ui";
 import type { ClientLite, ContactLite, KpiWithState, Standup, Task } from "@/lib/hq/data";
@@ -109,7 +109,7 @@ export function TodayView(p: TodayProps) {
               <h2 className="mt-1 text-2xl font-bold">{sd.closedAt ? "That's a wrap. See you tomorrow." : "Your three are done. That's a good day."}</h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {!sd.closedAt && (
-                  <Link href="/admin/today/end" className={cn(btn.base, btn.primary)}>
+                  <Link href="/savvy-hq/today/end" className={cn(btn.base, btn.primary)}>
                     Close my day
                   </Link>
                 )}
@@ -138,7 +138,7 @@ export function TodayView(p: TodayProps) {
 
           <Panel>
             <CardHead title={rest.length ? "Also on your plate" : "Your plate"} count={rest.length}>
-              <Link href="/admin/tasks" className="text-sm font-semibold text-pink underline">
+              <Link href="/savvy-hq/tasks" className="text-sm font-semibold text-pink underline">
                 All my tasks
               </Link>
             </CardHead>
@@ -168,7 +168,7 @@ export function TodayView(p: TodayProps) {
                 <h2 className="text-lg font-bold">Wrapping up?</h2>
                 <p className="text-sm text-slate">Two minutes: what you finished, what&apos;s blocked, what&apos;s first tomorrow.</p>
               </div>
-              <Link href="/admin/today/end" className={cn(btn.base, btn.primary)}>
+              <Link href="/savvy-hq/today/end" className={cn(btn.base, btn.primary)}>
                 Close my day
               </Link>
             </section>
@@ -224,7 +224,7 @@ export function TodayView(p: TodayProps) {
           {p.kpis.length > 0 && (
             <Panel>
               <CardHead title="My KPIs">
-                <Link href="/admin/kpis" className="text-sm font-semibold text-pink underline">
+                <Link href="/savvy-hq/kpis" className="text-sm font-semibold text-pink underline">
                   Update numbers
                 </Link>
               </CardHead>

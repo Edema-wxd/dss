@@ -7,6 +7,6 @@ import { marketingTabsFor } from "./access";
 export async function requireMarketingDashboard() {
   const user = await requireModule("marketing");
   const tabs = marketingTabsFor(user.roles);
-  if (tabs && !tabs.includes("overview")) redirect("/admin/marketing/publicity");
+  if (tabs && !tabs.includes("overview")) redirect("/savvy-hq/marketing/publicity");
   return user;
 }

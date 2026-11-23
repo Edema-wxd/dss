@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, ChevronLeft, ChevronRight, Clock3, Coffee, Download, LogOut, NotebookPen } from "lucide-react";
-import { type EodPrep, breakAction, clockInAction, clockOutAction, eodPrep } from "@/app/admin/(hq)/time/actions";
+import { type EodPrep, breakAction, clockInAction, clockOutAction, eodPrep } from "@/app/savvy-hq/(hq)/time/actions";
 import { Button, Field, Panel, btn, fieldClass } from "@/components/desk/ui";
 import { type DayKind, type LeaveItem, type Pattern, dayMode, lvLabel, onLeave } from "@/lib/hq/leave-model";
 import { MOODS, type TimeDay, type Workday, expectedMin, fmtHM, hhmm, hrsText, segMins, weekOf, workedMin } from "@/lib/hq/time-model";
@@ -102,7 +102,7 @@ export function Clock({ day, missed, serverNow }: { day: TimeDay | null; missed:
               <LogOut className="size-4" aria-hidden /> Clock out and send my report
             </button>
           )}
-          <Link role="menuitem" href="/admin/time" className={item} onClick={() => setMenu(false)}>
+          <Link role="menuitem" href="/savvy-hq/time" className={item} onClick={() => setMenu(false)}>
             <NotebookPen className="size-4" aria-hidden /> My hours and reports
           </Link>
         </div>
@@ -279,7 +279,7 @@ export function TimeView({ me, lead, today, serverNow, workday, people, rows, it
         ))}
         <span className="flex-1" />
         {me.owner && (
-          <Link href="/admin/settings" className="text-sm font-semibold text-slate underline-offset-2 hover:underline">
+          <Link href="/savvy-hq/settings" className="text-sm font-semibold text-slate underline-offset-2 hover:underline">
             Working hours: {workday.start} start, {workday.grace} min grace
           </Link>
         )}
@@ -583,7 +583,7 @@ function Sheet({ people, today, now, week, setWeek, workday, dayOf, mode, exp, o
           </Button>
         )}
         <span className="flex-1" />
-        <a href={`/admin/time/sheet?week=${week}`} className={cn(btn.base, btn.plain)}>
+        <a href={`/savvy-hq/time/sheet?week=${week}`} className={cn(btn.base, btn.plain)}>
           <Download className="size-4" aria-hidden /> Download CSV
         </a>
       </div>

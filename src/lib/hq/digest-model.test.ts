@@ -101,15 +101,15 @@ describe("who gets what", () => {
 });
 
 describe("update emails", () => {
-  const item = (n: number) => ({ id: `n${n}`, title: `Update ${n}`, body: `Body ${n}`, link: `https://hq.example.test/admin/x${n}`, at: "" });
+  const item = (n: number) => ({ id: `n${n}`, title: `Update ${n}`, body: `Body ${n}`, link: `https://hq.example.test/savvy-hq/x${n}`, at: "" });
 
   it("uses the title for one item and a count for several", () => {
     expect(updatesEmail({ name: "Bo Staff", items: [item(1)], site: "https://hq.example.test" }).subject).toBe("Update 1");
     const m = updatesEmail({ name: "Bo Staff", items: [item(1), item(2)], site: "https://hq.example.test" });
     expect(m.subject).toBe("DSS HQ: 2 updates for you");
     expect(m.text).toContain("Hi Bo,");
-    expect(m.text).toContain("Body 2\nhttps://hq.example.test/admin/x2");
-    expect(m.text).toContain("Open DSS HQ: https://hq.example.test/admin");
+    expect(m.text).toContain("Body 2\nhttps://hq.example.test/savvy-hq/x2");
+    expect(m.text).toContain("Open DSS HQ: https://hq.example.test/savvy-hq");
   });
 
   it("escapes what people typed", () => {

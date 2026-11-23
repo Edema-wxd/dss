@@ -21,7 +21,7 @@ export async function notify(toId: number | null | undefined, title: string, bod
     fromId,
     title.slice(0, 300),
     body.slice(0, 4000),
-    `${siteUrl()}/admin/${path.replace(/^\//, "")}`,
+    `${siteUrl()}/savvy-hq/${path.replace(/^\//, "")}`,
   ]);
   return true;
 }

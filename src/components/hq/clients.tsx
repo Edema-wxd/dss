@@ -15,7 +15,7 @@ import {
   startOnboarding,
   submitOnboarding,
   tickStep,
-} from "@/app/admin/(hq)/clients/actions";
+} from "@/app/savvy-hq/(hq)/clients/actions";
 import { Button, Field, Panel, btn, fieldClass } from "@/components/desk/ui";
 import type { Task } from "@/lib/hq/data";
 import { INV_STATUS, type InvStatus } from "@/lib/hq/invoice-model";
@@ -76,7 +76,7 @@ export function ClientsView({ clients, tasks, w, money: seesMoney, owner, templa
             const late = open.filter((t) => t.due && t.due < w.today).length;
             const onbDone = c.onb ? c.onb.steps.filter((s) => s.done).length : 0;
             return (
-              <Link key={c.id} href={`/admin/clients/${c.id}`} className="grid overflow-hidden rounded-[20px] border-2 border-ink bg-white transition-transform hover:-translate-y-0.5">
+              <Link key={c.id} href={`/savvy-hq/clients/${c.id}`} className="grid overflow-hidden rounded-[20px] border-2 border-ink bg-white transition-transform hover:-translate-y-0.5">
                 <span className={cn("px-4 py-2 text-xs font-bold", tint(c.id))}>{c.service || "Service not set"}</span>
                 <span className="grid gap-2 p-4">
                   <span className="flex flex-wrap gap-1">
@@ -318,7 +318,7 @@ export function ClientDetail(p: DetailProps) {
     <>
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         {p.canContracts && (
-          <Link href="/admin/contracts" className="rounded-2xl bg-white px-3 py-2 ring-1 ring-ink/15 hover:ring-ink">
+          <Link href="/savvy-hq/contracts" className="rounded-2xl bg-white px-3 py-2 ring-1 ring-ink/15 hover:ring-ink">
             <b className="block text-xs text-slate">Contract</b>
             <span className={cn(ct?.tone === "bad" && "font-semibold text-[#c42b3c]")}>{ct ? ct.l : "None on file, add it"}</span>
           </Link>
@@ -513,7 +513,7 @@ function Overview({ client: c, w, money: seesMoney }: DetailProps) {
             tone="ghost"
             className="text-pink"
             disabled={pending}
-            onClick={() => window.confirm(`Delete ${c.name}? This can't be undone.`) && run(() => removeClient(c.id)).then((ok) => ok && router.push("/admin/clients"))}
+            onClick={() => window.confirm(`Delete ${c.name}? This can't be undone.`) && run(() => removeClient(c.id)).then((ok) => ok && router.push("/savvy-hq/clients"))}
           >
             Delete
           </Button>
@@ -628,7 +628,7 @@ function MoneyTab({ m }: { m: ClientMoney }) {
       <Panel>
         <div className="mb-2 flex items-center gap-2">
           <b className="flex-1">Invoices</b>
-          <Link href="/admin/invoices" className={cn(btn.base, btn.sm)}>
+          <Link href="/savvy-hq/invoices" className={cn(btn.base, btn.sm)}>
             Open Invoices
           </Link>
         </div>
@@ -636,7 +636,7 @@ function MoneyTab({ m }: { m: ClientMoney }) {
           <ul className="grid gap-1.5">
             {m.invoices.map((i) => (
               <li key={i.id}>
-                <Link href={`/admin/invoices?open=${encodeURIComponent(i.id)}`} className="flex items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-paper">
+                <Link href={`/savvy-hq/invoices?open=${encodeURIComponent(i.id)}`} className="flex items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-paper">
                   <span className="font-mono text-xs text-slate">{i.no}</span>
                   <Pill tone={INV_STATUS[i.status][1]}>{INV_STATUS[i.status][0]}</Pill>
                   <span className="flex-1 text-slate">{i.issueDate}</span>

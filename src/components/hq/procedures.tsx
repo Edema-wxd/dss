@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ExternalLink, ListChecks, Plus, Search, Trash2 } from "lucide-react";
-import { procedureToTask, removeProcedure, saveProcedure } from "@/app/admin/(hq)/procedures/actions";
+import { procedureToTask, removeProcedure, saveProcedure } from "@/app/savvy-hq/(hq)/procedures/actions";
 import { Button, Field, btn, fieldClass } from "@/components/desk/ui";
 import type { Sop } from "@/lib/hq/data";
 import { SOP_AREAS } from "@/lib/hq/work";
